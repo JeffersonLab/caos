@@ -3,6 +3,8 @@
 // analysis package
 //--------------------------------------
 import org.jlab.data.h5.*;
+import j4np.data.base.*;
+import j4np.hipo5.data.*;
 //--------------------------------------
 // Imports for JAVA standard libraries
 //--------------------------------------

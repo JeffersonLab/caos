@@ -40,6 +40,7 @@ import org.jlab.coda.et.exception.EtWakeUpException;
 public class DataSourceEt implements DataSource {
     
     List<Event> etEvents = new ArrayList<>();
+    
     private Boolean  connectionOK = false;
     private String   etRingHost   = "localhost";
     private Integer  etRingPort   = 11111;
@@ -157,7 +158,10 @@ public class DataSourceEt implements DataSource {
 
     @Override
     public int nextFrame(DataFrame frame) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        this.takeEventsFromRing();
+        EtFrame.getEvents(etEvents);
+        frame.reset();frame.addEvents(etEvents);
+        return frame.getCount();
     }
     
 }
