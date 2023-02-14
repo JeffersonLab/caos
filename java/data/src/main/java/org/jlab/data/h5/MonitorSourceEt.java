@@ -35,7 +35,7 @@ public class MonitorSourceEt  {
         etSource = new DataSourceEt("localhost");
         etSource.open(file);
         this.initServer();
-        
+        this.initData();
         this.initTimer(interval);
     }
     
@@ -53,7 +53,7 @@ public class MonitorSourceEt  {
         config.serverPort = 8525;
         
         HttpDataServer.create(config);
-        HttpDataServer.getInstance().initDefault();
+        //HttpDataServer.getInstance().initDefault();
         HttpDataServer.getInstance().start();
     }
     
@@ -92,5 +92,10 @@ public class MonitorSourceEt  {
                     dateFormat.format(date));
         }
     }
-    
+
+    public static void main(String[] args){
+	String file = args[0];
+	Integer interval = Integer.parseInt(args[1]);
+	MonitorSourceEt mon = new MonitorSourceEt(file,interval);
+    }
 }
