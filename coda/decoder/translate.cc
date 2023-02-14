@@ -122,12 +122,13 @@ void processEcal(const char *file){
     int fragnum = -1; /* always '-1' */
     int banktag = 0xe101; 
     int banktag2 = 0xe116;
+    int banktag3 = 0xe107;
     int nbytes, ind_data;
     int ind12; int counter = 0;
 
-    while(r.next()==true&&counter<500){
+    while(r.next()==true&&counter<5000){
         decoder.reset(); counter++;
-        printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> event # %d\n",counter);
+        //printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> event # %d\n",counter);
         r.read(e);
         e.getStructure(evio,32,1);
         const unsigned int *bufptr_c = reinterpret_cast<const unsigned int *>(&evio.getAddress()[8]);
@@ -154,19 +155,32 @@ void processEcal(const char *file){
                         evioptr.offset = ind_data*4;
                         evioptr.length = nbytes;
                         evioptr.buffer = reinterpret_cast<const char*>(&bufptr[0]);
-                        printf("found the DC bank, crate = %5d , tag = %d\n", fragtag,evioptr.tag);
+                        //printf("found the DC bank, crate = %5d , tag = %d\n", fragtag,evioptr.tag);
                         decoder.decode(evioptr);
                         //decoder.decode_fadc250(fragtag,reinterpret_cast<const char*>(&bufptr[0]), ind_data*4, nbytes, fitter, bank);
                     }
+                
+                ind12 = evLinkBank(bufptr, fragtag, fragnum, banktag3, banknum, &nbytes, &ind_data);
+                if(ind12>0){
+                        evioptr.crate = fragtag;
+                        evioptr.tag   = banktag3;
+                        evioptr.offset = ind_data*4;
+                        evioptr.length = nbytes;
+                        evioptr.buffer = reinterpret_cast<const char*>(&bufptr[0]);
+                        //printf("found the EC tdc, crate = %5d , tag = %d\n", fragtag, evioptr.tag);
+                        decoder.decode(evioptr);
+                        //decoder.decode_fadc250(fragtag,reinterpret_cast<const char*>(&bufptr[0]), ind_data*4, nbytes, fitter, bank);
                 }
+                }
+
         }
-        decoder.show();
+        //decoder.show();
         
-        printf(">>>> EVENT SHOW\n");
+        //printf(">>>> EVENT SHOW\n");
         //out.show();
 
         decoder.write(out);
-        out.show();
+        //out.show();
         w.addEvent(out);
     }
     w.close();

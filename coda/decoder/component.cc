@@ -157,7 +157,7 @@ void  component::decode_fadc250(eviodata_t &data, coda::fitter &__fitter, coda::
                     //crate, slot, channel,nsamples, fadc.maximum() , contains?"true":"false");
                     
                 } else {
-                    printf(">>>>  error decoding [%d,%d,%d]\n",data.crate,slot, channel);
+                   // printf(">>>>  error decoding FADC 250 [%d,%d,%d]\n",data.crate,slot, channel);
                 }
                 pos += 2*nsamples;
             }
@@ -203,13 +203,50 @@ void  component::decode_tdc(eviodata_t &data, coda::table &__table, hipo::compos
                 bank.putLong(row,5,timestamp);
                 row++;
              } else {
-                printf(" error in decoder : "); table.print(desc);
+                printf(" error in decoder TDC : "); table.print(desc);
              }             
            } 
-          if((pos+17 - data.offset ) < data.length) doLoop = false;
+          if((pos+17 - data.offset ) > data.length) doLoop = false;
           //if((pos+17 - offset ) < length) doLoop = false;
        }
    
     }
-
+    //************************************************************************************************
+    // decoding TDC bank TAG= 0xe107 (57607), the TDCs are stored as integer array (32 bit) 
+    // with structure:
+    //  slot - bits 27-31 mask = 
+    //  channel - bits 19-25
+    //  value - bits 0-18
+    //************************************************************************************************
+    void  component::decode_tdc_57607( eviodata_t &data, coda::table &__table, hipo::composite &bank){
+        int   pos = data.offset;
+        bool  doLoop = true;
+        int   row = bank.getRows();
+        descriptor_t desc;
+        desc.crate = data.crate;
+        while(doLoop==true){
+            uint32_t word = *reinterpret_cast<const uint32_t*>( &data.buffer[pos]);
+            int    slot = (word>>27)&0x0000001F;
+            int channel = (word>>19)&0x0000007F;
+            int   value = (word)&0x0007FFFF;
+            desc.slot = slot;
+            desc.channel = channel;
+            if(table.contains(desc)==true){
+                table.decode(desc);
+                bank.putInt(row,0,desc.sector);
+                bank.putInt(row,1,desc.layer);
+                bank.putInt(row,2,desc.component);
+                bank.putInt(row,3,desc.order);
+                bank.putInt(row,4,value);
+                row++;
+            } else {
+                //printf(" error in decoder : ");
+                 //table.print(desc);
+                 //printf("position = %d, offset %d, length = %d, dist = %d, value = %X\n",pos,
+                 //data.offset, data.length, pos +4 - data.offset, word);
+            }
+            pos += 4;
+            if((pos+4 - data.offset ) > data.length) doLoop = false;
+        }
+    }
 }

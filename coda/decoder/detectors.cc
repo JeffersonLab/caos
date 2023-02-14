@@ -55,13 +55,18 @@ namespace coda {
   void   component_ec::decode(eviodata_t &evio){
     //printf("[%s] decoder is called for crate = %4d with tag = %d\n",name.c_str(),evio.crate, evio.tag);
     if(evio.tag==0xe101) {
-      decode_fadc250(evio,fitter,table,banks[1]);
+       decode_fadc250(evio,fitter,table,banks[1]);
       //printf(" decoded bank %X, now - rows = %d\n",evio.tag,banks[1].getRows());
+    }
+
+    if(evio.tag==0xe107){
+      //printf("EC COMPONENT DECODE BANK %d\n",evio.tag);
+      decode_tdc_57607(evio,table,banks[0]);
     }
   }
 
 void component_ec::init(){
-  initBanks( {{ 11,1,"bbsbil",512},{11,2,"bbsbifs",512}} );
+  initBanks( {{ 11,1,"bbsbil",4098},{11,2,"bbsbifs",4098}} );
 }
 
   /**
@@ -80,6 +85,6 @@ void component_ec::init(){
   }
 
   void component_dc::init(){
-    initBanks( {{ 12,1,"bbsbil",512}} );
+    initBanks( {{ 12,1,"bbsbil",4098}} );
   }
 }

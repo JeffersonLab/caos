@@ -71,6 +71,7 @@ class component {
       virtual void setBankSize(int n);
       void  decode_fadc250(eviodata_t &data, coda::fitter &__fitter, coda::table &__table, hipo::composite &bank);
       void  decode_tdc(    eviodata_t &data, coda::table &__table, hipo::composite &bank);
+      void  decode_tdc_57607( eviodata_t &data, coda::table &__table, hipo::composite &bank);
       void  initBanks(std::initializer_list<std::tuple<int,int,const char *,int> > desc);
 
    public:
