@@ -87,4 +87,39 @@ void component_ec::init(){
   void component_dc::init(){
     initBanks( {{ 12,1,"bbsbil",4098}} );
   }
+  /**
+   * @brief 
+   * 
+   */
+  component_config::component_config(){
+    setName("config"); setBankSize(1);  crateSet.insert(37);
+  }
+
+  void component_config::init(){
+      initBanks( {{ 10,1,"iiillbbff",4098}} );
+  }
+
+  void    component_config::decode(eviodata_t &evio){
+    if(evio.tag==57610) decode_trigger_57610(evio,banks[0]);
+    if(evio.tag==57615) decode_trigger_57615(evio,banks[0]);
+  }
+
+  void    component_config::decode_trigger_57610(eviodata_t &data, hipo::composite &bank){
+      int   pos = data.offset;
+      bank.setRows(1);
+      uint32_t   word1 = *reinterpret_cast<const uint32_t*>( &data.buffer[pos+ 5*4]);
+      uint32_t   word2 = *reinterpret_cast<const uint32_t*>( &data.buffer[pos+ 4*4]);
+      //printf(" word 1 = %d, word2 = %d\n",word1,word2);
+      long       trigger = ( ((long) word1)<<32)|(word2&0xFFFFFFL);
+      bank.putLong(0,3,trigger);
+  }
+
+  void    component_config::decode_trigger_57615(eviodata_t &data, hipo::composite &bank){
+      int   pos = data.offset;
+      bank.setRows(1);
+      uint32_t   runnum = *reinterpret_cast<const uint32_t*>( &data.buffer[pos+ 4]);
+      uint32_t   evtnum = *reinterpret_cast<const uint32_t*>( &data.buffer[pos+ 8]);
+      uint32_t unixtime = *reinterpret_cast<const uint32_t*>( &data.buffer[pos+12]);
+      bank.putInt(0,0,runnum); bank.putInt(0,1,evtnum); bank.putInt(0,2,unixtime); 
+  }
 }

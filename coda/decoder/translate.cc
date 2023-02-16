@@ -123,10 +123,12 @@ void processEcal(const char *file){
     int banktag = 0xe101; 
     int banktag2 = 0xe116;
     int banktag3 = 0xe107;
+    int banktag4 = 0xe10f;
+
     int nbytes, ind_data;
     int ind12; int counter = 0;
 
-    while(r.next()==true&&counter<5000){
+    while(r.next()==true&&counter<450000){
         decoder.reset(); counter++;
         //printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> event # %d\n",counter);
         r.read(e);
@@ -171,6 +173,18 @@ void processEcal(const char *file){
                         decoder.decode(evioptr);
                         //decoder.decode_fadc250(fragtag,reinterpret_cast<const char*>(&bufptr[0]), ind_data*4, nbytes, fitter, bank);
                 }
+                ind12 = evLinkBank(bufptr, fragtag, fragnum, banktag4, banknum, &nbytes, &ind_data);
+                if(ind12>0){
+                        evioptr.crate = fragtag;
+                        evioptr.tag   = banktag4;
+                        evioptr.offset = ind_data*4;
+                        evioptr.length = nbytes;
+                        evioptr.buffer = reinterpret_cast<const char*>(&bufptr[0]);
+                        //printf("found the EC tdc, crate = %5d , tag = %d\n", fragtag, evioptr.tag);
+                        decoder.decode(evioptr);
+                        //decoder.decode_fadc250(fragtag,reinterpret_cast<const char*>(&bufptr[0]), ind_data*4, nbytes, fitter, bank);
+                }
+
                 }
 
         }
@@ -178,7 +192,7 @@ void processEcal(const char *file){
         
         //printf(">>>> EVENT SHOW\n");
         //out.show();
-
+        
         decoder.write(out);
         //out.show();
         w.addEvent(out);
@@ -186,76 +200,6 @@ void processEcal(const char *file){
     w.close();
     printf("processed events %d\n",counter);
 
-}
-
-void processDrift(const char *inputFile){
-
-    coda::table table;
-    table.read("dc_tt.txt");
-    
-    coda::decoder decoder;
-
-    hipo::reader r;
-
-    hipo::event  e(24*ONE_KB);
-    hipo::event  eout(24*ONE_KB);
-
-    hipo::structure evio(2*ONE_MB);
-
-    r.open(inputFile);
-    
-    hipo::writer w;
-    w.open("output.h5");
-
-
-    hipo::dataframe    frame(50,4*ONE_MB); // frame(maximum number of events, maximum number of bytes); 
-
-    int fragnum = -1; /* always '-1' */
-    int banktag = 0xe116; 
-    int nbytes, ind_data;
-    int ind12; int counter = 0;
-
-    hipo::composite bank;//(42,11,std::string("bssbsl"),1024*1024*2);
-    bank.parse(42,11,std::string("bssbsl"),2*ONE_MB);
-    //bank.parse(std::string("bssbsl"));
-
-    while(r.next()&&counter<450000){
-
-        counter++;
-        r.read(e);
-        e.getStructure(evio,32,1);        
-        //int size = evio.getSize();                
-        bank.reset();
-        const unsigned int *bufptr_c = reinterpret_cast<const unsigned int *>(&evio.getAddress()[8]);
-        unsigned int         *bufptr = const_cast<unsigned int *>(bufptr_c);
-        //printf("evio buffer size = %d , in bytes = %d\n",bufptr[0],bufptr[0]*4);
-        //unsigned int *bufptr = &bufptr_k;
-        for(int fragtag=41; fragtag<=58; fragtag++)
-        {
-            for(int banknum=0; banknum<40; banknum++) // loop over 40 bank numbers, it can be any from 0 to 39 
-                {
-                    ind12 = evLinkBank(bufptr, fragtag, fragnum, banktag, banknum, &nbytes, &ind_data);
-                    if(ind12>0){ 
-		                //printf(" --- found it");
-		                //printf("[%5d] %d %d %d %d\n",ind12, fragtag,banknum, nbytes, ind_data*4);
-		                decoder.decode(fragtag,reinterpret_cast<const char*>(&bufptr[0]), ind_data*4, nbytes, table, bank);
-                    }
-                }
-
-        }
-	    //printf("event # %d : after decoding bank rows = %d\n" ,counter,bank.getRows() );
-	    eout.reset();
-        eout.addStructure(bank);
-    
-        bool success = frame.addEvent(eout);
-
-        if(success==false){
-            processFrame(frame.buffer());
-            frame.reset();
-            frame.addEvent(eout);
-        } 
-    }
-    printf("processed events %d\n",counter);
 }
 
 //=========================================================================================

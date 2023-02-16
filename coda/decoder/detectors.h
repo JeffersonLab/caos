@@ -44,6 +44,22 @@
 
 namespace coda {
 
+class component_config : public component {
+   private:
+      std::set<int> crateSet;
+
+   public:
+   component_config();
+   virtual ~component_config(){};
+
+   virtual void   decode(eviodata_t &evio);
+   virtual void   init();
+   virtual std::set<int> &keys(){ return crateSet;}
+
+   void    decode_trigger_57610(eviodata_t &data, hipo::composite &bank);
+   void    decode_trigger_57615(eviodata_t &data, hipo::composite &bank);
+};
+
 class component_ec : public component {
 
    public:

@@ -43,6 +43,8 @@
 #include "bank.h"
 #include "detectors.h"
 #include "event.h"
+#include "chart/ascii.h"
+#include "utils.h"
 
 namespace coda {
 
@@ -53,12 +55,33 @@ class decoder {
        std::vector<coda::component *> components;
        std::map<int,int>              crateMap;
        std::vector<std::set<int>>     componentSets;
+
+       
+       std::vector<double>            eventSizeStats;
+       std::vector<double>            eventStats;
+       
+       bool   doStatistics;
+
+       int      statisticsHeight  = 24;
+       int      statisticsCounter = 0;
+       int        agregationCount = 400;
+       int    statsPrintFrequency = 1000;
+
+        hipo::benchmark   bench;
+
        static void print(int x);
+       
+       void   constructDetectorSet();
+       void   showStats();
+       void   plotStats();
+       void   processStatistics(int eventSize);
 
     public:
 
     decoder(){};
-    virtual ~decoder(){};
+    virtual ~decoder(){ doStatistics = true; bench.setName("decoder"); bench.resume();};
+
+    void  stats(bool flag){ doStatistics = flag;}
 
     void  initialize();
     void  decode(coda::eviodata_t &evio);
@@ -67,8 +90,6 @@ class decoder {
     void  show();
     void  showKeys();
 
-    void     decode_fadc250(int crate, const char *buffer, int offset, int length, coda::fitter &fitter, hipo::composite &bank);
-    void     decode(int crate, const char *buffer, int offset, int length, coda::table &tbl, hipo::composite &bank);
 };
 
 } // end of namespace
