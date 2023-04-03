@@ -134,10 +134,25 @@ void  component::decode_fadc250(eviodata_t &data, coda::fitter &__fitter, coda::
                 if(contains==true){
                     memcpy(&fadc.pulse[0],&data.buffer[pos],nsamples*2);
                     fadc.setLength(nsamples);
-                    fadc.fit(__fitter.get(data.crate,slot,channel));
-                    //fadc.show();
-                    //fadc.print();
+                    fadc_t params = __fitter.get(data.crate,slot,channel);
+                    printf("********************************\n");
                     
+                    fadc.fit(params);
+                    fadc.print(params);
+                    fadc.show();
+                    
+                    params.ped = 0.0;
+                    printf(">>>> \n");
+                    fadc.fit(params);
+                    fadc.print(params);
+                    fadc.show();
+                    if(fadc.getTime()<0.001) fadc.csv(params);
+
+                    //fadc.print(__fitter.get(data.crate,slot,channel));
+                    //fadc.print(params);
+                    //fadc.print();
+                    //if(fadc.getTime()<0.001) fadc.csv(__fitter.get(data.crate,slot,channel));
+
                     desc.crate = data.crate;
                     desc.slot = slot;
                     desc.channel = channel;

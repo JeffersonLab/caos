@@ -146,7 +146,7 @@ namespace coda {
         int counter = 0;
          while (!tt.eof()){
             tt >> desc.crate  >> desc.slot  >> desc.channel 
-               >> params.ped >> params.nsa >> params.nsb
+               >> params.ped >> params.nsb >> params.nsa
                >> params.tet >> wwidth >> wsize;
             long key = encode(desc.crate,desc.slot,desc.channel);
             fadcmap[key] = fadc_t(params.ped,params.nsa,params.nsb,params.tet);

@@ -74,7 +74,10 @@ public:
   void   setLength(int length){*(reinterpret_cast<uint16_t *>(&pulse[0])) = (uint16_t) length;}
   void   setBin(int bin, uint16_t value){ *(reinterpret_cast<uint16_t *>(&pulse[2+bin*2]))=value;};
   void   show();
+  void   graph();
   void   print();
+  void   csv(coda::fadc_t &coef);
+  void   print(coda::fadc_t &coef);
 };
 
 } // end of namespace

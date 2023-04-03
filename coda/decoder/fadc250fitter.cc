@@ -139,7 +139,7 @@ namespace coda {
       printf("fadc250: n = %4d, adc = %5d, time = %8d\n",getLength(),adc_corrected,t0);
    }
 
-  void fadc250::print(){
+  void fadc250::graph(){
     std::vector<double> series;
     for(int p = 0; p < getLength(); p++)  series.push_back(getBin(p));
     //}
@@ -147,5 +147,22 @@ namespace coda {
     //ascii::Asciichart asciichart(std::vector<std::vector<double>>{series});
     ascii::Asciichart asciichart({{"FADC",series}});
     std::cout << asciichart.show_legend(true).height(10).Plot();
+  }
+  
+  void fadc250::csv(coda::fadc_t &coef){
+    printf("pulse: %d,%e,%d,%d,%d,", getLength(),coef.ped,coef.nsa,coef.nsb, coef.tet);
+    printf("%d,%d,%d,%d",getLength(),adc_corrected,t0,ped);
+    for(int k = 0; k < getLength(); k++) printf(",%d",getBin(k));    
+    printf("\n");
+  }
+
+  void fadc250::print(){
+    printf("%d,%d,%d",getLength(),adc_corrected,t0);
+    for(int k = 0; k < getLength(); k++) printf(",%d",getBin(k));    
+    printf("\n");
+  }
+
+  void   fadc250::print(coda::fadc_t &coef){
+     printf("entry: ped = %8.4f, nsa = %5d, nsb = %5d, tet = %5d\n", coef.ped,coef.nsa,coef.nsb, coef.tet);
   }
 }
