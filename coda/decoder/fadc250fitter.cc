@@ -139,6 +139,7 @@ namespace coda {
       printf("fadc250: n = %4d, adc = %5d, time = %8d\n",getLength(),adc_corrected,t0);
    }
 
+  
   void fadc250::graph(){
     std::vector<double> series;
     for(int p = 0; p < getLength(); p++)  series.push_back(getBin(p));
@@ -155,7 +156,28 @@ namespace coda {
     for(int k = 0; k < getLength(); k++) printf(",%d",getBin(k));    
     printf("\n");
   }
+  
+  int  fadc250::getMax(){
+    int max = 0;
+    for(int k = 0; k < getLength(); k++) if(getBin(k)>max) max=getBin(k);
+    return max;
+  }
+  
+  void fadc250::csv(){
+    int max = getMax();
+    if(max<1700){
 
+      printf("pulse_selfnorm: %d", getLength());
+      //printf("%d,%d,%d,%d",getLength(),adc_corrected,t0,ped);
+      for(int k = 0; k < getLength(); k++) printf(",%.4f",((double) getBin(k))/max);
+      printf("\n");
+      printf("pulse_totalnorm: %d", getLength());
+      //printf("%d,%d,%d,%d",getLength(),adc_corrected,t0,ped);
+      for(int k = 0; k < getLength(); k++) printf(",%.4f",((double) getBin(k))/1700);
+      printf("\n");
+    }
+  }
+  
   void fadc250::print(){
     printf("%d,%d,%d",getLength(),adc_corrected,t0);
     for(int k = 0; k < getLength(); k++) printf(",%d",getBin(k));    

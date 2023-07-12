@@ -70,6 +70,7 @@ public:
   
   int    maximum();
   int    getLength(){ return *(reinterpret_cast<uint16_t *>(&pulse[0]));}
+  int    getMax();
   int    getBin(int bin){return *(reinterpret_cast<uint16_t *>(&pulse[2+bin*2]));}
   void   setLength(int length){*(reinterpret_cast<uint16_t *>(&pulse[0])) = (uint16_t) length;}
   void   setBin(int bin, uint16_t value){ *(reinterpret_cast<uint16_t *>(&pulse[2+bin*2]))=value;};
@@ -77,6 +78,7 @@ public:
   void   graph();
   void   print();
   void   csv(coda::fadc_t &coef);
+  void   csv();
   void   print(coda::fadc_t &coef);
 };
 

@@ -39,10 +39,11 @@
 #include <fstream>
 
 namespace coda {
-    /** 
-     * Encode four integer numbers into one LONG value
-    */
-    long   table::encode(int id1, int id2, int id3, int id4){
+
+  /** 
+   * Encode four integer numbers into one LONG value
+   */
+  long   table::encode(int id1, int id2, int id3, int id4){
         long word = 0;
         word = word|( (((long) id1)<<48)&0xffff000000000000);
         word = word|( (((long) id2)<<32)&0x0000ffff00000000);
@@ -134,26 +135,28 @@ namespace coda {
         long key = encode(crate,slot,channel);
         return fadcmap.count(key);
     }
-    fadc_t  &fitter::get(int crate, int slot, int channel){
+
+  fadc_t  &fitter::get(int crate, int slot, int channel){
         long key = encode(crate,slot,channel);
         return fadcmap[key];
+  }
+  
+  void     fitter::read(const char *filename){
+    std::ifstream tt (filename);
+    descriptor_t desc;
+    fadc_t       params(0,0,0,0);
+    int wwidth, wsize;
+    int counter = 0;
+    while (!tt.eof()){
+      tt >> desc.crate  >> desc.slot  >> desc.channel 
+	 >> params.ped >> params.nsb >> params.nsa
+	 >> params.tet >> wwidth >> wsize;
+      long key = encode(desc.crate,desc.slot,desc.channel);
+      fadcmap[key] = fadc_t(params.ped,params.nsa,params.nsb,params.tet);
+      counter++;
+      //printf("row = %d (%d %d %d)\n",counter,desc.crate,desc.slot,desc.channel);
+      
     }
-    void     fitter::read(const char *filename){
-        std::ifstream tt (filename);
-        descriptor_t desc;
-        fadc_t       params(0,0,0,0);
-        int wwidth, wsize;
-        int counter = 0;
-         while (!tt.eof()){
-            tt >> desc.crate  >> desc.slot  >> desc.channel 
-               >> params.ped >> params.nsb >> params.nsa
-               >> params.tet >> wwidth >> wsize;
-            long key = encode(desc.crate,desc.slot,desc.channel);
-            fadcmap[key] = fadc_t(params.ped,params.nsa,params.nsb,params.tet);
-            counter++;
-            //printf("row = %d (%d %d %d)\n",counter,desc.crate,desc.slot,desc.channel);
-
-         }
-         printf("[table] file >> %s, loaded rows = %d, map size = %lu\n",filename, counter, fadcmap.size());
-    }
+    printf("[table] file >> %s, loaded rows = %d, map size = %lu\n",filename, counter, fadcmap.size());
+  }
 }
