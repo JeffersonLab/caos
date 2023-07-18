@@ -76,7 +76,6 @@ public class MonitorSourceEt  {
         Date date = new Date();
         //System.out.printf("%s: receive buffer with %d events\n",
         //            dateFormat.format(date),etEvents.getCount());
-        
         try {
             etSource.nextFrame(etEvents);
             int size = 0;
@@ -85,7 +84,8 @@ public class MonitorSourceEt  {
             for(int i = 0; i < etEvents.getCount(); i++){
                 Event e = (Event) etEvents.getEvent(i);
                 e.read(cbank, 42, 11);
-                hdcbank.fill(cbank.getRows());                
+                
+                hdcbank.fill(cbank.getRows());
             }
         } catch (Exception e){
             System.out.printf("%s: error receiving events from et ring.....\n",
