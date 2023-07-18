@@ -1,7 +1,7 @@
 
 
 exec: et_start.o
-	$(CC) -o et_start $< ../libet.a
+	$(CC) -o et_start $< ../libet.a -lm -ldl -lpthread
 
 clean:
 	@echo cleaning distribution
