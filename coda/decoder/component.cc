@@ -145,9 +145,9 @@ void  component::decode_fadc250(eviodata_t &data, coda::fitter &__fitter, coda::
                     //printf(">>>> \n");
                     fadc.fit(params);
                     //fadc.print(params);
-                    fadc.show();
+                    //fadc.show();
                     //if(fadc.getTime()<0.001) fadc.csv(params);
-		    fadc.csv();
+		   // fadc.csv();
                     //fadc.print(__fitter.get(data.crate,slot,channel));
                     //fadc.print(params);
                     //fadc.print();
@@ -190,7 +190,7 @@ void  component::decode_tdc(eviodata_t &data, coda::table &__table, hipo::compos
        int   row = bank.getRows();
        descriptor_t desc;
        desc.crate = data.crate;
-       //printf(">>>>>>>> decoding\n");
+       //printf(">>>>>>>> decoding tdc : %d\n", data.length);
        while(doLoop==true){
           uint8_t        slot = *reinterpret_cast<const uint8_t*>( &data.buffer[pos]);
           //uint32_t    tnumber = *reinterpret_cast<const uint32_t*>(&buffer[pos + 1]);
@@ -202,13 +202,15 @@ void  component::decode_tdc(eviodata_t &data, coda::table &__table, hipo::compos
           
           //printf  ("\n >>>> slot = %d, N = %d\n",slot, nrepeat);
           for(int n =  0; n < nrepeat; n++){
-             uint8_t  channel =  *reinterpret_cast<const uint8_t*>( &data.buffer[pos]);
+             uint8_t  channel =  *reinterpret_cast<const uint8_t*>(  &data.buffer[pos]);
              uint16_t     tdc =  *reinterpret_cast<const uint16_t*>( &data.buffer[pos+1]);
              pos += 3;
              desc.slot = slot;
              desc.channel = channel;
              //printf("\t\t channel = %d tdc = %d\n",channel,tdc);
+             
              if(table.contains(desc)==true){
+             //if(1){   
                 table.decode(desc);
                 bank.putInt(row,0,desc.sector);
                 bank.putInt(row,1,desc.layer);
@@ -219,12 +221,13 @@ void  component::decode_tdc(eviodata_t &data, coda::table &__table, hipo::compos
                 row++;
              } else {
                 printf(" error in decoder TDC : "); table.print(desc);
-             }             
+             }
            } 
           if((pos+17 - data.offset ) > data.length) doLoop = false;
           //if((pos+17 - offset ) < length) doLoop = false;
        }
-   
+        //printf(">>>>>>>> decoding done tdc : %d , offset %d pos %d, moved %d\n", 
+        //data.length,data.offset,pos,pos-data.offset);
     }
     //************************************************************************************************
     // decoding TDC bank TAG= 0xe107 (57607), the TDCs are stored as integer array (32 bit) 

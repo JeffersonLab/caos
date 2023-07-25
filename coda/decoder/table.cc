@@ -80,10 +80,10 @@ namespace coda {
     void   table::decode(descriptor_t &desc){
         long key = encode(desc.crate,desc.slot,desc.channel,0);
         long value = translation[key];
-        desc.sector = ((int) (value>>48))&0x0000ffff;
-        desc.layer = ((int) (value>>32))&0x0000ffff;
-        desc.component = ((int) (value>>8))&0x00ffffff;
-        desc.order = ((int) value)&0x000000ff;
+        desc.sector    = ((int) (value>>48))& 0x0000ffff;
+        desc.layer     = ((int) (value>>32))& 0x0000ffff;
+        desc.component = ((int) (value>>8) )& 0x00ffffff;
+        desc.order     = (  (int) value    )& 0x000000ff;
     }
     std::set<int>   &table::getKeys(){
         return crateKeys;

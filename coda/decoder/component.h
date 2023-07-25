@@ -43,17 +43,17 @@
 #include "table.h"
 #include "fadc250fitter.h"
 #include "bank.h"
-
+#include "eviostream.h"
 
 namespace coda {
 
-struct eviodata_t {
+/*struct eviodata_t {
    int crate; // this is fragment number
    int tag; // this is the tag number of composite bank
    int offset; // offset to the start of the data
    int length;
    const char *buffer;// pointer to the evio buffer
-};
+};*/
 
 class component {
 

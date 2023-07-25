@@ -27,88 +27,62 @@
  *   For more information contact author at gavalian@jlab.org
  *   Department of Experimental Nuclear Physics, Jefferson Lab.
  */
-/*******************************************************************************
- * File:   table.h
+/******************************************************************************
+ * * File:   eviostream.h
  * Author: gavalian
  *
- * Created on April 12, 2017, 10:14 AM
+ * Created on July 19, 2023, 10:14 AM
  */
+#ifndef __EVIOSTREAM__
+#define __EVIOSTREAM__
 
-#ifndef HIPO_TABLE_H
-#define HIPO_TABLE_H
+#include "reader.h"
+#include "writer.h"
+#include "utils.h"
+#include "evio.h"
+#include "container.h"
 
-#include <map>
-#include <set>
-#include <unordered_map>
-#include "unordered_dense.h"
+namespace evio {
 
-namespace coda {
- 
-typedef struct descriptor_t {
-   
-   int crate;
-   int slot;
-   int channel;
-   int sector;
-   int layer;
-   int component;
-   int order;
-   descriptor_t() : crate(0),slot(0),channel(0),sector(0),layer(0),component(0),order(0) {}
-   descriptor_t(int cr, int sl, int ch) 
-          : sector(0),layer(0),component(0),order(0) {crate = cr; slot = sl; channel = ch;}
-}  descriptor_t;
+    /**
+     * @brief stream class for getting evio events in bulk from evio file in
+     * multi-threaded environment. The pull method has a mutex lock so all calls
+     * are thread safe.
+     */
+    class eviostream {
+        private:
+           
+           hipo::writer  writer;
+           int           evioHandle;
+           int           MAX_BUFFER = 1024*100;
+           std::mutex obj;
+        public:
+            eviostream(){ }
+            virtual ~eviostream(){};
+            void open(const char *file){
+                writer.open("output.h5");
+                int err = evOpen((char*) file,"r",&evioHandle);
+                printf("evOpen: error code = %d\n",err);
+            }
 
-typedef struct tdc_t {
-   descriptor_t desc;
-   int          tdc;
-   tdc_t() : desc(0,0,0), tdc(0) {}
-} tdc_t;
+            bool pull(std::vector<container> &events){
+                std::unique_lock<std::mutex> lock(obj);
+                bool success = true;
+                for(int i = 0; i < events.size(); i++){
+                    int err = evRead(evioHandle,&events[i].buffer[0],MAX_BUFFER);
+                    if(err!=S_SUCCESS) { events[i].buffer[0] = 0; success = false;}
+                    //printf(">>>> reading evne # %d, err code = %d size = %d\n",i,err, events[i].buffer[0]);
+                }
+                return success;
+            }
+            
+            void push(hipo::event &evt){
+                writer.addEvent(evt);
+            }
+            void close(){
+                writer.close();
+            }
+    };
+}
 
-
-typedef struct fadc_t {
-   double  ped;
-   int     nsa;
-   int     nsb;
-   int     tet;
-   fadc_t(): ped(0.0), nsa(0), nsb(0), tet(0) {}
-   fadc_t(double __ped, int __nsa, int __nsb, int __tet){ ped = __ped; nsa = __nsa; nsb = __nsb; tet = __tet;}
-} fadc_t;
-
-class fitter {
-   private:
-      std::map<long,fadc_t>  fadcmap;
-   public:
-      fitter(){};
-      virtual  ~fitter(){};
-      long     encode (int crate, int slot, int channel);
-      bool     contains(int crate, int slot, int channel);
-      fadc_t  &get(int crate, int slot, int channel);
-      void     read(const char *filename);
-};
-
-class table {
-    
-    private:
-     //std::map<long,long>  translation;
-     std::unordered_map<long,long>  translation;
-     //ankerl::unordered_dense::map<long,long> translation;
-     std::set<int>        crateKeys;
-     //std::unordered_map<long,long>  translation;
-    public:
-
-     table(){};
-     virtual ~table(){};
-     
-     long   encode   ( int id1, int id2, int id3, int id4);
-     void   decode   ( descriptor_t &desc);
-     bool   contains ( descriptor_t &desc);
-     void   insert   ( descriptor_t &desc);
-     void   read     ( const char *filename);
-     void   print    ( descriptor_t &desc);
-
-     std::set<int>   &getKeys();
-};
-
-} // end of namespace
-
-#endif /*HIPO_TABLE_H*/
+#endif

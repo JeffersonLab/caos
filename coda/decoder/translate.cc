@@ -119,8 +119,8 @@ void processEcal(const char *file){
     decoder.initialize();
     decoder.showKeys();
 
-    int fragnum = -1; /* always '-1' */
-    int banktag = 0xe101; 
+    int fragnum  = -1; /* always '-1' */
+    int banktag  = 0xe101; 
     int banktag2 = 0xe116;
     int banktag3 = 0xe107;
     int banktag4 = 0xe10f;

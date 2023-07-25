@@ -113,7 +113,7 @@ void component_ec::init(){
       long       trigger = ( ((long) word1)<<32)|(word2&0xFFFFFFL);
       bank.putLong(0,3,trigger);
   }
-
+  
   void    component_config::decode_trigger_57615(eviodata_t &data, hipo::composite &bank){
       int   pos = data.offset;
       bank.setRows(1);

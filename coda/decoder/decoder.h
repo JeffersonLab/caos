@@ -45,6 +45,8 @@
 #include "event.h"
 #include "chart/ascii.h"
 #include "utils.h"
+#include "container.h"
+
 
 namespace coda {
 
@@ -75,17 +77,21 @@ class decoder {
        void   showStats();
        void   plotStats();
        void   processStatistics(int eventSize);
+       hipo::node    evionode;//({1,11,1,1024*1024});
+       evio::container container;
 
     public:
 
     decoder(){};
-    virtual ~decoder(){ doStatistics = true; bench.setName("decoder"); bench.resume();};
+    virtual ~decoder(){ doStatistics = false; bench.setName("decoder"); bench.resume();};
 
     void  stats(bool flag){ doStatistics = flag;}
 
     void  initialize();
     void  decode(coda::eviodata_t &evio);
+    void  decode(uint32_t *evioBuffer);
     void  write(hipo::event &event);
+    void  write(hipo::event &event, evio::container &evio);
     void  reset();
     void  show();
     void  showKeys();

@@ -32,6 +32,12 @@
  * Author: gavalian
  *
  * Created on April 12, 2017, 10:14 AM
+ *
+ *
+ * Discovered better hash map implementation than std library's, it speeds up
+ * the map operations by factor of 2. Here is the link:
+ * https://github.com/martinus/unordered_dense/tree/main
+ *
  */
 
 
@@ -46,6 +52,8 @@ namespace coda {
     }
 
     void decoder::initialize(){
+        
+        evionode.assign({1,11,1,1024*1024});
 
         components.push_back(new coda::component_ec("ec_tt.txt","ec_fadc.txt"));
         components.push_back(new coda::component_dc("dc_tt.txt"));
@@ -97,6 +105,19 @@ namespace coda {
         }
     }
 
+    void  decoder::decode(uint32_t *eviobuffer){
+        coda::eviodata_t  ptr;
+        container.copy(eviobuffer);
+        container.init();
+        while(container.next() == true){
+            container.link(ptr);
+              if(ptr.offset>0){
+                    //printf("crate (%3d) -> tag = %8X (%8d)\n",ptr.crate,ptr.tag,ptr.tag);
+                decode(ptr);
+            }                
+                //decoder.decode(evioptr);
+        }
+    }
     void decoder::decode(coda::eviodata_t &evio){
         for(int k = 0; k < componentSets.size(); k++){
             if(componentSets[k].count(evio.crate)>0){
@@ -105,6 +126,7 @@ namespace coda {
             }
         }
     }
+
 
     void decoder::show(){
         printf("[decoder] summary printout with %d components\n",(int) components.size());
@@ -122,14 +144,37 @@ namespace coda {
    void  decoder::write(hipo::event &event){
       event.reset();
       for(int loop = 0; loop < components.size(); loop++){
-          std::vector<hipo::composite>  banks = components[loop]->getBanks();
+	//--- check here to see if this is copying the structure rather than
+	//--- getting a reference to the banks.
+          std::vector<hipo::composite>  &banks = components[loop]->getBanks();
           for(int b = 0; b < banks.size(); b++){
             if(banks[b].getRows()>0) event.addStructure(banks[b]);
           }
       }
-      if(doStatistics==true){
-         processStatistics(event.getSize());
+      //if(doStatistics==true){
+      //   processStatistics(event.getSize());
+      //}
+      reset();
+   }
+
+   void  decoder::write(hipo::event &event, evio::container &evio){
+      event.reset();
+      int bufferSize = evio.size()*4;
+      memcpy(const_cast<void *>(reinterpret_cast<const void *>(&(evionode.pointer()[8]))), 
+      reinterpret_cast<const void *>(&evio.getBuffer()[0]), bufferSize);
+      evionode.setSize(bufferSize);
+      event.add(evionode);
+      for(int loop = 0; loop < components.size(); loop++){
+	//--- check here to see if this is copying the structure rather than
+	//--- getting a reference to the banks.
+          std::vector<hipo::composite>  &banks = components[loop]->getBanks();
+          for(int b = 0; b < banks.size(); b++){
+            if(banks[b].getRows()>0) event.addStructure(banks[b]);
+          }
       }
+      //if(doStatistics==true){
+      //   processStatistics(event.getSize());
+      //}
       reset();
    }
 
