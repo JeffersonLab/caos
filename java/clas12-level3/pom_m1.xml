@@ -22,7 +22,7 @@
 
     <!-- Uncomment block for CPU usage -->
 
-    <dl4j-master.version>1.0.0-beta7</dl4j-master.version>
+    <dl4j-master.version>1.0.0-M2.1</dl4j-master.version>
     <dl4j.backend>deeplearning4j-core</dl4j.backend> 
     <nd4j.backend>nd4j-native</nd4j.backend>
 
@@ -81,7 +81,7 @@
       <groupId>org.nd4j</groupId>
       <artifactId>${nd4j.backend}</artifactId>
       <version>${dl4j-master.version}</version>
-<!--      <classifier>macosx-arm64</classifier> -->
+      <classifier>macosx-arm64</classifier>
     </dependency>
     <dependency>
       <groupId>org.deeplearning4j</groupId>
@@ -114,6 +114,7 @@
       <artifactId>deeplearning4j-parallel-wrapper</artifactId>
       <version>${dl4j-master.version}</version>
     </dependency>
+
 
   </dependencies>
   
