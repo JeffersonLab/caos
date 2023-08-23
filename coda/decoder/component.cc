@@ -147,7 +147,10 @@ void  component::decode_fadc250(eviodata_t &data, coda::fitter &__fitter, coda::
                     //fadc.print(params);
                     //fadc.show();
                     //if(fadc.getTime()<0.001) fadc.csv(params);
-		   // fadc.csv();
+		    //if(fadc.getAdc()>10000){ 
+                        //printf("ADC VALUE = %d pedestal = %d\n", fadc.getAdc(),fadc.getPedestal());
+                    //    fadc.csv();
+                    //}
                     //fadc.print(__fitter.get(data.crate,slot,channel));
                     //fadc.print(params);
                     //fadc.print();
@@ -158,13 +161,13 @@ void  component::decode_fadc250(eviodata_t &data, coda::fitter &__fitter, coda::
                     desc.channel = channel;
                     if(table.contains(desc)==true){
                         table.decode(desc);
-                        bank.putInt(row,0,desc.sector);
-                        bank.putInt(row,1,desc.layer);
-                        bank.putInt(row,2,desc.component);
-                        bank.putInt(row,3,desc.order);
-                        bank.putInt(row,4,fadc.getAdc());
-                        bank.putFloat(row,5,fadc.getTime());
-                        bank.putInt(row,6,fadc.getPedestal());
+                        bank.putInt(0,row,desc.sector);
+                        bank.putInt(1,row,desc.layer);
+                        bank.putInt(2,row,desc.component);
+                        bank.putInt(3,row,desc.order);
+                        bank.putInt(4,row,fadc.getAdc());
+                        bank.putFloat(5,row,fadc.getTime());
+                        bank.putInt(6,row,fadc.getPedestal());
                         row++;
                     }
                     //bank.setRows(row);                    
@@ -212,12 +215,12 @@ void  component::decode_tdc(eviodata_t &data, coda::table &__table, hipo::compos
              if(table.contains(desc)==true){
              //if(1){   
                 table.decode(desc);
-                bank.putInt(row,0,desc.sector);
-                bank.putInt(row,1,desc.layer);
-                bank.putInt(row,2,desc.component);
-                bank.putInt(row,3,desc.order);
-                bank.putInt(row,4,tdc);
-                bank.putLong(row,5,timestamp);
+                bank.putInt( 0,row,desc.sector);
+                bank.putInt( 1,row,desc.layer);
+                bank.putInt( 2,row,desc.component);
+                bank.putInt( 3,row,desc.order);
+                bank.putInt( 4,row,tdc);
+                bank.putLong(5,row,timestamp);
                 row++;
              } else {
                 printf(" error in decoder TDC : "); table.print(desc);
@@ -251,11 +254,11 @@ void  component::decode_tdc(eviodata_t &data, coda::table &__table, hipo::compos
             desc.channel = channel;
             if(table.contains(desc)==true){
                 table.decode(desc);
-                bank.putInt(row,0,desc.sector);
-                bank.putInt(row,1,desc.layer);
-                bank.putInt(row,2,desc.component);
-                bank.putInt(row,3,desc.order);
-                bank.putInt(row,4,value);
+                bank.putInt(0,row,desc.sector);
+                bank.putInt(1,row,desc.layer);
+                bank.putInt(2,row,desc.component);
+                bank.putInt(3,row,desc.order);
+                bank.putInt(4,row,value);
                 row++;
             } else {
                 //printf(" error in decoder : ");

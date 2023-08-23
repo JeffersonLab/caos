@@ -111,7 +111,7 @@ void component_ec::init(){
       uint32_t   word2 = *reinterpret_cast<const uint32_t*>( &data.buffer[pos+ 4*4]);
       //printf(" word 1 = %d, word2 = %d\n",word1,word2);
       long       trigger = ( ((long) word1)<<32)|(word2&0xFFFFFFL);
-      bank.putLong(0,3,trigger);
+      bank.putLong(3,0,trigger);
   }
   
   void    component_config::decode_trigger_57615(eviodata_t &data, hipo::composite &bank){

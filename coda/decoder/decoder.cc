@@ -148,7 +148,7 @@ namespace coda {
 	//--- getting a reference to the banks.
           std::vector<hipo::composite>  &banks = components[loop]->getBanks();
           for(int b = 0; b < banks.size(); b++){
-            if(banks[b].getRows()>0) event.addStructure(banks[b]);
+            if(banks[b].getRows()>0) event.add(banks[b]);
           }
       }
       //if(doStatistics==true){
@@ -169,7 +169,7 @@ namespace coda {
 	//--- getting a reference to the banks.
           std::vector<hipo::composite>  &banks = components[loop]->getBanks();
           for(int b = 0; b < banks.size(); b++){
-            if(banks[b].getRows()>0) event.addStructure(banks[b]);
+            if(banks[b].getRows()>0) event.add(banks[b]);
           }
       }
       //if(doStatistics==true){

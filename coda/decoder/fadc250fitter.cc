@@ -165,8 +165,21 @@ namespace coda {
   
   void fadc250::csv(){
     int max = getMax();
-    if(max<1700){
+    max = max*1.001;
+    std::vector<double> vec;
+    for(int k = 0; k < getLength(); k++) vec.push_back(((double) getBin(k))/max);
+    double summ = 0;
+    for(int i =0; i < 5; i++) summ += vec[i+1];
+    double ped = summ/5;
 
+    if(ped<0.2&&getLength()==48) {
+      printf("pulse_selfnorm: %d", getLength());
+      for(int k = 0; k < getLength(); k++) printf(",%.4f",vec[k]);
+      printf("\n");
+    }
+    
+    //if(max<1700){
+      /*
       printf("pulse_selfnorm: %d", getLength());
       //printf("%d,%d,%d,%d",getLength(),adc_corrected,t0,ped);
       for(int k = 0; k < getLength(); k++) printf(",%.4f",((double) getBin(k))/max);
@@ -175,7 +188,7 @@ namespace coda {
       //printf("%d,%d,%d,%d",getLength(),adc_corrected,t0,ped);
       for(int k = 0; k < getLength(); k++) printf(",%.4f",((double) getBin(k))/1700);
       printf("\n");
-    }
+    }*/
   }
   
   void fadc250::print(){
