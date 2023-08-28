@@ -50,6 +50,12 @@
       <id>clas12maven</id>
       <url>https://clasweb.jlab.org/clas12maven/j4np/maven</url>
     </repository>
+    <repository>
+      <!--<id>freehep</id>
+          <url>https://java.freehep.org/maven2</url>-->
+      <id>freehep-repo-public</id>
+      <url>https://srs.slac.stanford.edu/nexus/content/groups/freehep-maven2-public/</url>
+    </repository>
   </repositories>
 
   <!-- groot and hipo4 -->

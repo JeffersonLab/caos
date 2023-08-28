@@ -21,13 +21,12 @@
     <nd4j.backend>nd4j-cuda-10.2-platform</nd4j.backend>
 
     <!-- Uncomment block for CPU usage -->
-
-    <!--
+<!--
     <dl4j-master.version>1.0.0-beta7</dl4j-master.version>
     <dl4j.backend>deeplearning4j-core</dl4j.backend> 
     <nd4j.backend>nd4j-native</nd4j.backend>
-    -->
-    
+-->
+
     <java.version>1.8</java.version>
     <logback.version>1.1.7</logback.version>
     <javacpp.version>1.8</javacpp.version>
@@ -52,6 +51,12 @@
       <id>clas12maven</id>
       <url>https://clasweb.jlab.org/clas12maven/j4np/maven</url>
     </repository>
+    <repository>
+      <!--<id>freehep</id>
+          <url>https://java.freehep.org/maven2</url>-->
+      <id>freehep-repo-public</id>
+      <url>https://srs.slac.stanford.edu/nexus/content/groups/freehep-maven2-public/</url>
+    </repository>
   </repositories>
 
   <!-- groot and hipo4 -->
@@ -59,13 +64,13 @@
     <dependency>
       <groupId>j4np</groupId>
       <artifactId>j4np-ui</artifactId>
-      <version>1.0.6</version>
+      <version>1.0.7</version>
     </dependency>
 
     <dependency>
       <groupId>j4np</groupId>
       <artifactId>j4np-data</artifactId>
-      <version>1.0.6</version>
+      <version>1.0.7</version>
     </dependency>
 
     <!-- Redist needed if you don't have CUDA 10.2 installed
