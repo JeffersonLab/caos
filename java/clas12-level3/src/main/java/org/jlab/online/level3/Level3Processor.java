@@ -104,9 +104,14 @@ public class Level3Processor  {
     
     public static void main(String[] args){
         String file  = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000000_daq.h5";
+        String network = "etc/networks/network-level3-dl4j.network";
+        if(args.length>0) file = args[0];
+        if(args.length>1) network = args[1];
+        
         Level3Processor processor = new Level3Processor();
-        processor.load("level3-850_epochs.network");
-        System.out.println("------ starting the level-3 network...");
+        processor.load(network);
+        
+        System.out.println("------ starting the level-3 benchmark with file = " + file);
         processor.benchmark(file, 2500);
         //processor.initNetwork("etc/networks/network_rgb_50nA_inbending.h5");
         
