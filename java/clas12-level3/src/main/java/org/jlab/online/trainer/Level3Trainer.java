@@ -44,7 +44,7 @@ public class Level3Trainer {
     
     public void initNetwork(){
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
-                .l2(0.0005)
+                //.l2(0.0005)
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Adam(1e-3))                
                 .graphBuilder()
@@ -154,10 +154,11 @@ public class Level3Trainer {
                  .setMaxEpochs(this.nEpochs);
         */
         INDArray[] inputs = this.getFromFile(file, nEvents);
-        GraphErrors graph = new GraphErrors();
-        TGCanvas c = new TGCanvas();
-        c.view().initTimer(5000);
+        //GraphErrors graph = new GraphErrors();
+        //TGCanvas c = new TGCanvas();
+        //c.view().initTimer(5000);
         //c.draw(graph);
+        
         for(int i = 0; i < nEpochs; i++){
             long then = System.currentTimeMillis();
             network.fit(new INDArray[]{inputs[0],inputs[1]}, new INDArray[]{inputs[2]});
@@ -165,8 +166,8 @@ public class Level3Trainer {
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
                     i,network.score(), now-then);
             //System.out.printf("iteration %d, %12f\n",i,network.score());
-            if(i>2) c.draw(graph,"PL");
-            graph.addPoint(i, network.score());
+            //if(i>2) c.draw(graph,"PL");
+            //graph.addPoint(i, network.score());
             if(i%25==0){
                 this.save("level3-"+i+"_epochs.network");
             }
@@ -218,14 +219,14 @@ public class Level3Trainer {
         System.out.println(" training on file : " + file);
         Level3Trainer t = new Level3Trainer();
         
-        t.initNetwork();
+       /* t.initNetwork();
         t.nEpochs = 1250;
         t.trainFile(file, 10000);
         t.save("level3.network");
-        
-        /*
-        t.load("level3-800_epochs.network");
-        t.evaluateFile(file2, 2000);
         */
+        
+        t.load("level3-475_epochs.network");
+        t.evaluateFile(file2, 2000);
+        
     }
 }

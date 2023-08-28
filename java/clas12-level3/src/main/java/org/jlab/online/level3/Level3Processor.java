@@ -69,7 +69,7 @@ public class Level3Processor  {
     
     
     public void benchmark(String file, int iterations){
-        int[] quantity = new int[]{8,16,32,64,128,512,1024};
+        int[] quantity = new int[]{8,16,32,64,128,512,1024,2048,4096};
         double[] rate = new double[quantity.length];
         
         for(int k = 0; k < quantity.length; k++){
@@ -89,8 +89,9 @@ public class Level3Processor  {
             }
             long now = System.currentTimeMillis();
             double time = (now - then)/1000.0;
-            rate[k] = quantity[k]*frame.getList().size()/time;
-            System.out.printf(">>>> processing rate = %9.4f evt/sec\n",rate[k]);
+            rate[k] = iterations*frame.getList().size()/time;
+            System.out.printf(">>>> processing rate = %9.4f evt/sec, time elapsed = %d msec\n",
+                    rate[k],now-then);
         }
         
         for(int k = 0; k < quantity.length; k++){
@@ -112,7 +113,7 @@ public class Level3Processor  {
         processor.load(network);
         
         System.out.println("------ starting the level-3 benchmark with file = " + file);
-        processor.benchmark(file, 2500);
+        processor.benchmark(file, 500);
         //processor.initNetwork("etc/networks/network_rgb_50nA_inbending.h5");
         
     }
