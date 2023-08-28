@@ -16,16 +16,18 @@
     <dl4j.backend>deeplearning4j-cuda-11.0</dl4j.backend> 
     <nd4j.backend>nd4j-cuda-11.0-platform</nd4j.backend>-->
 
-    <!--<dl4j-master.version>1.0.0-beta7</dl4j-master.version>
+    <dl4j-master.version>1.0.0-beta7</dl4j-master.version>
     <dl4j.backend>deeplearning4j-cuda-10.2</dl4j.backend> 
-    <nd4j.backend>nd4j-cuda-10.2-platform</nd4j.backend>-->
+    <nd4j.backend>nd4j-cuda-10.2-platform</nd4j.backend>
 
     <!-- Uncomment block for CPU usage -->
 
-    <dl4j-master.version>1.0.0-M2.1</dl4j-master.version>
+    <!--
+    <dl4j-master.version>1.0.0-beta7</dl4j-master.version>
     <dl4j.backend>deeplearning4j-core</dl4j.backend> 
     <nd4j.backend>nd4j-native</nd4j.backend>
-
+    -->
+    
     <java.version>1.8</java.version>
     <logback.version>1.1.7</logback.version>
     <javacpp.version>1.8</javacpp.version>
@@ -57,13 +59,13 @@
     <dependency>
       <groupId>j4np</groupId>
       <artifactId>j4np-ui</artifactId>
-      <version>1.0.7</version>
+      <version>1.0.6</version>
     </dependency>
 
     <dependency>
       <groupId>j4np</groupId>
       <artifactId>j4np-data</artifactId>
-      <version>1.0.7</version>
+      <version>1.0.6</version>
     </dependency>
 
     <!-- Redist needed if you don't have CUDA 10.2 installed
@@ -79,40 +81,21 @@
     <!-- Recommended nd4j and dl4j dependencies -->
     <dependency>
       <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-native</artifactId>
-      <version>1.0.0-M2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-native</artifactId>
-      <version>1.0.0-M2.1</version>
-      <classifier>macosx-arm64</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.bytedeco</groupId>
-      <artifactId>openblas</artifactId>
-      <version>0.3.21-1.5.8</version>
-      <classifier>macosx-arm64</classifier>
-    </dependency>
-<!--
-    <dependency>
-      <groupId>org.nd4j</groupId>
       <artifactId>${nd4j.backend}</artifactId>
       <version>${dl4j-master.version}</version>
-      <classifier>macosx-arm64</classifier>
-    </dependency> -->
+<!--      <classifier>macosx-arm64</classifier> -->
+    </dependency>
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>${dl4j.backend}</artifactId>
       <version>${dl4j-master.version}</version>
     </dependency>
-    
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-nlp</artifactId>
       <version>${dl4j-master.version}</version>
     </dependency>
-<!--
+
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-tensorflow</artifactId>
@@ -133,7 +116,6 @@
       <artifactId>deeplearning4j-parallel-wrapper</artifactId>
       <version>${dl4j-master.version}</version>
     </dependency>
--->
 
   </dependencies>
   

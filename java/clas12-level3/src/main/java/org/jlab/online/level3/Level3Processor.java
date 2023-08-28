@@ -5,33 +5,46 @@
  */
 package org.jlab.online.level3;
 
+import j4np.data.base.DataFrame;
+import j4np.hipo5.data.CompositeNode;
+import j4np.hipo5.data.Event;
+import j4np.hipo5.io.HipoReader;
+import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.jlab.online.trainer.Level3Trainer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- *
+ * 
  * @authors gavalian, tyson
  */
 public class Level3Processor  {
     
-    double inferenceThreshold = 0.5;
-    ComputationGraph network;
+    ComputationGraph  network;
+    CompositeNode     dcBank = null;
+    CompositeNode     ecBank = null;    
     
+    public Level3Processor(){
+        dcBank = new CompositeNode(11,1,"bbii",1500);
+        ecBank = new CompositeNode(12,1,"bbii",1500);
+    }
     /**
-     *  Loads the network from the saved weights.
+     * Loads the network from the saved weights.
      *
      * @param url
      */
     public void initNetwork(String url){
-        try {
-            network = KerasModelImport.importKerasModelAndWeights(url);
-            System.out.println(network.summary());
+        /*try {
+            network = KerasModelImport.importKerasModelAndWeights(url);            
+            System.out.println(network.summary());            
         } catch (IOException e) {
             System.out.println("IO Exception");
             e.printStackTrace();
@@ -41,13 +54,61 @@ public class Level3Processor  {
         } catch (UnsupportedKerasConfigurationException e) {
             System.out.println("Unsupported Keras Config");
             e.printStackTrace();
+        }*/
+    }
+    
+    public void load(String networkFile){
+        try {
+            network = ComputationGraph.load(new File(networkFile), true);
+            System.out.println(network.summary());
+            System.out.println("sucessfully loaded the network : " + networkFile);
+        } catch (IOException ex) {
+            Logger.getLogger(Level3Trainer.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
-  
+    
+    public void benchmark(String file, int iterations){
+        int[] quantity = new int[]{8,16,32,64,128,512,1024};
+        double[] rate = new double[quantity.length];
+        
+        for(int k = 0; k < quantity.length; k++){
+            DataFrame<Event> frame = new DataFrame<>();
+            HipoReader r = new HipoReader();
+            r.setDebugMode(0);
+            r.open(file);
+            for(int n = 0; n < quantity[k]; n++) frame.addEvent(new Event());
+            r.nextFrame(frame);
+            INDArray[] input = Level3Utils.createData(frame.getList());
+            
+            long then = System.currentTimeMillis();
+            System.out.printf(">>>> batch size = %d, n-iterations = %d\n",
+                    frame.getList().size(),iterations);
+            for(int it = 0; it < iterations; it++){
+                INDArray[] output = network.output(input);                
+            }
+            long now = System.currentTimeMillis();
+            double time = (now - then)/1000.0;
+            rate[k] = quantity[k]*frame.getList().size()/time;
+            System.out.printf(">>>> processing rate = %9.4f evt/sec\n",rate[k]);
+        }
+        
+        for(int k = 0; k < quantity.length; k++){
+            System.out.printf(">>>> processing rate: batch size = %12d %9.4f evt/sec\n",
+                    quantity[k],rate[k]);
+        }
+        
+    }
+    
+
     
     public static void main(String[] args){
+        String file  = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000000_daq.h5";
         Level3Processor processor = new Level3Processor();
-        processor.initNetwork("etc/networks/network_rgb_50nA_inbending.h5");
+        processor.load("level3-850_epochs.network");
+        System.out.println("------ starting the level-3 network...");
+        processor.benchmark(file, 2500);
+        //processor.initNetwork("etc/networks/network_rgb_50nA_inbending.h5");
+        
     }
 }
