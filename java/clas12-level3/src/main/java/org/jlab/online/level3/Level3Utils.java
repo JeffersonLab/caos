@@ -102,6 +102,8 @@ public class Level3Utils {
         INDArray  DCArray = Nd4j.zeros( size*6 , 1, 6, 112);
     	INDArray  ECArray = Nd4j.zeros( size*6 , 1, 6,  72);
         for(int order = 0; order < size; order++){
+            events.get(order).read(nDC,12,1);
+            events.get(order).read(nEC,11,2);
             Level3Utils.fillDC(DCArray, nDC, order);
             Level3Utils.fillDC(ECArray, nEC, order);
         }

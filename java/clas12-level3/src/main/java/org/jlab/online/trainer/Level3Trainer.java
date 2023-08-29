@@ -35,14 +35,16 @@ import twig.graphics.TGCanvas;
  */
 public class Level3Trainer {
 
-    ComputationGraph network = null;
-    public int nEpochs = 25;
+    ComputationGraph  network = null;
+    public        int nEpochs = 25;
+    public    String cnnModel = "0a";
     
     public Level3Trainer(){
         
     }
     
     public void initNetwork(){
+        /*
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
                 //.l2(0.0005)
                 .weightInit(WeightInit.XAVIER)
@@ -61,8 +63,8 @@ public class Level3Trainer {
                         .activation(Activation.RELU)
                         .stride(1,1).build()
                         , "ec")
-                .addLayer("dcDense", new DenseLayer.Builder().nIn(6*5*111).nOut(48).dropOut(0.5).build(), "L1")
-                .addLayer("ecDense", new DenseLayer.Builder().nIn(6*5*111).nOut(48).dropOut(0.5).build(), "L2")
+                .addLayer("dcDense", new DenseLayer.Builder().nIn(3330).nOut(48).dropOut(0.5).build(), "L1")
+                .addLayer("ecDense", new DenseLayer.Builder().nIn(2130).nOut(48).dropOut(0.5).build(), "L2")
                 .addVertex("merge", new MergeVertex(), "dcDense", "ecDense")
                 .addLayer("out", new OutputLayer.Builder()
                         .nIn(48+48).nOut(2)
@@ -72,18 +74,17 @@ public class Level3Trainer {
                 .setOutputs("out")
                 .setInputTypes(InputType.convolutional(6, 112, 1),InputType.convolutional(6, 72, 1))
                 .build();
-        
-        
+                */
+        ComputationGraphConfiguration config = Level3Models.getModel(cnnModel);
         network = new ComputationGraph(config);
         network.init();
-        System.out.println(network.summary());
-        
+        System.out.println(network.summary());        
     }
     
     public void save(String file){
         
         try {
-            network.save(new File(file));
+            network.save(new File(file+"_"+cnnModel+".network"));
             System.out.println("saved file : " + file +"\n"+"done...");
         } catch (IOException ex) {
             Logger.getLogger(Level3Trainer.class.getName()).log(Level.SEVERE, null, ex);
@@ -141,38 +142,19 @@ public class Level3Trainer {
     }
     
     public void trainFile(String file, int nEvents){
-        /*
-        BackpropagationTrainer trainer = network.getTrainer();
-         trainer.setLearningRate(0.001f) // za ada delta 0.00001f za rms prop 0.001
-                 //trainer.setLearningRate(0.01f) // za ada delta 0.00001f za rms prop 0.001
-                 .setMaxError(0.0001f)
-                 .setOptimizer(OptimizerType.SGD) // use adagrad optimization algorithm
-                 .setL1Regularization(0.005f)
-                 //.setL2Regularization(0.001f)
-                 //.setBatchSize(200)
-                 //.setBatchMode(true)
-                 .setMaxEpochs(this.nEpochs);
-        */
-        INDArray[] inputs = this.getFromFile(file, nEvents);
-        //GraphErrors graph = new GraphErrors();
-        //TGCanvas c = new TGCanvas();
-        //c.view().initTimer(5000);
-        //c.draw(graph);
+       
+        INDArray[] inputs = this.getFromFile(file, nEvents);        
         
         for(int i = 0; i < nEpochs; i++){
             long then = System.currentTimeMillis();
             network.fit(new INDArray[]{inputs[0],inputs[1]}, new INDArray[]{inputs[2]});
             long now = System.currentTimeMillis();
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
-                    i,network.score(), now-then);
-            //System.out.printf("iteration %d, %12f\n",i,network.score());
-            //if(i>2) c.draw(graph,"PL");
-            //graph.addPoint(i, network.score());
-            if(i%25==0){
-                this.save("level3-"+i+"_epochs.network");
+                    i,network.score(), now-then);            
+            if(i%25==0&&i!=0){
+                this.save("level3_model_"+ this.cnnModel + "_" + i +"_epochs.network");
             }
-        }
-        
+        }        
         //network.output()
     }
     
@@ -219,13 +201,14 @@ public class Level3Trainer {
         System.out.println(" training on file : " + file);
         Level3Trainer t = new Level3Trainer();
         
-       /* t.initNetwork();
+        /*t.cnnModel = "0b";
+        t.initNetwork();
         t.nEpochs = 1250;
         t.trainFile(file, 10000);
-        t.save("level3.network");
+        t.save("level3");
         */
         
-        t.load("level3-475_epochs.network");
+        t.load("level3_model_0b_1225_epochs.network_0b.network");
         t.evaluateFile(file2, 2000);
         
     }

@@ -9,6 +9,7 @@ import j4np.data.base.DataFrame;
 import j4np.hipo5.data.CompositeNode;
 import j4np.hipo5.data.Event;
 import j4np.hipo5.io.HipoReader;
+import j4np.utils.io.OptionParser;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -67,9 +68,21 @@ public class Level3Processor  {
         }
     }
     
+    public INDArray[] getOutput(INDArray[] input){
+        return this.network.output(input);
+    }
+    public void benchmark(String file, int iterations, String batches){
+        String[] tokens = batches.split(",");
+        int[] q = new int[tokens.length];
+        for(int i = 0; i < q.length; i++) q[i] = Integer.parseInt(tokens[i]);
+        this.benchmark(file, iterations, q);
+    }
     
-    public void benchmark(String file, int iterations){
-        int[] quantity = new int[]{8,16,32,64,128,512,1024,2048,4096};
+    public void benchmark(String file, int iterations, int[] batches){
+        
+        String omp_num_threads = System.getenv("OMP_NUM_THREADS");
+        
+        int[] quantity = batches;//new int[]{8,16,32,64,128,512,1024,2048,4096};
         double[] rate = new double[quantity.length];
         
         for(int k = 0; k < quantity.length; k++){
@@ -95,25 +108,35 @@ public class Level3Processor  {
         }
         
         for(int k = 0; k < quantity.length; k++){
-            System.out.printf(">>>> processing rate: batch size = %12d %9.4f evt/sec\n",
-                    quantity[k],rate[k]);
+            System.out.printf(">>>> processing rate result: batch size = %4s %12d %9.4f evt/sec\n",
+                    omp_num_threads,quantity[k],rate[k]);
         }
         
     }
     
-
+    
     
     public static void main(String[] args){
-        String file  = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000000_daq.h5";
-        String network = "etc/networks/network-level3-dl4j.network";
-        if(args.length>0) file = args[0];
-        if(args.length>1) network = args[1];
+        
+        OptionParser opt = new OptionParser("benchmark");
+        
+        opt.addRequired("-batch", "batch sizes to run can be comma separated list");
+        opt.addOption("-n", "etc/networks/network-level3-dl4j.network", "cnn network file name");
+        opt.addOption("-i", "128", "number of iterations");
+        
+        opt.parse(args);
+        
+        String file  = opt.getInputList().get(0);
+        
+        String network = opt.getOption("-n").stringValue();
+        String batchSize = opt.getOption("-batch").stringValue();
+        int    iterations = opt.getOption("-i").intValue();
+        
+        
         
         Level3Processor processor = new Level3Processor();
-        processor.load(network);
-        
-        System.out.println("------ starting the level-3 benchmark with file = " + file);
-        processor.benchmark(file, 500);
+        processor.load(network);        
+        processor.benchmark(file, iterations, batchSize);
         //processor.initNetwork("etc/networks/network_rgb_50nA_inbending.h5");
         
     }
