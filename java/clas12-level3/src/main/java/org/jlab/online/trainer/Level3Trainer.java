@@ -330,7 +330,7 @@ public class Level3Trainer {
             event.read(nRC,  5, 1);
             //System.out.printf(" READ %d %d %d\n",nDC.getRows(),nEC.getRows(),nRC.getRows());
             Level3Utils.fillDC(DCArray, nDC, i);
-            Level3Utils.fillDC(ECArray, nEC, i);
+            Level3Utils.fillEC(ECArray, nEC, i);
             Level3Utils.fillLabels(OUTArray, nRC, i);
 	    i++;
         }
@@ -359,9 +359,9 @@ public class Level3Trainer {
         
 	t.cnnModel = net;
 	t.initNetwork();
-	/*t.nEpochs = 1000;
-	t.trainManyFiles(baseLoc,0,5,10000);//10
-	t.save("level3");*/
+	t.nEpochs = 1000;
+	t.trainManyFiles(baseLoc,0,10,10000);//10
+	t.save("level3");
 	    
 	String file2=baseLoc+"19.h5";
 

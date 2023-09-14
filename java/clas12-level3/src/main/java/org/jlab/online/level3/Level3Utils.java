@@ -66,7 +66,7 @@ public class Level3Utils {
             }
         }
     }
-    
+   
     public static void fillEC(INDArray dc, CompositeNode ecBank, int order){
         int   nrows = ecBank.getRows();
         int[] index = new int[]{0,0,0,0};
@@ -85,10 +85,10 @@ public class Level3Utils {
                     index[2]   = (layer-1);
                     index[3]   = strip-1;
                     if(layer>6){
-                        index[1] = layer - 3 - 1;
-                        index[2] = strip + 36;
+                        index[2] = layer - 3 - 1;
+                        index[3] = (strip + 36)-1;
                     }
-                    if(index[2]<72&&index[1]<6)
+                    if(index[3]<72&&index[2]<6)
                         dc.putScalar(index, energy);
                 }
             }
