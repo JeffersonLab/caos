@@ -56,11 +56,13 @@ namespace evio {
            int           evioHandle;
            int           MAX_BUFFER = 1024*100;
            std::mutex obj;
+           std::string outputFile = "output_decoder.h5";
         public:
             eviostream(){ }
+            eviostream(const char *file){ outputFile = file; }
             virtual ~eviostream(){};
             void open(const char *file){
-                writer.open("output.h5");
+	        writer.open(outputFile.c_str());
                 int err = evOpen((char*) file,"r",&evioHandle);
                 printf("evOpen: error code = %d\n",err);
             }
