@@ -26,10 +26,12 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import twig.data.GraphErrors;
 import twig.graphics.TGCanvas;
 import twig.server.HttpDataServer;
 import twig.server.HttpServerConfig;
+import org.jlab.online.trainer.Level3Metrics;
 
 /**
  *
@@ -102,7 +104,7 @@ public class Level3Trainer {
         }
     }
     
-    public void evaluateFile(String file, int nEvents){
+    public void evaluateFile_out(String file, int nEvents){
         INDArray[] inputs  = this.getFromFile(file, nEvents);
         INDArray[] outputs = network.output(inputs[0],inputs[1]);
         
@@ -118,6 +120,22 @@ public class Level3Trainer {
             w.writeString(output);
         }
         w.close();
+    }
+
+    public void evaluateFile(String file,int nEvents){
+        INDArray[] inputs  = this.getFromFile(file,nEvents);
+
+	inputs=balanceDataset(inputs,nEvents);
+
+        INDArray[] outputs = network.output(inputs[0],inputs[1]);	
+
+	long nTestEvents=inputs[0].shape()[0];
+
+	//System.out.println("Number of Test Events "+nTestEvents);
+	Level3Metrics metrics = new Level3Metrics(nTestEvents,outputs[0],inputs[2]);
+       
+        
+        
     }
     
     public void train(){
@@ -145,7 +163,9 @@ public class Level3Trainer {
     
     public void trainFile(String file, int nEvents){
        
-        INDArray[] inputs = this.getFromFile(file, nEvents);        
+        INDArray[] inputs = this.getFromFile(file,nEvents);  
+
+	inputs=balanceDataset(inputs,nEvents);
         
         
         HttpServerConfig config = new HttpServerConfig();
@@ -172,6 +192,122 @@ public class Level3Trainer {
         }        
         //network.output()
     }
+
+    public void trainManyFiles(String loc,int rangeLow,int rangeHigh, int nEvents){
+       
+	INDArray[] inputs=new INDArray[3];
+
+	for (int i=rangeLow;i<rangeHigh;i++){
+
+	    String file=loc+String.valueOf(i)+".h5";
+	
+	    INDArray[] inputs_temp = this.getFromFile(file,nEvents);  
+
+	    inputs_temp=balanceDataset(inputs_temp,nEvents);
+
+	    if (i==0){
+		inputs[0]=inputs_temp[0];
+		inputs[1]=inputs_temp[1];
+		inputs[2]=inputs_temp[2];
+	    } else{
+		inputs[0]=Nd4j.vstack(inputs[0],inputs_temp[0]);
+		inputs[1]=Nd4j.vstack(inputs[1],inputs_temp[1]);
+		inputs[2]=Nd4j.vstack(inputs[2],inputs_temp[2]);
+	    }
+	}
+        
+        
+	HttpServerConfig config = new HttpServerConfig();
+	config.serverPort = 8525;
+	HttpDataServer.create(config);
+	GraphErrors graph = new GraphErrors("graph");
+        
+	HttpDataServer.getInstance().getDirectory().add("/server/training", graph);
+	HttpDataServer.getInstance().start();
+        
+	//HttpDataServer.getInstance().getDirectory().list();
+	HttpDataServer.getInstance().getDirectory().show();
+        
+	for(int i = 0; i < nEpochs; i++){
+	    long then = System.currentTimeMillis();
+	    network.fit(new INDArray[]{inputs[0],inputs[1]}, new INDArray[]{inputs[2]});
+	    long now = System.currentTimeMillis();
+	    System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
+			      i,network.score(), now-then);
+	    graph.addPoint(i, network.score());
+	    if(i%25==0&&i!=0){
+		this.save("level3_model_"+ this.cnnModel + "_" + i +"_epochs.network");
+	    }
+	}        
+    
+        //network.output()
+    }
+
+    public INDArray[] balanceDataset(INDArray[] inputs,int nEvents){
+	INDArray  DCArray_new = Nd4j.zeros( 1, 1, 6, 112);
+    	INDArray  ECArray_new = Nd4j.zeros( 1 , 1, 6,  72);
+        INDArray OUTArray_new = Nd4j.zeros( 1,  2);
+
+	INDArray  DCArray=inputs[0];
+	INDArray  ECArray=inputs[1];
+	INDArray  OUTArray=inputs[2];
+
+	int nNegatives=0;
+	int nPositives=0;
+	int nPredictions=0;
+
+	for(int i=0;i<nEvents*6;i++){
+
+	    INDArray  DCArray_ev = Nd4j.zeros( 1, 1, 6, 112);
+	    INDArray  ECArray_ev = Nd4j.zeros( 1 , 1, 6,  72);
+	    INDArray OUTArray_ev = Nd4j.zeros( 1,  2);
+
+	    DCArray_ev.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(DCArray.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+	    ECArray_ev.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(ECArray.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+	    OUTArray_ev.get(NDArrayIndex.point(0), NDArrayIndex.all()).assign(OUTArray.get(NDArrayIndex.point(i), NDArrayIndex.all()));
+
+	    //check this row isn't empty
+	    if(OUTArray.getInt(i,0)!=0 || OUTArray.getInt(i,1)!=0){
+		
+		if(nPredictions==0){
+		    DCArray_new=DCArray_ev;
+		    ECArray_new=ECArray_ev;
+		    OUTArray_new=OUTArray_ev;
+		    if(OUTArray.getInt(i,0)==0){
+			nPositives++;
+		    }else{
+			nNegatives++;
+		    }
+		    nPredictions++;
+		} else{	    
+		    if(OUTArray.getInt(i,0)==0){
+			DCArray_new=Nd4j.vstack(DCArray_new,DCArray_ev);
+			ECArray_new=Nd4j.vstack(ECArray_new,ECArray_ev);
+			OUTArray_new=Nd4j.vstack(OUTArray_new,OUTArray_ev);
+			nPredictions++;
+			nPositives++;
+		    }else{
+			//probably more negatives than positives
+			//want to have equal proportion
+			if(nNegatives<nPositives){
+			    DCArray_new=Nd4j.vstack(DCArray_new,DCArray_ev);
+			    ECArray_new=Nd4j.vstack(ECArray_new,ECArray_ev);
+			    OUTArray_new=Nd4j.vstack(OUTArray_new,OUTArray_ev);
+			    nPredictions++;
+			    nNegatives++;
+			}
+			
+		    }
+		}//check if first event
+	    }//check this is row is not empty
+
+	}//loop over event
+
+	System.out.println("Number of Events "+nPredictions+" positive "+nPositives+" negatives "+nNegatives);
+
+	return new INDArray[]{DCArray_new, ECArray_new, OUTArray_new};
+
+    }
     
     public INDArray[] getFromFile(String file, int max){
         HipoReader r = new HipoReader(file);
@@ -185,20 +321,23 @@ public class Level3Trainer {
         INDArray OUTArray = Nd4j.zeros( max*6,  2);
         Event event = new Event();
         
-        for(int i = 0; i < max; i++){
+        //for(int i = 0; i < max; i++){
+	int i=0;
+	while (r.hasNext() == true ) {
             r.nextEvent(event);
             event.read(nDC, 12, 1);
             event.read(nEC, 11, 2);
             event.read(nRC,  5, 1);
             //System.out.printf(" READ %d %d %d\n",nDC.getRows(),nEC.getRows(),nRC.getRows());
             Level3Utils.fillDC(DCArray, nDC, i);
-            Level3Utils.fillDC(ECArray, nEC, i);
+            Level3Utils.fillEC(ECArray, nEC, i);
             Level3Utils.fillLabels(OUTArray, nRC, i);
+	    i++;
         }
         
         return new INDArray[]{DCArray, ECArray, OUTArray};
     }
-    
+
     public INDArray[]  getDummyInputs(int batch){
         INDArray  DCArray = Nd4j.zeros( batch*6 , 1, 6, 112);
     	INDArray  ECArray = Nd4j.zeros( batch*6 , 1, 6,  72);
@@ -207,24 +346,28 @@ public class Level3Trainer {
     }
     
     public static void main(String[] args){
+	
+	String baseLoc="/w/work5/jlab/hallb/clas12/rg-a/trackingInfo/rg-c/caos_training/daq_";
 
-        String file  = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000000_daq.h5";
-        String file2 = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000001_daq.h5";
+        //String file  = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000000_daq.h5";
+        //String file2 = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000001_daq.h5";
 
-        if(args.length>0) file = args[0];
+        //if(args.length>0) file = args[0];
+        	
+	String net="0c";
+	Level3Trainer t = new Level3Trainer();
         
-        System.out.println(" training on file : " + file);
-        Level3Trainer t = new Level3Trainer();
-        
-        t.cnnModel = "0b";
-        t.initNetwork();
-        t.nEpochs = 1250;
-        t.trainFile(file, 10000);
-        t.save("level3");
-        
-        
-        t.load("level3_model_0b_1225_epochs.network_0b.network");
-        t.evaluateFile(file2, 2000);
+	t.cnnModel = net;
+	t.initNetwork();
+	t.nEpochs = 1000;
+	t.trainManyFiles(baseLoc,0,10,10000);//10
+	t.save("level3");
+	    
+	String file2=baseLoc+"19.h5";
+
+	t.load("level3_"+net+".network");
+	t.evaluateFile(file2,10000);
+	
         
     }
 }
