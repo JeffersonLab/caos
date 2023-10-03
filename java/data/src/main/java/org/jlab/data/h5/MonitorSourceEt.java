@@ -49,11 +49,11 @@ public class MonitorSourceEt  {
     }
     
     private void initServer(){
-         HttpServerConfig config = new HttpServerConfig();
+	HttpServerConfig config = new HttpServerConfig();
         config.serverPort = 8525;
         
         HttpDataServer.create(config);
-        //HttpDataServer.getInstance().initDefault();
+        HttpDataServer.getInstance().initDefault();
         HttpDataServer.getInstance().start();
     }
     
