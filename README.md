@@ -1,17 +1,7 @@
 # caos
 Clas12 Online Software
 
-=== Starting ET ring ===
-
-on clon machines
-
-```
-et_start -n 100 -s 100000 -f /tmp/et_sys_decoder -p 12345
-evio2et clasrun_005442.evio /tmp/et_sys_decoder
-et_monitor -f /tmp/et_sys_decoder
-```
-
-=== Staring et to et ===
+# Running online AI/ML reconstruction
 
 login into clonfarm11 computer with clasrun account. Then run script:
 
@@ -31,3 +21,13 @@ prompt>clas12mltrack
 ```
 
 sit back and enjoy tracks reconstructed by artificial intelligence.
+
+# Starting ET ring
+
+on clon machines
+
+```
+et_start -n 100 -s 100000 -f /tmp/et_sys_decoder -p 12345
+evio2et clasrun_005442.evio /tmp/et_sys_decoder
+et_monitor -f /tmp/et_sys_decoder
+```
