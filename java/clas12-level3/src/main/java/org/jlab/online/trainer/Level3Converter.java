@@ -130,11 +130,11 @@ public class Level3Converter {
         w.close();
     }
     
-    public static void main(String[] args){
+    public static void main(String[] args){        
         //String file = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.evio.00090-00094.hipo";
         String file = "/Users/gavalian/Work/DataSpace/trigger/recon/006152/rec_clas_006152.evio.00055-00059.hipo";
-
-        //Level3Converter.convertFile(file, file+"_daq.h5");
-        Level3Converter.analyzer(file+"_daq.h5");
+        if(args.length>0) file = args[0];
+        Level3Converter.convertFile(file, file+"_daq.h5");
+        //Level3Converter.analyzer(file+"_daq.h5");
     }
 }

@@ -10,6 +10,8 @@ import j4np.hipo5.io.HipoReader;
 import j4np.utils.io.TextFileWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -192,7 +194,52 @@ public class Level3Trainer {
         }        
         //network.output()
     }
+    public void trainManyFiles(List<String> files, int nEvents){
+        INDArray[] inputs=new INDArray[3];
 
+	for (int i=0;i<files.size();i++){
+
+	    String file=files.get(i);
+	
+	    INDArray[] inputs_temp = this.getFromFile(file,nEvents);  
+
+	    inputs_temp=balanceDataset(inputs_temp,nEvents);
+
+	    if (i==0){
+		inputs[0]=inputs_temp[0];
+		inputs[1]=inputs_temp[1];
+		inputs[2]=inputs_temp[2];
+	    } else{
+		inputs[0]=Nd4j.vstack(inputs[0],inputs_temp[0]);
+		inputs[1]=Nd4j.vstack(inputs[1],inputs_temp[1]);
+		inputs[2]=Nd4j.vstack(inputs[2],inputs_temp[2]);
+	    }
+	}
+        
+        HttpServerConfig config = new HttpServerConfig();
+	config.serverPort = 8525;
+	HttpDataServer.create(config);
+	GraphErrors graph = new GraphErrors("graph");
+        
+	HttpDataServer.getInstance().getDirectory().add("/server/training", graph);
+	HttpDataServer.getInstance().start();
+        
+	//HttpDataServer.getInstance().getDirectory().list();
+	HttpDataServer.getInstance().getDirectory().show();
+        
+	for(int i = 0; i < nEpochs; i++){
+	    long then = System.currentTimeMillis();
+	    network.fit(new INDArray[]{inputs[0],inputs[1]}, new INDArray[]{inputs[2]});
+	    long now = System.currentTimeMillis();
+	    System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
+			      i,network.score(), now-then);
+	    graph.addPoint(i, network.score());
+	    if(i%25==0&&i!=0){
+		this.save("level3_model_"+ this.cnnModel + "_" + i +"_epochs.network");
+	    }
+	}        
+    }
+    
     public void trainManyFiles(String loc,int rangeLow,int rangeHigh, int nEvents){
        
 	INDArray[] inputs=new INDArray[3];
@@ -347,27 +394,31 @@ public class Level3Trainer {
     
     public static void main(String[] args){
 	
-	String baseLoc="/w/work5/jlab/hallb/clas12/rg-a/trackingInfo/rg-c/caos_training/daq_";
+                
+	//String baseLoc="/w/work5/jlab/hallb/clas12/rg-a/trackingInfo/rg-c/caos_training/daq_";
 
         //String file  = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000000_daq.h5";
         //String file2 = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000001_daq.h5";
-
-        //if(args.length>0) file = args[0];
-        	
+        //if(args.length>0) file = args[0];        	
+        
+        List<String> files = new ArrayList<>();
+        
+        for(int i = 0; i < args.length; i++) files.add(args[i]);
+        
 	String net="0c";
 	Level3Trainer t = new Level3Trainer();
         
 	t.cnnModel = net;
 	t.initNetwork();
 	t.nEpochs = 1000;
-	t.trainManyFiles(baseLoc,0,10,10000);//10
+	t.trainManyFiles(files,10000);//10
 	t.save("level3");
 	    
-	String file2=baseLoc+"19.h5";
+        String file = files.get(files.size()-1);
+        files.remove(files.size()-1);
 
 	t.load("level3_"+net+".network");
-	t.evaluateFile(file2,10000);
-	
+	t.evaluateFile(file,10000);	
         
     }
 }
