@@ -10,6 +10,7 @@ import j4np.hipo5.data.CompositeNode;
 import j4np.hipo5.data.Node;
 import j4np.hipo5.io.HipoReader;
 import j4np.hipo5.io.HipoWriter;
+import j4np.utils.io.OptionParser;
 import java.util.Arrays;
 import java.util.List;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -73,17 +74,18 @@ public class Level3ProcessFile {
         float[] array = new float[7];
         for(int row = 0; row < events.size(); row++){
             //outputBank(node,output,row);
-            //outputBank(array,output,row);
+            outputBank(array,output,row);
 
             //node.print();
             //System.out.println("---- before writing " + node.getLength());
             //node.show();
             //node.print();
+            //System.out.println("------------------------ " + Arrays.toString(array));
             Node n1 = new Node(5,5,array);
-            events.get(row).scanShow();
-            events.get(row).write(node);
-//events.get(row).write(n1);
-            events.get(row).scanShow();
+            //events.get(row).scanShow();
+            //events.get(row).write(node);
+            events.get(row).write(n1);
+            //events.get(row).scanShow();
         }
     }
     
@@ -91,11 +93,13 @@ public class Level3ProcessFile {
         dataFrame.reset();
         timeProcessing = 0L;
         countProcessing = 0L;
-        Event ev = new Event();
+        Event ev = new Event(200*1024);
         List<Event> eList = Arrays.asList(new Event());
         while(source.hasNext()==true){
             //source.nextFrame(sourceFrame);
+            //System.out.println("event capacity = " + ev.getEventBuffer().capacity());
             source.next(ev);
+            
             dataFrame.getList().add(ev.copy());
 
             long then = System.currentTimeMillis();
@@ -103,7 +107,8 @@ public class Level3ProcessFile {
                 countProcessing += dataFrame.getList().size();
                 INDArray[]  inputs = Level3Utils.createData(dataFrame.getList());
                 INDArray[] outputs = this.processor.getOutput(inputs);
-                System.out.printf(" progress = %d , time %d msec\n",countProcessing, timeProcessing);
+                System.out.printf(" progress = %d , time %d msec, frequency = %8.2f Hz\n",
+                        countProcessing, timeProcessing, ((double) countProcessing*1000.0)/timeProcessing );
                 writeOutput(outputs,dataFrame.getList());
                 //System.out.println(inputs[0]);
                 //System.out.println(outputs[0]);
@@ -119,13 +124,25 @@ public class Level3ProcessFile {
     }
     
     public static void main(String[] args){
+        
+        OptionParser opt = new OptionParser("level3-process");
+        
+        opt.addRequired("-n", "network file name")
+                .addOption("-o", "", "output file name");
+        
+        opt.parse(args);
+        
         Level3ProcessFile l3f = new Level3ProcessFile();
-        l3f.networkFile = "etc/networks/network-level3-default.network";
+        
+        //l3f.networkFile = "level3_model_0b_850_epochs.network_0b.network";
+        l3f.networkFile = opt.getOption("-n").stringValue();//"etc/networks/network-level3-default.network";
+        
         l3f.batchSize = 4096;
         l3f.maxEvents = 50;
         l3f.initialize();
         //String file = "/Users/gavalian/Work/Software/project-10.7/distribution/caos/coda/decoder/output.h5";
-        String file = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000001_daq.h5";
+        //String file = "rec_clas_005442.evio.00050-00054.hipo_daq.h5";
+        String file = opt.getInputList().get(0);
 
         HipoReader r = new HipoReader();
         r.setDebugMode(0);

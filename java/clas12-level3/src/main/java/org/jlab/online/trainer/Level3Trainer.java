@@ -125,9 +125,10 @@ public class Level3Trainer {
     }
 
     public void evaluateFile(String file,int nEvents){
+        
         INDArray[] inputs  = this.getFromFile(file,nEvents);
 
-	inputs=balanceDataset(inputs,nEvents);
+	//inputs=balanceDataset(inputs,nEvents);
 
         INDArray[] outputs = network.output(inputs[0],inputs[1]);	
 
@@ -194,17 +195,36 @@ public class Level3Trainer {
         }        
         //network.output()
     }
+    
+    public void transferTrainManyFiles(List<String> files, int nEvents, String networkFile, int max){
+        this.load(networkFile);
+        INDArray[] inputs=this.getFromFile(files.get(0), nEvents);
+        for(int i = 0; i < nEpochs; i++){
+	    long then = System.currentTimeMillis();
+	    network.fit(new INDArray[]{inputs[0],inputs[1]}, new INDArray[]{inputs[2]});
+	    long now = System.currentTimeMillis();
+	    System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
+			      i,network.score(), now-then);
+	    //graph.addPoint(i, network.score());
+	    if(i%25==0&&i!=0){
+		this.save("level3_model_"+ this.cnnModel + "_" + i +"_epochs.network");
+	    }
+	} 
+    }
+    
     public void trainManyFiles(List<String> files, int nEvents){
-        INDArray[] inputs=new INDArray[3];
+        
+        INDArray[] inputs=this.getFromFile(files.get(0), nEvents);
 
+        /*
 	for (int i=0;i<files.size();i++){
 
 	    String file=files.get(i);
 	
 	    INDArray[] inputs_temp = this.getFromFile(file,nEvents);  
-
+            System.out.println(" before = ");
 	    inputs_temp=balanceDataset(inputs_temp,nEvents);
-
+            System.out.println(" after = ");
 	    if (i==0){
 		inputs[0]=inputs_temp[0];
 		inputs[1]=inputs_temp[1];
@@ -214,7 +234,7 @@ public class Level3Trainer {
 		inputs[1]=Nd4j.vstack(inputs[1],inputs_temp[1]);
 		inputs[2]=Nd4j.vstack(inputs[2],inputs_temp[2]);
 	    }
-	}
+	}*/
         
         HttpServerConfig config = new HttpServerConfig();
 	config.serverPort = 8525;
@@ -358,19 +378,24 @@ public class Level3Trainer {
     
     public INDArray[] getFromFile(String file, int max){
         HipoReader r = new HipoReader(file);
+        
+        int nMax = max;
+        
+        if(r.entries()<max) nMax = r.entries();
+        
         CompositeNode nDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
         CompositeNode nRC = new CompositeNode(  5, 1,  "b", 10);
         CompositeNode nET = new CompositeNode(  5, 2,  "b", 10);
         
-        INDArray  DCArray = Nd4j.zeros( max*6 , 1, 6, 112);
-    	INDArray  ECArray = Nd4j.zeros( max*6 , 1, 6,  72);
-        INDArray OUTArray = Nd4j.zeros( max*6,  2);
+        INDArray  DCArray = Nd4j.zeros( nMax*6 , 1, 6, 112);
+    	INDArray  ECArray = Nd4j.zeros( nMax*6 , 1, 6,  72);
+        INDArray OUTArray = Nd4j.zeros( nMax*6,  2);
         Event event = new Event();
         
         //for(int i = 0; i < max; i++){
 	int i=0;
-	while (r.hasNext() == true ) {
+	while (r.hasNext() == true && i<nMax) {
             r.nextEvent(event);
             event.read(nDC, 12, 1);
             event.read(nEC, 11, 2);
@@ -380,6 +405,7 @@ public class Level3Trainer {
             Level3Utils.fillEC(ECArray, nEC, i);
             Level3Utils.fillLabels(OUTArray, nRC, i);
 	    i++;
+            System.out.println(" getting " + i  + "  out of " + nMax + "  " + r.hasNext());
         }
         
         return new INDArray[]{DCArray, ECArray, OUTArray};
@@ -405,20 +431,25 @@ public class Level3Trainer {
         
         for(int i = 0; i < args.length; i++) files.add(args[i]);
         
-	String net="0c";
-	Level3Trainer t = new Level3Trainer();
         
+        files.add("rec_clas_005442.evio.00010-00014.hipo_daq.h5");
+        
+	String net="0b";
+	Level3Trainer t = new Level3Trainer();
+        /*
 	t.cnnModel = net;
 	t.initNetwork();
 	t.nEpochs = 1000;
 	t.trainManyFiles(files,10000);//10
 	t.save("level3");
+        */
+        String file = "rec_clas_005442.evio.00040-00044.hipo_daq.h5";
 	    
-        String file = files.get(files.size()-1);
-        files.remove(files.size()-1);
+        //String file = files.get(files.size()-1);
+        //files.remove(files.size()-1);
 
-	t.load("level3_"+net+".network");
-	t.evaluateFile(file,10000);	
-        
+	//t.load("level3_"+net+".network");
+        t.load("level3_model_0b_750_epochs.network_0b.network");
+	t.evaluateFile(file,10000);
     }
 }
