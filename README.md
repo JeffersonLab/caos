@@ -1,7 +1,7 @@
 # caos
 Clas12 Online Software
 
-# Running online AI/ML reconstruction
+# Running online reconstruction (Conventional or AI/ML) 
 
 login into clonfarm11 computer with clasrun account. Then run script:
 
