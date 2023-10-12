@@ -22,6 +22,13 @@ clonfarm11> clas12mltrack
 
 sit back and enjoy tracks reconstructed by artificial intelligence.
 
+If you want to start the online conventional reconstruction, then run:
+
+```
+clonfarm11> clas12online
+```
+Enjoy the histograms.
+
 # Expert Only (for debugging)
 
 This section is for debugging the online ET to ET connection on clon machines.
