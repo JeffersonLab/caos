@@ -25,6 +25,31 @@ import twig.graphics.TGCanvas;
  */
 public class Level3Utils {
 
+    
+     public static void fillDC(INDArray dc, CompositeNode dcBank, int sector, int order){
+        int   nrows = dcBank.getRows();
+        int[] index = new int[]{0,0,0,0};
+        double dcIncrement = 1./6.0;
+        for(int row = 0; row < nrows; row++){
+            int  sect = dcBank.getInt(0, row);
+            int  layer = dcBank.getInt(1, row);
+            int   wire = dcBank.getInt(2, row);
+            
+            index[0]   = order;
+            //index[1]   = (layer-1)/6;
+            index[1]   = 0;
+            index[2]   = (layer-1)/6;
+            index[3]   = wire - 1;
+
+
+            //System.out.println(Arrays.toString(index));
+            //System.out.println(Arrays.toString(index));
+            if(sect==sector){
+                double previous = dc.getDouble(index);
+                dc.putScalar(index, previous + dcIncrement);
+            }
+        }
+    }
     //--------------------------------------------------------------
     // DC TDC bank is a composite bank: {{ 12,1, "bbsbil" , 4098}}
     // EC ADC bank is a composite bank: {{ 11,2, "bbsbifs", 4098}}
@@ -67,6 +92,16 @@ public class Level3Utils {
         }
     }
    
+    public static void fillLabels(INDArray labels, int label, int order){
+        if(label==0){
+            labels.putScalar(new int[]{order,0} , 1.0);
+            labels.putScalar(new int[]{order,1} , 0.0);
+        } else {
+            labels.putScalar(new int[]{order,0} , 0.0);
+            labels.putScalar(new int[]{order,1} , 1.0);
+        }        
+    }
+    
     public static void fillEC(INDArray dc, CompositeNode ecBank, int order){
         int   nrows = ecBank.getRows();
         int[] index = new int[]{0,0,0,0};
@@ -95,6 +130,39 @@ public class Level3Utils {
         }
     }
     
+    public static void fillEC(INDArray dc, CompositeNode ecBank, int sector , int order){
+        int   nrows = ecBank.getRows();
+        int[] index = new int[]{0,0,0,0};
+        double dcIncrement = 1./6.0;
+        for(int row = 0; row < nrows; row++){
+            
+            int   sect = ecBank.getInt(0, row);
+            int  layer = ecBank.getInt(1, row);
+            int  strip = ecBank.getInt(2, row);
+            int    ADC = ecBank.getInt(4, row);
+
+            if(ADC>0){
+                double energy = (ADC/10000.0)/1.5;
+                //----------------
+                if(energy>=0.0&&energy<1.0&&sect==sector){
+                    index[0]   = order;                    
+                    index[1]   = 0;
+                    index[2]   = (layer-1);
+                    index[3]   = strip-1;
+                    if(layer>6){
+                        index[2] = layer - 3 - 1;
+                        index[3] = (strip + 36)-1;
+                    }
+                    
+                    
+                    if(index[3]<72&&index[2]<6)
+                        dc.putScalar(index, energy);
+                }
+                //----------------
+                
+            }
+        }
+    }
     public static INDArray[] createData(List<Event> events){
         CompositeNode nDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
@@ -105,7 +173,7 @@ public class Level3Utils {
             events.get(order).read(nDC,12,1);
             events.get(order).read(nEC,11,2);
             Level3Utils.fillDC(DCArray, nDC, order);
-            Level3Utils.fillDC(ECArray, nEC, order);
+            Level3Utils.fillEC(ECArray, nEC, order);
         }
         return new INDArray[]{DCArray,ECArray};
     }

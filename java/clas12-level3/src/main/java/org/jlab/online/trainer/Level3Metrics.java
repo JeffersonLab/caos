@@ -23,7 +23,6 @@ public class Level3Metrics {
 	PlotResponse(NEvents,predictions,Labels);
     }
 
-
     public static INDArray getMetrics(long NEvents,INDArray predictions, INDArray Labels, double RespTh) {
 	INDArray metrics = Nd4j.zeros(3,1);
 	double TP=0,FN=0,FP=0,TN=0;

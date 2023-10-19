@@ -6,7 +6,9 @@ package org.jlab.online.trainer;
 
 import j4np.hipo5.data.CompositeNode;
 import j4np.hipo5.data.Event;
+import j4np.hipo5.data.Node;
 import j4np.hipo5.io.HipoReader;
+import j4np.utils.io.OptionParser;
 import j4np.utils.io.TextFileWriter;
 import java.io.File;
 import java.io.IOException;
@@ -15,25 +17,14 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.MergeVertex;
-import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.jlab.online.level3.Level3Utils;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import twig.data.GraphErrors;
-import twig.graphics.TGCanvas;
 import twig.server.HttpDataServer;
 import twig.server.HttpServerConfig;
-import org.jlab.online.trainer.Level3Metrics;
 
 /**
  *
@@ -141,6 +132,23 @@ public class Level3Trainer {
         
     }
     
+    public void evaluateFileNuevo(String file,int nEvents){
+        
+        INDArray[] inputs  = this.getFromFileNuevo(file,nEvents);
+
+	//inputs=balanceDataset(inputs,nEvents);
+
+        INDArray[] outputs = network.output(inputs[0],inputs[1]);	
+
+	long nTestEvents=inputs[0].shape()[0];
+
+	//System.out.println("Number of Test Events "+nTestEvents);
+	Level3Metrics metrics = new Level3Metrics(nTestEvents,outputs[0],inputs[2]);
+       
+        
+        
+    }
+    
     public void train(){
         /*
         BackpropagationTrainer trainer = network.getTrainer();
@@ -216,25 +224,37 @@ public class Level3Trainer {
         
         INDArray[] inputs=this.getFromFile(files.get(0), nEvents);
 
-        /*
-	for (int i=0;i<files.size();i++){
-
-	    String file=files.get(i);
-	
-	    INDArray[] inputs_temp = this.getFromFile(file,nEvents);  
-            System.out.println(" before = ");
-	    inputs_temp=balanceDataset(inputs_temp,nEvents);
-            System.out.println(" after = ");
-	    if (i==0){
-		inputs[0]=inputs_temp[0];
-		inputs[1]=inputs_temp[1];
-		inputs[2]=inputs_temp[2];
-	    } else{
-		inputs[0]=Nd4j.vstack(inputs[0],inputs_temp[0]);
-		inputs[1]=Nd4j.vstack(inputs[1],inputs_temp[1]);
-		inputs[2]=Nd4j.vstack(inputs[2],inputs_temp[2]);
+     
+        
+        HttpServerConfig config = new HttpServerConfig();
+	config.serverPort = 8525;
+	HttpDataServer.create(config);
+	GraphErrors graph = new GraphErrors("graph");
+        
+	HttpDataServer.getInstance().getDirectory().add("/server/training", graph);
+	HttpDataServer.getInstance().start();
+        
+	//HttpDataServer.getInstance().getDirectory().list();
+	HttpDataServer.getInstance().getDirectory().show();
+        
+	for(int i = 0; i < nEpochs; i++){
+	    long then = System.currentTimeMillis();
+	    network.fit(new INDArray[]{inputs[0],inputs[1]}, new INDArray[]{inputs[2]});
+	    long now = System.currentTimeMillis();
+	    System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
+			      i,network.score(), now-then);
+	    graph.addPoint(i, network.score());
+	    if(i%25==0&&i!=0){
+		this.save("level3_model_"+ this.cnnModel + "_" + i +"_epochs.network");
 	    }
-	}*/
+	}        
+    }
+    
+     public void trainManyFilesNuevo(List<String> files, int nEvents){
+        
+        INDArray[] inputs=this.getFromFileNuevo(files.get(0), nEvents);
+
+     
         
         HttpServerConfig config = new HttpServerConfig();
 	config.serverPort = 8525;
@@ -376,6 +396,55 @@ public class Level3Trainer {
 
     }
     
+    
+     public INDArray[] getFromFileNuevo(String file, int max){
+        HipoReader r = new HipoReader(file);
+        
+        int nMax = max;
+        
+        if(r.entries()<max) nMax = r.entries();
+        
+        CompositeNode nDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
+        CompositeNode nEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
+        CompositeNode nRC = new CompositeNode(  5, 1,  "b", 10);
+        CompositeNode nET = new CompositeNode(  5, 2,  "b", 10);
+        
+        INDArray  DCArray = Nd4j.zeros( nMax , 1, 6, 112);
+    	INDArray  ECArray = Nd4j.zeros( nMax , 1, 6,  72);
+        INDArray OUTArray = Nd4j.zeros( nMax,  2);
+        Event event = new Event();
+        int counter = 0;
+        int npos = 0;
+        int nneg = 0;
+        while (r.hasNext() == true && counter<nMax) {
+            r.nextEvent(event);
+            event.read(nDC, 12, 1);
+            event.read(nEC, 11, 2);
+
+            Node node = event.read(5, 4);
+            
+            int[] ids = node.getInt();
+            
+            if(ids[0]==11&&ids[1]==ids[2]){
+                Level3Utils.fillDC(DCArray, nDC, ids[1], counter);
+                Level3Utils.fillEC(ECArray, nEC, ids[1], counter);
+                Level3Utils.fillLabels(OUTArray, 1, counter);
+                counter++; npos++;
+            }
+            
+            if(ids[0]!=11&&ids[1]>0&&ids[1]>0){
+                 Level3Utils.fillDC(DCArray, nDC, ids[1], counter);
+                Level3Utils.fillEC(ECArray, nEC, ids[1], counter);
+                Level3Utils.fillLabels(OUTArray, 0, counter);
+                counter++; nneg++;
+            }
+        }
+        
+        System.out.printf("\n\n loaded sampels (%d)  positive = %s, negative = %d\n",counter, npos,nneg);
+        return new INDArray[]{DCArray, ECArray, OUTArray};
+     } 
+
+     
     public INDArray[] getFromFile(String file, int max){
         HipoReader r = new HipoReader(file);
         
@@ -400,10 +469,12 @@ public class Level3Trainer {
             event.read(nDC, 12, 1);
             event.read(nEC, 11, 2);
             event.read(nRC,  5, 1);
+            event.read(nET,  5, 2);
             //System.out.printf(" READ %d %d %d\n",nDC.getRows(),nEC.getRows(),nRC.getRows());
             Level3Utils.fillDC(DCArray, nDC, i);
             Level3Utils.fillEC(ECArray, nEC, i);
-            Level3Utils.fillLabels(OUTArray, nRC, i);
+            //Level3Utils.fillLabels(OUTArray, nRC, i);
+            Level3Utils.fillLabels(OUTArray, nET, i);
 	    i++;
             System.out.println(" getting " + i  + "  out of " + nMax + "  " + r.hasNext());
         }
@@ -419,37 +490,38 @@ public class Level3Trainer {
     }
     
     public static void main(String[] args){
-	
-                
-	//String baseLoc="/w/work5/jlab/hallb/clas12/rg-a/trackingInfo/rg-c/caos_training/daq_";
-
-        //String file  = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000000_daq.h5";
-        //String file2 = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.h5_000001_daq.h5";
-        //if(args.length>0) file = args[0];        	
+	int mode = 1;
         
-        List<String> files = new ArrayList<>();
+        if(mode>0){
         
-        for(int i = 0; i < args.length; i++) files.add(args[i]);
-        
-        
-        files.add("rec_clas_005442.evio.00010-00014.hipo_daq.h5");
-        
-	String net="0b";
-	Level3Trainer t = new Level3Trainer();
-        /*
-	t.cnnModel = net;
-	t.initNetwork();
-	t.nEpochs = 1000;
-	t.trainManyFiles(files,10000);//10
-	t.save("level3");
-        */
-        String file = "rec_clas_005442.evio.00040-00044.hipo_daq.h5";
-	    
-        //String file = files.get(files.size()-1);
-        //files.remove(files.size()-1);
-
-	//t.load("level3_"+net+".network");
-        t.load("level3_model_0b_750_epochs.network_0b.network");
-	t.evaluateFile(file,10000);
+            Level3Trainer t = new Level3Trainer();         
+            t.load("level3_model_0a_1000_epochs.network_0a.network");
+            //t.load("level3_model_0b_625_epochs.network_0b.network");
+            String file = "rec_clas_005197.evio.00405-00409.hipo_daq.h5";
+            t.evaluateFileNuevo(file,10000);
+            
+        } else {
+            
+            OptionParser parser = new OptionParser("trainer");
+            
+            parser.addOption("-n", "level3", "output network name");
+            parser.addOption("-m", "0b", "model name (0a,0b or 0c)");
+            parser.addOption("-e", "1024", "number of epochs");
+            parser.addOption("-max", "200000", "number of data samples");
+            
+            parser.parse(args);
+            
+            String net = parser.getOption("-m").stringValue();
+            Level3Trainer t = new Level3Trainer(); 
+            
+            t.cnnModel = net;
+            t.initNetwork();
+            t.nEpochs = parser.getOption("-e").intValue();
+            int max = parser.getOption("-max").intValue();
+            
+            t.trainManyFilesNuevo(parser.getInputList(),max);
+            t.save(parser.getOption("-n").stringValue());
+            
+        }      
     }
 }
