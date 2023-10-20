@@ -237,14 +237,28 @@ public class Level3Converter {
         }
     }
     public static void main(String[] args){        
-        //String file = "/Users/gavalian/Work/DataSpace/trigger/clas_005630.evio.00090-00094.hipo";
         
-        
-        //Level3Converter.extract("rec_clas_005442.evio.00040-00044.hipo_daq.h5");
-        //String file = "/Users/gavalian/Work/DataSpace/trigger/recon/006152/rec_clas_006152.evio.00055-00059.hipo";
-        String file = "rec_clas_005197.evio.00405-00409.hipo";
+
+        /*String file = "rec_clas_005197.evio.00405-00409.hipo";
         if(args.length>0) file = args[0];
         Level3Converter.convertFile(file, file+"_daq.h5");
-        //Level3Converter.analyzer(file+"_daq.h5");
+        //Level3Converter.analyzer(file+"_daq.h5");*/
+
+        String dir="/Users/tyson/data_repo/trigger_data/rga/";
+        String base="rec_clas_005197.evio.";
+        for (int file=0;file<55;file+=5){
+    
+            String fileS=String.valueOf(file);
+            String fileS2=String.valueOf(file+4);
+
+            String zeros="0000";
+            String zeros2="0000";
+            if(file>9){zeros="000";}
+            if((file+4)>9){zeros2="000";}
+            String fName=dir+base+zeros+fileS+"-"+zeros2+fileS2+".hipo";
+            Level3Converter.convertFile(fName, dir+"daq_"+fileS+".h5");
+
+        }
+
     }
 }
