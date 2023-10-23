@@ -435,21 +435,29 @@ public class Level3Trainer {
 
             int[] ids = node.getInt();
 
-            if (ids[0] == 11 && ids[1] == ids[2]) {
-                Level3Utils.fillDC(DCArray, nDC, ids[1], counter);
-                Level3Utils.fillEC(ECArray, nEC, ids[1], counter);
-                Level3Utils.fillLabels(OUTArray, 1, counter);
-                counter++;
-                npos++;
+            // Do we care if the trigger is fired in the event? (ids[1]>0) - no
+            // do we care if trigger is right (&& ids[1] == ids[2])? - no
+            if (ids[0] == 11) {
+                // Want particle sector to be non null (ids[2]) for positive only
+                if (ids[2] > 0) {
+                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                    Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                    Level3Utils.fillLabels(OUTArray, 1, counter);
+                    counter++;
+                    npos++;
+                }
+            } else {
+                // always have more neg than pos, balance dataset by only adding neg after pos
+                // do we care if trigger is wrong (&& ids[1] == ids[2])? - means training in worse case scenario
+                if (nneg < npos) {
+                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                    Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                    Level3Utils.fillLabels(OUTArray, 0, counter);
+                    counter++;
+                    nneg++;
+                }
             }
 
-            if (ids[0] != 11 && ids[1] > 0 && ids[1] > 0 && nneg<npos) {
-                Level3Utils.fillDC(DCArray, nDC, ids[1], counter);
-                Level3Utils.fillEC(ECArray, nEC, ids[1], counter);
-                Level3Utils.fillLabels(OUTArray, 0, counter);
-                counter++;
-                nneg++;
-            }
         }
 
         System.out.printf("\n\n loaded samples (%d)  positive = %s, negative = %d\n", counter, npos, nneg);
@@ -519,19 +527,26 @@ public class Level3Trainer {
 	        Level3Trainer t = new Level3Trainer();
 
             List<String> files= new ArrayList<>();
-            for (int file=0;file<5;file+=5){
+            for (int file=0;file<50;file+=5){
                 files.add(baseLoc+String.valueOf(file)+".h5");
             }
 
 	        t.cnnModel = net;
+
+            //if not transfer learning
 	        t.initNetwork();
-	        t.nEpochs = 1500;
+
+            //transfer learning
+            //t.load("level3_"+net+".network");
+
+	        t.nEpochs = 1000;
 	        t.trainManyFilesNuevo(files,20000);//10
 	        t.save("level3");
 	    
 	        String file2=baseLoc+"50.h5";
 
 	        t.load("level3_"+net+".network");
+            //t.load("etc/networks/network-level3-0c-rgc.network");
 	        t.evaluateFileNuevo(file2,20000);
 
         }else {

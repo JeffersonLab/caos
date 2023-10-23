@@ -97,8 +97,8 @@ public class Level3Models {
 
     public static ComputationGraphConfiguration getModel0bw(){
 
-        //weighting, class 1 twice as important
-        INDArray weightsArray = Nd4j.create(new double[]{0.5, 1.0});
+        //weights
+        INDArray weightsArray = Nd4j.create(new double[]{0.01, 1.0});
 
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
                 //.l2(0.0005)

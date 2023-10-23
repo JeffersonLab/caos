@@ -77,6 +77,15 @@ public class Level3Converter {
             }
         }
     }
+
+    public static int getTrackIndex(Bank TrackBank, int pIndex){
+        int trIndex=-1;
+        for (int row=0; row< TrackBank.getRows();row++){
+            int trackPIndex=TrackBank.getInt("pindex", row);
+            if (trackPIndex==0){trIndex=row;}
+        }
+        return trIndex;
+    }
     
     public static void convertDC(Bank bank, CompositeNode node, int... sectors){
         node.setRows(0);
@@ -129,31 +138,44 @@ public class Level3Converter {
             int pid = dsts[0].getInt(0, 0);
             int status = dsts[0].getInt("status", 0);
             int partSector = 0;
-            if(dsts[1].getRows()>0) partSector = dsts[1].getInt("sector", 0);
-            long     bits = banks[2].getLong("trigger", 0);
-            
-            int[] trigger = Level3Converter.convertTriggerLong(bits);
-                        
 
-            int trigSector = Level3Converter.getTriggerSector(trigger);
+            //only want particles in FD
+            if (Math.abs(status) >= 2000 && Math.abs(status) < 4000) {
+                // always taking first particle from event ie pIndex 0
+                int trIndex = Level3Converter.getTrackIndex(dsts[1], 0);
+                // trIndex==-1 means that pIndex not found in track bank
+                if (trIndex != -1) partSector = dsts[1].getInt("sector", trIndex);
 
-            //if(trigger[0]>0) System.out.printf("%6d %4d %4d, %s\n",pid, trigSector, partSector ,Arrays.toString(trigger));            
-            
-            int[] labels = new int[]{pid,trigSector,partSector};
-            
-            Level3Converter.convertDC(banks[0], nodeDC, trigSector);
-            Level3Converter.convertEC(banks[1], nodeEC, trigSector);
-            
-            //nodeDC.print();
-            //nodeEC.print();
-            
-            Node tnode = new Node(5,4,labels);
-            
-            
-            if(nodeEC.getRows()>0&&nodeDC.getRows()>0){
-                e.write(nodeEC);e.write(nodeDC);
-                e.write(tnode);
-                 w.addEvent(e);
+                //only want particles associated to a sector
+                if (partSector != 0) {
+                    long bits = banks[2].getLong("trigger", 0);
+
+                    int[] trigger = Level3Converter.convertTriggerLong(bits);
+
+                    int trigSector = Level3Converter.getTriggerSector(trigger);
+
+                    // if(trigger[0]>0) System.out.printf("%6d %4d %4d, %s\n",pid, trigSector,
+                    // partSector ,Arrays.toString(trigger));
+
+                    int[] labels = new int[] { pid, trigSector, partSector };
+
+                    // want to get DC and EC from the particle sector
+                    // not trigger sector
+                    Level3Converter.convertDC(banks[0], nodeDC, partSector);
+                    Level3Converter.convertEC(banks[1], nodeEC, partSector);
+
+                    // nodeDC.print();
+                    // nodeEC.print();
+
+                    Node tnode = new Node(5, 4, labels);
+
+                    if (nodeEC.getRows() > 0 && nodeDC.getRows() > 0) {
+                        e.write(nodeEC);
+                        e.write(nodeDC);
+                        e.write(tnode);
+                        w.addEvent(e);
+                    }
+                }
             }
             /*
             if(pid==11&&Math.abs(status)>=2000&&Math.abs(status)<3000){
@@ -244,9 +266,9 @@ public class Level3Converter {
         Level3Converter.convertFile(file, file+"_daq.h5");
         //Level3Converter.analyzer(file+"_daq.h5");*/
 
-        String dir="/Users/tyson/data_repo/trigger_data/rga/";
-        String base="rec_clas_005197.evio.";
-        for (int file=0;file<55;file+=5){
+        String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";//rga
+        String base="rec_clas_018437.evio.";//005197
+        for (int file=0;file<10;file+=5){
     
             String fileS=String.valueOf(file);
             String fileS2=String.valueOf(file+4);
