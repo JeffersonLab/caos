@@ -51,7 +51,7 @@ public class Level3Trainer_MultiClass {
             network.save(new File(file + "_" + cnnModel + ".network"));
             System.out.println("saved file : " + file + "\n" + "done...");
         } catch (IOException ex) {
-            Logger.getLogger(Level3Trainer.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Level3Trainer_MultiClass.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -60,7 +60,7 @@ public class Level3Trainer_MultiClass {
             network = ComputationGraph.load(new File(file), true);
             System.out.println(network.summary());
         } catch (IOException ex) {
-            Logger.getLogger(Level3Trainer.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Level3Trainer_MultiClass.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -184,7 +184,7 @@ public class Level3Trainer_MultiClass {
 
         if (mode > 0) {
 
-            Level3Trainer t = new Level3Trainer();
+            Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
             t.load("level3_model_0a_1000_epochs.network_0a.network");
             // t.load("level3_model_0b_625_epochs.network_0b.network");
             String file = "rec_clas_005197.evio.00405-00409.hipo_daq.h5";
@@ -192,9 +192,9 @@ public class Level3Trainer_MultiClass {
 
         } else if(mode<0){
             //String baseLoc="/Users/tyson/data_repo/trigger_data/rga/daq_";
-            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_";
+            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_";
             String net="0b";
-	        Level3Trainer t = new Level3Trainer();
+	        Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
 
             List<String> files= new ArrayList<>();
             for (int file=0;file<5;file+=5){
@@ -211,11 +211,11 @@ public class Level3Trainer_MultiClass {
 
 	        t.nEpochs = 1500;
 	        //t.trainManyFiles(files,200000);//10
-	        //t.save("level3");
+	        //t.save("level3_MC");
 	    
 	        String file2=baseLoc+"5.h5";
 
-	        t.load("level3_"+net+"_fCF.network");
+	        t.load("level3_MC_"+net+"_fCF.network");
             //t.load("etc/networks/network-level3-0c-rgc.network");
 	        t.evaluateFile(file2,200000);
 
@@ -231,7 +231,7 @@ public class Level3Trainer_MultiClass {
             parser.parse(args);
 
             String net = parser.getOption("-m").stringValue();
-            Level3Trainer t = new Level3Trainer();
+            Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
 
             t.cnnModel = net;
             t.initNetwork();

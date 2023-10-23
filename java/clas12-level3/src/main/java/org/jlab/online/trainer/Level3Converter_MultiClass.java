@@ -68,7 +68,7 @@ public class Level3Converter_MultiClass {
             
             for(int row = 0; row < nrowsec; row++){
                 int sector = bank.getInt("sector", row);
-                if(Level3Converter.contains(sectors, sector)==true){
+                if(Level3Converter_MultiClass.contains(sectors, sector)==true){
                     node.setRows(counter+1); 
                     node.putByte(  0, row, (byte) bank.getInt("sector", row));
                     node.putByte(  1, row, (byte) bank.getInt("layer", row));
@@ -118,7 +118,7 @@ public class Level3Converter_MultiClass {
             int counter = 0;
             for(int row = 0; row < nrowsdc; row++){
                 int sector = bank.getInt("sector", row);
-                if(Level3Converter.contains(sectors, sector)==true){
+                if(Level3Converter_MultiClass.contains(sectors, sector)==true){
                     node.setRows(counter+1);                
                     node.putByte(  0, counter, (byte) bank.getInt("sector", row));
                     node.putByte(  1, counter, (byte) bank.getInt("layer", row));
@@ -160,7 +160,7 @@ public class Level3Converter_MultiClass {
             //loop over sectors
             for (int sect = 1; sect < 7; sect++) {
                 // get a list of pIndices in the sector
-                List<Integer> pIndices = getPIndices_fSector(dsts[1], sect);
+                List<Integer> pIndices = Level3Converter_MultiClass.getPIndices_fSector(dsts[1], sect);
 
                 //pid=-1 denotes no track in sector
                 int pid=-1;
@@ -176,7 +176,7 @@ public class Level3Converter_MultiClass {
                         }
                         //check if we have neutral pids
                         if (dsts[0].getInt(0, i) == 22 || dsts[0].getInt(0, i) == 2212 || dsts[0].getInt(0, i) == 0) {
-                            nEdep+=getCALE(dsts[2],i);
+                            nEdep+=Level3Converter_MultiClass.getCALE(dsts[2],i);
                         }
                     }
                 }
@@ -185,14 +185,14 @@ public class Level3Converter_MultiClass {
                 //could help with some logic in training data
                 //eg requiring conventional trigger to be wrong
                 long bits = banks[2].getLong("trigger", 0);
-                int[] trigger = Level3Converter.convertTriggerLong(bits);
-                int trigSector = Level3Converter.getTriggerSector(trigger);
+                int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
+                int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);
 
                 int[] labels = new int[] { pid, trigSector, sect };
 
                 // get DC and EC from the sector
-                Level3Converter.convertDC(banks[0], nodeDC, sect);
-                Level3Converter.convertEC(banks[1], nodeEC, sect);
+                Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
+                Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
 
                 Boolean hasNeutral=false;
                 //hasNeutral means there's one or more photon 
@@ -262,8 +262,8 @@ public class Level3Converter_MultiClass {
 
         /*String file = "rec_clas_005197.evio.00405-00409.hipo";
         if(args.length>0) file = args[0];
-        Level3Converter.convertFile(file, file+"_daq.h5");
-        //Level3Converter.analyzer(file+"_daq.h5");*/
+        Level3Converter_MultiClass.convertFile(file, file+"_daq.h5");
+        //Level3Converter_MultiClass.analyzer(file+"_daq.h5");*/
 
         String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";//rga
         String base="rec_clas_018437.evio.";//005197
@@ -277,7 +277,7 @@ public class Level3Converter_MultiClass {
             if(file>9){zeros="000";}
             if((file+4)>9){zeros2="000";}
             String fName=dir+base+zeros+fileS+"-"+zeros2+fileS2+".hipo";
-            Level3Converter.convertFile(fName, dir+"daq_MC_"+fileS+".h5");
+            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+".h5");
 
         }
 
