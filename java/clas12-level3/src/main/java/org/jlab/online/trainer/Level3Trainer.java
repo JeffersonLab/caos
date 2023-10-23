@@ -439,7 +439,7 @@ public class Level3Trainer {
             // do we care if trigger is right (&& ids[1] == ids[2])? - no
             if (ids[0] == 11) {
                 // Want particle sector to be non null (ids[2]) for positive only
-                if (ids[2] > 0) {
+                if (ids[2] > 0 && npos<nneg) {
                     Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
                     Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
                     Level3Utils.fillLabels(OUTArray, 1, counter);
@@ -448,14 +448,15 @@ public class Level3Trainer {
                 }
             } else {
                 // always have more neg than pos, balance dataset by only adding neg after pos
-                // do we care if trigger is wrong (&& ids[1] == ids[2])? - means training in worse case scenario
-                if (nneg < npos) {
-                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                    Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                    Level3Utils.fillLabels(OUTArray, 0, counter);
-                    counter++;
-                    nneg++;
-                }
+                // do we care if trigger is wrong (&& ids[1] == ids[2])? - means training in
+                // worse case scenario
+                // if (nneg < npos) {
+                Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                Level3Utils.fillLabels(OUTArray, 0, counter);
+                counter++;
+                nneg++;
+                // }
             }
 
         }
@@ -522,12 +523,13 @@ public class Level3Trainer {
             t.evaluateFileNuevo(file, 10000);
 
         } else if(mode<0){
-            String baseLoc="/Users/tyson/data_repo/trigger_data/rga/daq_";
+            //String baseLoc="/Users/tyson/data_repo/trigger_data/rga/daq_";
+            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_";
             String net="0b";
 	        Level3Trainer t = new Level3Trainer();
 
             List<String> files= new ArrayList<>();
-            for (int file=0;file<50;file+=5){
+            for (int file=0;file<5;file+=5){
                 files.add(baseLoc+String.valueOf(file)+".h5");
             }
 
@@ -539,15 +541,15 @@ public class Level3Trainer {
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 1000;
-	        t.trainManyFilesNuevo(files,20000);//10
+	        t.nEpochs = 1500;
+	        t.trainManyFilesNuevo(files,50000);//10
 	        t.save("level3");
 	    
-	        String file2=baseLoc+"50.h5";
+	        String file2=baseLoc+"5.h5";
 
 	        t.load("level3_"+net+".network");
             //t.load("etc/networks/network-level3-0c-rgc.network");
-	        t.evaluateFileNuevo(file2,20000);
+	        t.evaluateFileNuevo(file2,50000);
 
         }else {
 
