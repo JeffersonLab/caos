@@ -22,15 +22,16 @@ import twig.data.GraphErrors;
  */
 public class Level3Metrics_MultiClass {
     
-    public Level3Metrics_MultiClass(long NEvents,INDArray predictions, INDArray Labels,List<Integer> tags){
+    public Level3Metrics_MultiClass(long NEvents,INDArray predictions, INDArray Labels,List<Integer> tags,Boolean makePlots){
 
 		Evaluation eval = new Evaluation(tags.size());
 		eval.eval(Labels, predictions);
 		System.out.println(eval.stats());
 		System.out.println(eval.confusionToString());
-
-        PlotMetricsVsResponse(NEvents,predictions,Labels,tags);
-		PlotResponse(NEvents,predictions,Labels,tags);
+		if(makePlots){
+        	PlotMetricsVsResponse(NEvents,predictions,Labels,tags);
+			PlotResponse(NEvents,predictions,Labels,tags);
+		}
     }
 
     public static INDArray getMetrics(long NEvents, INDArray predictions, INDArray Labels, double RespTh,

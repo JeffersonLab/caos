@@ -74,7 +74,7 @@ public class Level3Trainer_MultiClass {
         long nTestEvents = inputs[0].shape()[0];
 
         // System.out.println("Number of Test Events "+nTestEvents);
-        Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], inputs[2],tags);
+        Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], inputs[2],tags,true);
 
     }
 
