@@ -24,6 +24,8 @@ public class Level3Metrics_MultiClass {
     
     public Level3Metrics_MultiClass(long NEvents,INDArray predictions, INDArray Labels,List<Integer> tags,Boolean makePlots){
 
+		System.out.print(Labels);
+
 		Evaluation eval = new Evaluation(tags.size());
 		eval.eval(Labels, predictions);
 		System.out.println(eval.stats());
@@ -46,12 +48,14 @@ public class Level3Metrics_MultiClass {
 		for (long i = 0; i < NEvents; i += 1) {
 			if (Labels.getFloat(i, el_tag_index) == 1) {
 				if (predictions.getFloat(i, el_tag_index) > RespTh) {
+				//if (Labels.getFloat(i, el_tag_index) >RespTh){ //for testing purposes
 					TP++;
 				} else {
 					FN++;
 				} // Check model prediction
 			} else if (Labels.getFloat(i, el_tag_index) == 0) {
 				if (predictions.getFloat(i, el_tag_index) > RespTh) {
+				//if (Labels.getFloat(i, el_tag_index) >RespTh){ //for testing purposes
 					FP++;
 				} else {
 					TN++;
@@ -60,7 +64,7 @@ public class Level3Metrics_MultiClass {
 		} // loop over events
 
 		double Pur = TP/(TP+FP);
-		double Eff = TP/(TP+TN);
+		double Eff = TP/(TP+FN);
 		metrics.putScalar(new int[] { 0, 0 }, Pur);
 		metrics.putScalar(new int[] { 1, 0 }, Eff);
 		return metrics;
@@ -125,11 +129,11 @@ public class Level3Metrics_MultiClass {
 		int tag_counter=0;
 		//loop over tags/classes
 		for (int tag : tags) {
-			H1F hResp = new H1F("Positive Sample", 100, 0, 1);
+			H1F hResp = new H1F("Positive Sample", 101, 0, 1.01);
 			hResp.attr().setLineColor(tag+1);//tags start at 1
-			if (tag == 1) {
+			/*if (tag == 1) {
 				hResp.attr().setFillColor(2);
-			}
+			}*/
 			hResp.attr().setLineWidth(3);
 			hResp.attr().setTitleX("Response");
 			hResp.attr().setTitle("Tag "+String.valueOf(tag));
@@ -144,6 +148,7 @@ public class Level3Metrics_MultiClass {
 					//we want to see how hard a class is to distinguish
 					//from class 1
 					hResp.fill(output.getFloat(i, index_tag1));
+					//hResp.fill(Labels.getFloat(i, index_tag1)); //for testing purposes
 				} 
 			}
 
