@@ -19,7 +19,7 @@ import twig.graphics.TGCanvas;
 
 /**
  *
- * @author gavalian
+ * @author gavalian, tyson
  */
 public class Level3Converter_MultiClass {
     
@@ -60,7 +60,8 @@ public class Level3Converter_MultiClass {
         return false;
     }
     
-    public static void convertEC(Bank bank, CompositeNode node, int... sectors){
+    public static double convertEC(Bank bank, CompositeNode node, int... sectors){
+        double totEnergy=0;
         node.setRows(0);
         int nrowsec = bank.getRows();
         if(bank.getRows()<4000){
@@ -75,10 +76,12 @@ public class Level3Converter_MultiClass {
                     node.putShort( 2, row, (short) bank.getInt("component", row));
                     node.putByte(  3, row, (byte) bank.getInt("order", row));
                     node.putInt(   4, row,  bank.getInt("ADC", row));
+                    totEnergy+=(double) (bank.getInt("ADC", row)/10000.0)/1.5;
                     counter++;
                 }
             }
         }
+        return totEnergy;
     }
 
     public static int getTrackIndex(Bank TrackBank, int pIndex){
@@ -147,6 +150,8 @@ public class Level3Converter_MultiClass {
         
         CompositeNode nodeDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nodeEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
+
+        int nTag1=0,nTag2=0,nTag3=0,nTag4=0,nTag5=0,nTag6=0,nTag7=0;
         
         while(r.hasNext()){
             
@@ -155,7 +160,7 @@ public class Level3Converter_MultiClass {
             
             e.read(dsts);
 
-            //V3
+            e.setEventTag(0);
 
             //loop over sectors
             for (int sect = 1; sect < 7; sect++) {
@@ -164,7 +169,7 @@ public class Level3Converter_MultiClass {
 
                 //pid=-1 denotes no track in sector
                 int pid=-1;
-                float nEdep=0;
+                boolean hasNeutral=false;
                 //check if there's at least 1 track in sector
                 if (pIndices.size() > 0) {
                     pid = dsts[0].getInt(0, 0);
@@ -174,72 +179,112 @@ public class Level3Converter_MultiClass {
                         if (dsts[0].getInt(0, i) == 11) {
                             pid = 11;
                         }
+                        //if there's already an electron we don't want
+                        //to overwrite it
+                        //if not check if there's a pi-
+                        if (pid!=11 && dsts[0].getInt(0, i) == -211) {
+                            pid = -211;
+                        }
                         //check if we have neutral pids
                         if (dsts[0].getInt(0, i) == 22 || dsts[0].getInt(0, i) == 2212 || dsts[0].getInt(0, i) == 0) {
-                            nEdep+=Level3Converter_MultiClass.getCALE(dsts[2],i);
+                            //energy mostly 0, because cal not calibrated yet??
+                            //nEdep+=Level3Converter_MultiClass.getCALE(dsts[2],i);
+                            //System.out.printf("per neutral Edep: (%f)\n",nEdep);
+                            hasNeutral=true;
                         }
                     }
                 }
 
-                //for each data entry we record trigger
-                //could help with some logic in training data
-                //eg requiring conventional trigger to be wrong
-                long bits = banks[2].getLong("trigger", 0);
-                int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
-                int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);
-
-                int[] labels = new int[] { pid, trigSector, sect };
-
                 // get DC and EC from the sector
                 Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
-                Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
+                double totEdep=Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
 
-                Boolean hasNeutral=false;
+                /*if(hasNeutral){
+                    System.out.printf("has neutral & per event Edep: (%f)\n",nEdep);
+                } else{
+                    System.out.printf("no neutral & per event Edep: (%f)\n",nEdep);
+                }*/
+
                 //hasNeutral means there's one or more photon 
                 //with >1 GeV E dep in calorimeters in total
-                if(nEdep>1){hasNeutral=true;}
+                if(totEdep<0.5){hasNeutral=false;}
 
                 //tag 0 is trash
                 int tag=0;
 
-                //tag=1 means there's an electron
-                if(pid==11){tag=1;}
+                if (hasNeutral) {
+                    // tag=1 means there's an electron
+                    if (pid == 11) {
+                        tag = 1;
+                        nTag1++;
+                    } // tag 5 means there's a pion and neutral
+                    else if (pid == -211) {
+                        tag = 5;
+                        nTag5++;
+                    } // tag 7 means there's no track and a neutral
+                    else if (pid == -1) {
+                        tag = 7;
+                        nTag7++;
+                    } // tag 6 means there's another particle (not el not pion) and neutral
+                    else {
+                        tag = 6;
+                        nTag6++;
+                    }
+                } else {
+                    // tag=1 means there's an electron
+                    if (pid == 11) {
+                        tag = 1;
+                        nTag1++;
+                    } // tag 2 means there's a negative pion but no neutral
+                    else if (pid == -211) {
+                        tag = 2;
+                        nTag2++;
+                    } // tag 4 means there's no track and no neutral
+                    else if (pid == -1 ) {
+                        tag = 4;
+                        nTag4++;
+                    } // tag 3 means there's another particle (not el or pi-) but no neutral
+                    else {
+                        tag = 3;
+                        nTag3++;
+                    }
+                }
 
-                //tag 2 means there's a negative pion but no neutral
-                //biggest source of bg for electrons
-                if(pid==-211 && !hasNeutral){tag=2;}
+                //for each data entry we could record trigger
+                //could help with some logic in training data
+                //eg requiring conventional trigger to be wrong
+                /*long bits = banks[2].getLong("trigger", 0);
+                int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
+                int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);*/
+
+                int[] labels = new int[] { pid, tag, sect };
                 
-                //tag 3 means there's another particle (not el or pi-) but no neutral
-                if(pid!=11 && pid!=-211 && !hasNeutral){tag=3;}
-
-                 //tag 4 means there's a pion and neutral
-                if(pid==-211 && hasNeutral){tag=4;}
-
-                //tag 5 means there's another particle (not el not pion) and neutral
-                if(pid!=11 && pid!=-211 && hasNeutral){tag=4;}
-                
-                //tag 6 means there's no track and a neutral
-                if(pid==-1 && hasNeutral){tag=6;}
-
                 // nodeDC.print();
                 // nodeEC.print();
+
+                //System.out.printf("Tag: (%d)",tag);
 
                 Node tnode = new Node(5, 4, labels);
 
                 if (nodeEC.getRows() > 0 && nodeDC.getRows() > 0 && tag>0) {
+                    
                     e.write(nodeEC);
                     e.write(nodeDC);
                     e.write(tnode);
 
                     e.setEventTag(tag);
+
                     w.addEvent(e);
                 }
 
 
             }
         }
-        
         w.close();
+
+        System.out.println("Number of events from:");
+        System.out.printf("Tags 1 (%d), 2 (%d), 3 (%d)\n",nTag1,nTag2,nTag3);
+        System.out.printf("Tags 4 (%d), 5 (%d), 6 (%d), 7 (%d)\n",nTag4,nTag5,nTag6,nTag7);
     }
     
     public static void extract(String file){
@@ -260,13 +305,11 @@ public class Level3Converter_MultiClass {
     public static void main(String[] args){        
         
 
-        /*String file = "rec_clas_005197.evio.00405-00409.hipo";
-        if(args.length>0) file = args[0];
-        Level3Converter_MultiClass.convertFile(file, file+"_daq.h5");
-        //Level3Converter_MultiClass.analyzer(file+"_daq.h5");*/
+        String dir="/Users/tyson/data_repo/trigger_data/rga/";
+        String base="rec_clas_005197.evio.";
 
-        String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";//rga
-        String base="rec_clas_018437.evio.";//005197
+        //String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";
+        //String base="rec_clas_018437.evio.";
         for (int file=0;file<10;file+=5){
     
             String fileS=String.valueOf(file);

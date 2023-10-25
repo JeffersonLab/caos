@@ -26,7 +26,7 @@ import twig.server.HttpServerConfig;
 
 /**
  *
- * @author gavalian
+ * @author gavalian, tyson
  */
 public class Level3Trainer_MultiClass {
 
@@ -38,8 +38,8 @@ public class Level3Trainer_MultiClass {
 
     }
 
-    public void initNetwork() {
-        ComputationGraphConfiguration config = Level3Models.getModel(cnnModel);
+    public void initNetwork(int nClasses) {
+        ComputationGraphConfiguration config = Level3Models_MultiClass.getModel(cnnModel,nClasses);
         network = new ComputationGraph(config);
         network.init();
         System.out.println(network.summary());
@@ -65,39 +65,24 @@ public class Level3Trainer_MultiClass {
     }
 
 
-    public void evaluateFile(String file, int nEvents) {
+    public void evaluateFile(String file, int nEvents_pSample,List<Integer> tags) {
 
-        INDArray[] inputs = this.getFromFile(file, nEvents);
+        INDArray[] inputs = this.getTagsFromFile(file,nEvents_pSample,tags);
 
         INDArray[] outputs = network.output(inputs[0], inputs[1]);
 
         long nTestEvents = inputs[0].shape()[0];
 
         // System.out.println("Number of Test Events "+nTestEvents);
-        Level3Metrics metrics = new Level3Metrics(nTestEvents, outputs[0], inputs[2]);
+        Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], inputs[2],tags);
 
     }
 
-    public void trainManyFiles(List<String> files, int nEvents) {
+    public void trainFile(String file, int nEvents_pSample,List<Integer> tags) {
 
-        // INDArray[] inputs = this.getFromFile(files.get(0), nEvents);
+        INDArray[] inputs = this.getTagsFromFile(file,nEvents_pSample,tags);
 
-        INDArray[] inputs = new INDArray[3];
-        int count = 0;
-        for (String file : files) {
-            INDArray[] inputs_temp = this.getFromFile(file, nEvents);
-            if (count == 0) {
-                inputs[0] = inputs_temp[0];
-                inputs[1] = inputs_temp[1];
-                inputs[2] = inputs_temp[2];
-            } else {
-                inputs[0] = Nd4j.vstack(inputs[0], inputs_temp[0]);
-                inputs[1] = Nd4j.vstack(inputs[1], inputs_temp[1]);
-                inputs[2] = Nd4j.vstack(inputs[2], inputs_temp[2]);
-            }
-        }
-
-        HttpServerConfig config = new HttpServerConfig();
+        /*HttpServerConfig config = new HttpServerConfig();
         config.serverPort = 8525;
         HttpDataServer.create(config);
         GraphErrors graph = new GraphErrors("graph");
@@ -106,77 +91,83 @@ public class Level3Trainer_MultiClass {
         HttpDataServer.getInstance().start();
 
         // HttpDataServer.getInstance().getDirectory().list();
-        HttpDataServer.getInstance().getDirectory().show();
+        HttpDataServer.getInstance().getDirectory().show();*/
 
         for (int i = 0; i < nEpochs; i++) {
             long then = System.currentTimeMillis();
             network.fit(new INDArray[] { inputs[0], inputs[1] }, new INDArray[] { inputs[2] });
             long now = System.currentTimeMillis();
-            System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
+            System.out.printf(">>> network iteration %8d, score = %e, time = %12d ms\n",
                     i, network.score(), now - then);
-            graph.addPoint(i, network.score());
-            /*if (i % 25 == 0 && i != 0) {
-                this.save("level3_model_" + this.cnnModel + "_" + i + "_epochs.network");
-            }*/
+
+            //graph.addPoint(i, network.score());
+            if (i % 500 == 0 && i != 0) {
+                this.save("tmp_models/level3_model_" + this.cnnModel + "_" + i + "_epochs.network");
+            }
         }
     }
 
+    public INDArray[] getTagsFromFile(String file, int max,List<Integer> tags) {
+        INDArray[] inputs = new INDArray[3];
+        int added_tags=0;
+        for (int tag : tags) {
+            HipoReader r = new HipoReader(file);
 
-    public INDArray[] getFromFile(String file, int max) {
-        HipoReader r = new HipoReader(file);
+            //r.setTags(tag);
 
-        int nMax = max;
+            int nMax = max;
 
-        if (r.entries() < max)
-            nMax = r.entries();
+            if (r.entries() < max)
+                nMax = r.entries();
 
-        CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
-        CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+            CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
+            CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
 
-        INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
-        INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-        INDArray OUTArray = Nd4j.zeros(nMax, 2);
-        Event event = new Event();
-        int counter = 0;
-        int npos = 0;
-        int nneg = 0;
-        while (r.hasNext() == true && counter < nMax) {
-            r.nextEvent(event);
-            event.read(nDC, 12, 1);
-            event.read(nEC, 11, 2);
+            INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+            INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
+            INDArray OUTArray = Nd4j.zeros(nMax, tags.size());
+            Event event = new Event();
+            int counter = 0;
+            while (r.hasNext() == true && counter < nMax) {
+                r.nextEvent(event);
 
-            Node node = event.read(5, 4);
+                //get tag doesn't seem to work
+                //if(event.getEventTag()==tag){
+                    
+                event.read(nDC, 12, 1);
+                event.read(nEC, 11, 2);
 
-            int[] ids = node.getInt();
+                Node node = event.read(5, 4);
 
-            // Do we care if the trigger is fired in the event? (ids[1]>0) - no
-            // do we care if trigger is right (&& ids[1] == ids[2])? - no
-            if (ids[0] == 11) {
-                // Want particle sector to be non null (ids[2]) for positive only
-                //if (ids[2] > 0 && npos<nneg) {
-                Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                Level3Utils.fillLabels(OUTArray, 1, counter);
-                counter++;
-                npos++;
-                //}
-            } else {
-                // always have more neg than pos, balance dataset by only adding neg after pos
-                // do we care if trigger is wrong (&& ids[1] == ids[2])? - means training in
-                // worse case scenario
-                if (nneg < npos) {
+                int[] ids = node.getInt();
+
+                if(ids[1]==tag){
+
+                    //System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
+                    //System.out.printf("event tag (%d) & ID (%d)\n",ids[1],ids[0]);
+
                     Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
                     Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                    Level3Utils.fillLabels(OUTArray, 0, counter);
+
+                    Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
                     counter++;
-                    nneg++;
                 }
+
             }
 
-        }
+            //System.out.print(OUTArray);
 
-        System.out.printf("\n\n loaded samples (%d)  positive = %s, negative = %d\n", counter, npos, nneg);
-        return new INDArray[] { DCArray, ECArray, OUTArray };
+            System.out.printf("loaded samples (%d) for tag %d\n\n\n", counter, tag);
+            if (added_tags == 0) {
+                inputs=new INDArray[] { DCArray, ECArray, OUTArray };
+            } else{
+                inputs[0] = Nd4j.vstack(inputs[0], DCArray);
+                inputs[1] = Nd4j.vstack(inputs[1], ECArray);
+                inputs[2] = Nd4j.vstack(inputs[2], OUTArray);
+            }
+            added_tags++;
+        }
+        return inputs;
     }
 
     public static void main(String[] args) {
@@ -184,40 +175,45 @@ public class Level3Trainer_MultiClass {
 
         if (mode > 0) {
 
+            List<Integer> tags= new ArrayList<>();
+            for(int i=1;i<6;i++){tags.add(i);}
+
             Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
             t.load("level3_model_0a_1000_epochs.network_0a.network");
             // t.load("level3_model_0b_625_epochs.network_0b.network");
             String file = "rec_clas_005197.evio.00405-00409.hipo_daq.h5";
-            t.evaluateFile(file, 10000);
+            t.evaluateFile(file, 10000,tags);
 
         } else if(mode<0){
             //String baseLoc="/Users/tyson/data_repo/trigger_data/rga/daq_";
-            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_";
+            String file="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_0.h5";
+
+            List<Integer> tags= new ArrayList<>();
+            for(int i=1;i<5;i++){tags.add(i);}
+            //tags.add(2);
+            //tags.add(1);
+            
             String net="0b";
 	        Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
-
-            List<String> files= new ArrayList<>();
-            for (int file=0;file<5;file+=5){
-                files.add(baseLoc+String.valueOf(file)+".h5");
-            }
 
 	        t.cnnModel = net;
 
             //if not transfer learning
-	        //t.initNetwork();
+	        t.initNetwork(tags.size());
 
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 1500;
-	        //t.trainManyFiles(files,200000);//10
-	        //t.save("level3_MC");
+	        t.nEpochs = 100;
+	        t.trainFile(file,40000,tags);//10
+	        t.save("level3_MC");
 	    
-	        String file2=baseLoc+"5.h5";
+	        String file2="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_5.h5";
 
-	        t.load("level3_MC_"+net+"_fCF.network");
+            t.load("level3_MC_"+net+".network");
+	        //t.load("level3_"+net+"_fCF.network");//level3_MC_
             //t.load("etc/networks/network-level3-0c-rgc.network");
-	        t.evaluateFile(file2,200000);
+	        t.evaluateFile(file2,40000,tags);
 
         }else {
 
@@ -227,6 +223,7 @@ public class Level3Trainer_MultiClass {
             parser.addOption("-m", "0b", "model name (0a,0b or 0c)");
             parser.addOption("-e", "1024", "number of epochs");
             parser.addOption("-max", "200000", "number of data samples");
+            parser.addOption("-f","/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_0.h5","input file");
 
             parser.parse(args);
 
@@ -234,11 +231,12 @@ public class Level3Trainer_MultiClass {
             Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
 
             t.cnnModel = net;
-            t.initNetwork();
+            t.initNetwork(5); //nb change this to nb tags once figure out how to pass this in option parser
             t.nEpochs = parser.getOption("-e").intValue();
             int max = parser.getOption("-max").intValue();
 
-            t.trainManyFiles(parser.getInputList(), max);
+            //NB can't figure out how to use option parser for this
+            //t.trainFile(parser.getOption("-f").stringValue(), max,parser.getInputList());
             t.save(parser.getOption("-n").stringValue());
 
         }

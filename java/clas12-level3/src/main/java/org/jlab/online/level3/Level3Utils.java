@@ -101,6 +101,18 @@ public class Level3Utils {
             labels.putScalar(new int[]{order,1} , 1.0);
         }        
     }
+
+    public static void fillLabels_MultiClass(INDArray labels,List<Integer> tags, int tag, int order){
+        //loop over possible tags
+        for (int i=0;i<tags.size();i++){
+            double val=0.0;
+            //if event at order correspond to desired tag
+            //then label it with 1
+            if(tags.get(i)==tag){val=1.0;}
+            //put val at index i in output array
+            labels.putScalar(new int[]{order,i} , val);
+        }   
+    }
     
     public static void fillEC(INDArray dc, CompositeNode ecBank, int order){
         int   nrows = ecBank.getRows();
