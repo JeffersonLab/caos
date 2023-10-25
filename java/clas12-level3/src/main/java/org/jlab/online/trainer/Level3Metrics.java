@@ -4,6 +4,7 @@
  */
 package org.jlab.online.trainer;
 
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -19,8 +20,12 @@ import twig.data.GraphErrors;
 public class Level3Metrics {
     
     public Level3Metrics(long NEvents,INDArray predictions, INDArray Labels){
-        PlotMetricsVsResponse(NEvents,predictions,Labels);
-	PlotResponse(NEvents,predictions,Labels);
+		Evaluation eval = new Evaluation(2);
+		eval.eval(Labels, predictions);
+		System.out.println(eval.stats());
+		System.out.println(eval.confusionToString());
+       	PlotMetricsVsResponse(NEvents, predictions, Labels);
+		PlotResponse(NEvents, predictions, Labels);
     }
 
     public static INDArray getMetrics(long NEvents,INDArray predictions, INDArray Labels, double RespTh) {

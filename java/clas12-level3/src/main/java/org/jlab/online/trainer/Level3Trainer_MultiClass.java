@@ -111,9 +111,10 @@ public class Level3Trainer_MultiClass {
         INDArray[] inputs = new INDArray[3];
         int added_tags=0;
         for (int tag : tags) {
-            HipoReader r = new HipoReader(file);
-
-            //r.setTags(tag);
+            HipoReader r = new HipoReader();
+           
+            r.setTags(tag);
+            r.open(file);
 
             int nMax = max;
 
@@ -130,9 +131,6 @@ public class Level3Trainer_MultiClass {
             int counter = 0;
             while (r.hasNext() == true && counter < nMax) {
                 r.nextEvent(event);
-
-                //get tag doesn't seem to work
-                //if(event.getEventTag()==tag){
                     
                 event.read(nDC, 12, 1);
                 event.read(nEC, 11, 2);
@@ -141,21 +139,21 @@ public class Level3Trainer_MultiClass {
 
                 int[] ids = node.getInt();
 
-                if(ids[1]==tag){
+                //System.out.printf("event tag (%d) & ID (%d)\n", ids[1], ids[0]);
+                //System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
 
-                    //System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
-                    //System.out.printf("event tag (%d) & ID (%d)\n",ids[1],ids[0]);
+                Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
 
-                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                    Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-
-                    Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
-                    counter++;
-                }
+                Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
+                counter++;
+                
 
             }
 
-            //System.out.print(OUTArray);
+            /*System.out.printf("tag (%d)",tag);
+            System.out.print(OUTArray);
+            System.out.print("\n\n");*/
 
             System.out.printf("loaded samples (%d) for tag %d\n\n\n", counter, tag);
             if (added_tags == 0) {
@@ -189,8 +187,8 @@ public class Level3Trainer_MultiClass {
             String file="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_0.h5";
 
             List<Integer> tags= new ArrayList<>();
-            for(int i=1;i<5;i++){tags.add(i);}
-            //tags.add(2);
+            for(int i=1;i<8;i++){tags.add(i);}
+            //tags.add(4);
             //tags.add(1);
             
             String net="0b";
@@ -199,21 +197,22 @@ public class Level3Trainer_MultiClass {
 	        t.cnnModel = net;
 
             //if not transfer learning
-	        t.initNetwork(tags.size());
+	        //t.initNetwork(tags.size());
 
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 100;
-	        t.trainFile(file,40000,tags);//10
-	        t.save("level3_MC");
+	        //t.nEpochs = 10;
+	        //t.trainFile(file,10000,tags);//10
+	        //t.save("level3_MC");
 	    
 	        String file2="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_5.h5";
 
-            t.load("level3_MC_"+net+".network");
+            //t.load("level3_MC_"+net+".network");
+            t.load("level3_MC_"+net+"_fCF.network");
 	        //t.load("level3_"+net+"_fCF.network");//level3_MC_
             //t.load("etc/networks/network-level3-0c-rgc.network");
-	        t.evaluateFile(file2,40000,tags);
+	        t.evaluateFile(file2,10000,tags);
 
         }else {
 

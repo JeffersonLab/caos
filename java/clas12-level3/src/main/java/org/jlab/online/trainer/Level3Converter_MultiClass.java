@@ -13,6 +13,7 @@ import j4np.hipo5.io.HipoWriter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.Math;
 
 import twig.data.H1F;
 import twig.graphics.TGCanvas;
@@ -102,12 +103,31 @@ public class Level3Converter_MultiClass {
         return energy;
     }
 
+    public static double getPartE(Bank PartBank, int pIndex,double massPart){
+        double px=PartBank.getFloat("px", pIndex);
+        double py=PartBank.getFloat("py", pIndex);
+        double pz=PartBank.getFloat("pz", pIndex);
+        double p=Math.sqrt(px*px+py*py+pz*pz);
+        double energy=Math.sqrt(p*p+massPart*massPart);
+        return energy;
+    }
+
     public static List<Integer> getPIndices_fSector(Bank TrackBank, int sector){
         List<Integer> pIndices = new ArrayList<Integer>();
         for (int row=0; row< TrackBank.getRows();row++){
             int trackPIndex=TrackBank.getInt("pindex", row);
             int trSector=TrackBank.getInt("sector", row);
             if (trSector==sector){pIndices.add(trackPIndex);}
+        }
+        return pIndices;
+    }
+
+    public static List<Integer> getPIndices_fSector_fCal(Bank CalBank, int sector){
+        List<Integer> pIndices = new ArrayList<Integer>();
+        for (int row=0; row< CalBank.getRows();row++){
+            int calPIndex=CalBank.getInt("pindex", row);
+            int calSector=CalBank.getInt("sector", row);
+            if (calSector==sector){pIndices.add(calPIndex);}
         }
         return pIndices;
     }
@@ -139,11 +159,51 @@ public class Level3Converter_MultiClass {
             if(trigger[s]>0) return s;                
         return 0;
     }
+
+    public static int getPID_inSector(List<Integer> pIndices,Bank PartBank) {
+        // pid=-1 denotes no track in sector
+        int pid = -1;
+        // check if there's at least 1 track in sector
+        if (pIndices.size() > 0) {
+            pid = PartBank.getInt(0, 0);
+            // loop over particle indices in sector to check if there's an electron in
+            // sector
+            for (int i = 0; i < pIndices.size(); i++) {
+                if (PartBank.getInt(0, i) == 11) {
+                    pid = 11;
+                }
+                // if there's already an electron we don't want
+                // to overwrite it
+                // if not check if there's a pi-
+                if (pid != 11 && PartBank.getInt(0, i) == -211) {
+                    pid = -211;
+                }
+            }
+        }
+        return pid;
+    }
+
+    public static double getTotal_neutralE_inSector(List<Integer> pIndices_fCal, Bank PartBank) {
+        double nEnergy = 0;
+        // loop over particle indices in cal in sector to check if there's neutrals
+        for (int i = 0; i < pIndices_fCal.size(); i++) {
+            // check if we have neutral pids
+            if (PartBank.getInt(0, i) == 22) {
+                // nEdep+=Level3Converter_MultiClass.getCALE(dsts[2],i);
+                nEnergy += getPartE(PartBank, i, 0);
+            } else if (PartBank.getInt(0, i) == 2112) {
+                // nEdep+=Level3Converter_MultiClass.getCALE(dsts[2],i);
+                nEnergy += getPartE(PartBank, i, 0.93957);
+            }
+        }
+        return nEnergy;
+    }
     
     public static void convertFile(String file, String output){
         HipoReader r = new HipoReader(file);
         HipoWriter w = HipoWriter.create(output, r);
         Event e = new Event();
+        Event e_out = new Event();
         
         Bank[] banks = r.getBanks("DC::tdc","ECAL::adc","RUN::config");
         Bank[]  dsts = r.getBanks("REC::Particle","REC::Track","REC::Calorimeter");
@@ -160,59 +220,32 @@ public class Level3Converter_MultiClass {
             
             e.read(dsts);
 
-            e.setEventTag(0);
-
             //loop over sectors
             for (int sect = 1; sect < 7; sect++) {
-                // get a list of pIndices in the sector
+                // get a list of pIndices in the sector associated with tracks
                 List<Integer> pIndices = Level3Converter_MultiClass.getPIndices_fSector(dsts[1], sect);
+                //find if there's an electron, pion, other or no track in the track pindices in sector
+                int pid=getPID_inSector(pIndices,dsts[0]);
 
-                //pid=-1 denotes no track in sector
-                int pid=-1;
-                boolean hasNeutral=false;
-                //check if there's at least 1 track in sector
-                if (pIndices.size() > 0) {
-                    pid = dsts[0].getInt(0, 0);
-                    
-                    //loop over particle indices in sector to check if there's an electron in sector
-                    for (int i = 0; i < pIndices.size(); i++) {
-                        if (dsts[0].getInt(0, i) == 11) {
-                            pid = 11;
-                        }
-                        //if there's already an electron we don't want
-                        //to overwrite it
-                        //if not check if there's a pi-
-                        if (pid!=11 && dsts[0].getInt(0, i) == -211) {
-                            pid = -211;
-                        }
-                        //check if we have neutral pids
-                        if (dsts[0].getInt(0, i) == 22 || dsts[0].getInt(0, i) == 2212 || dsts[0].getInt(0, i) == 0) {
-                            //energy mostly 0, because cal not calibrated yet??
-                            //nEdep+=Level3Converter_MultiClass.getCALE(dsts[2],i);
-                            //System.out.printf("per neutral Edep: (%f)\n",nEdep);
-                            hasNeutral=true;
-                        }
-                    }
-                }
+                // get a list of pIndices in the sector associated with calorimeter
+                List<Integer> pIndices_fCal = Level3Converter_MultiClass.getPIndices_fSector_fCal(dsts[2], sect);
+                //if there's neutrals in cal pindices in sector, get their total energy
+                double nEnergy=getTotal_neutralE_inSector(pIndices_fCal,dsts[0]);
 
-                // get DC and EC from the sector
+                // get DC and EC for the sector
                 Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
-                double totEdep=Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
+                double nEdep=Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
 
-                /*if(hasNeutral){
-                    System.out.printf("has neutral & per event Edep: (%f)\n",nEdep);
-                } else{
-                    System.out.printf("no neutral & per event Edep: (%f)\n",nEdep);
-                }*/
-
-                //hasNeutral means there's one or more photon 
-                //with >1 GeV E dep in calorimeters in total
-                if(totEdep<0.5){hasNeutral=false;}
+                /*if(nEnergy>0){
+                    System.out.printf("per event Edep: (%f)\n",nEnergy);
+                } */
 
                 //tag 0 is trash
                 int tag=0;
 
-                if (hasNeutral) {
+                //there's one or more photon 
+                //with >1 GeV E dep in calorimeters in total
+                if (nEnergy>1) {
                     // tag=1 means there's an electron
                     if (pid == 11) {
                         tag = 1;
@@ -268,13 +301,14 @@ public class Level3Converter_MultiClass {
 
                 if (nodeEC.getRows() > 0 && nodeDC.getRows() > 0 && tag>0) {
                     
-                    e.write(nodeEC);
-                    e.write(nodeDC);
-                    e.write(tnode);
+                    e_out.reset();
+                    e_out.write(nodeEC);
+                    e_out.write(nodeDC);
+                    e_out.write(tnode);
 
-                    e.setEventTag(tag);
+                    e_out.setEventTag(tag);
 
-                    w.addEvent(e);
+                    w.addEvent(e_out);
                 }
 
 
@@ -305,11 +339,12 @@ public class Level3Converter_MultiClass {
     public static void main(String[] args){        
         
 
-        String dir="/Users/tyson/data_repo/trigger_data/rga/";
-        String base="rec_clas_005197.evio.";
+        /*String dir="/Users/tyson/data_repo/trigger_data/rga/";
+        String base="rec_clas_005197.evio.";*/
 
-        //String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";
-        //String base="rec_clas_018437.evio.";
+        String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";
+        String base="rec_clas_018437.evio.";
+
         for (int file=0;file<10;file+=5){
     
             String fileS=String.valueOf(file);
