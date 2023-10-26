@@ -21,6 +21,8 @@ import org.jlab.online.level3.Level3Utils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import twig.data.GraphErrors;
+import twig.data.H1F;
+import twig.graphics.TGCanvas;
 import twig.server.HttpDataServer;
 import twig.server.HttpServerConfig;
 
@@ -107,10 +109,53 @@ public class Level3Trainer_MultiClass {
         }
     }
 
+    public void getEnergiesForTagsFromFile(String file, int max,List<Integer> tags) {
+        int added_tags=0;
+        //for testing
+        TGCanvas c = new TGCanvas();
+        c.setTitle("Calorimeter Energy");
+        for (int tag : tags) {
+            //for testing
+            H1F h = new H1F("E", 101, -0.01, 1);
+            h.attr().setLineColor(tag+1);// tags start at 1
+            h.attr().setTitleX("Calorimeter Energy [AU]");
+            h.attr().setLineWidth(3);
+            h.attr().setTitle("Tag "+String.valueOf(tag));
+            HipoReader r = new HipoReader();
+            r.setTags(tag);
+            r.open(file);
+            int nMax = max;
+            if (r.entries() < max)
+                nMax = r.entries();
+            CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+            INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
+            Event event = new Event();
+            int counter = 0;
+            while (r.hasNext() == true && counter < nMax) {
+                r.nextEvent(event);
+                event.read(nEC, 11, 2);
+                Node node = event.read(5, 4);
+                int[] ids = node.getInt();
+                List<Double> energies = new ArrayList<Double>();
+                Level3Utils.fillEC(ECArray, nEC, ids[2], counter,energies);
+                for(double energy:energies){h.fill(energy);}
+                counter++;
+            }
+            if (added_tags == 0) {
+                c.draw(h);
+            } else{
+                c.draw(h,"same");
+            }
+            added_tags++;
+        }
+    }
+
     public INDArray[] getTagsFromFile(String file, int max,List<Integer> tags) {
         INDArray[] inputs = new INDArray[3];
         int added_tags=0;
+
         for (int tag : tags) {
+
             HipoReader r = new HipoReader();
            
             r.setTags(tag);
@@ -165,6 +210,7 @@ public class Level3Trainer_MultiClass {
             }
             added_tags++;
         }
+        
         return inputs;
     }
 
@@ -188,8 +234,11 @@ public class Level3Trainer_MultiClass {
 
             List<Integer> tags= new ArrayList<>();
             for(int i=1;i<8;i++){tags.add(i);}
+            //tags.add(7);
             //tags.add(4);
+            //tags.add(2);
             //tags.add(1);
+            
             
             String net="0b";
 	        Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
@@ -208,8 +257,8 @@ public class Level3Trainer_MultiClass {
 	    
 	        String file2="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_5.h5";
 
-            //t.load("level3_MC_"+net+".network");
-            t.load("level3_MC_"+net+"_fCF.network");
+            t.load("level3_MC_"+net+".network");
+            //t.load("level3_MC_3C_"+net+"_fCF.network");
 	        //t.load("level3_"+net+"_fCF.network");//level3_MC_
             //t.load("etc/networks/network-level3-0c-rgc.network");
 	        t.evaluateFile(file2,10000,tags);

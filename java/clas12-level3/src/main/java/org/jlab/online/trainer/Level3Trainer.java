@@ -282,9 +282,9 @@ public class Level3Trainer {
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
                     i, network.score(), now - then);
             graph.addPoint(i, network.score());
-            /*if (i % 25 == 0 && i != 0) {
-                this.save("level3_model_" + this.cnnModel + "_" + i + "_epochs.network");
-            }*/
+            if (i % 500 == 0 && i != 0) {
+                this.save("tmp_models/level3_model_" + this.cnnModel + "_" + i + "_epochs.network");
+            }
         }
     }
 
