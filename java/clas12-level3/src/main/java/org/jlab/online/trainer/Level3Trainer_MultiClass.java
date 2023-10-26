@@ -11,13 +11,16 @@ import j4np.hipo5.io.HipoReader;
 import j4np.utils.io.OptionParser;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.jlab.online.level3.Level3Utils;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import twig.data.GraphErrors;
@@ -80,9 +83,10 @@ public class Level3Trainer_MultiClass {
 
     }
 
-    public void trainFile(String file, int nEvents_pSample,List<Integer> tags) {
+    public void trainFile(String file,String fileTest, int nEvents_pSample,List<Integer> tags) {
 
         INDArray[] inputs = this.getTagsFromFile(file,nEvents_pSample,tags);
+        INDArray[] inputs_test = this.getTagsFromFile(fileTest,nEvents_pSample,tags);
 
         /*HttpServerConfig config = new HttpServerConfig();
         config.serverPort = 8525;
@@ -101,6 +105,11 @@ public class Level3Trainer_MultiClass {
             long now = System.currentTimeMillis();
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d ms\n",
                     i, network.score(), now - then);
+
+            INDArray[] outputs = network.output(inputs_test[0], inputs_test[1]);
+            Evaluation eval = new Evaluation(tags.size());
+		    eval.eval(inputs[2], outputs[0]);
+            System.out.printf("Test Purity: %f, Efficiency: %f\n",eval.precision(),eval.recall());
 
             //graph.addPoint(i, network.score());
             if (i % 500 == 0 && i != 0) {
@@ -210,6 +219,14 @@ public class Level3Trainer_MultiClass {
             }
             added_tags++;
         }
+
+        //can't figure this out
+        //List<int[]> dimensions = Arrays.asList(new int[]{0}, new int[]{0}, new int[]{0});
+        //Nd4j.shuffle(Arrays.asList(inputs[0], inputs[1],inputs[2]), new Random(12345), dimensions);
+        //Random r=new Random(12345);
+        /*Nd4j.shuffle(inputs[0], new Random(12345), 0);
+        Nd4j.shuffle(inputs[1], new Random(12345), 0);
+        Nd4j.shuffle(inputs[2], new Random(12345), 0);*/
         
         return inputs;
     }
@@ -230,14 +247,15 @@ public class Level3Trainer_MultiClass {
 
         } else if(mode<0){
             //String baseLoc="/Users/tyson/data_repo/trigger_data/rga/daq_";
-            String file="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_0.h5";
+            String file="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_0.h5";
+            String file2="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_5.h5";
 
             List<Integer> tags= new ArrayList<>();
-            for(int i=1;i<8;i++){tags.add(i);}
+            //for(int i=1;i<8;i++){tags.add(i);}
             //tags.add(7);
-            //tags.add(4);
+            tags.add(4);
             //tags.add(2);
-            //tags.add(1);
+            tags.add(1);
             
             
             String net="0b";
@@ -252,15 +270,12 @@ public class Level3Trainer_MultiClass {
             //t.load("level3_"+net+".network");
 
 	        //t.nEpochs = 10;
-	        //t.trainFile(file,10000,tags);//10
+	        //t.trainFile(file,file2,10000,tags);//10
 	        //t.save("level3_MC");
-	    
-	        String file2="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_5.h5";
 
-            t.load("level3_MC_"+net+".network");
-            //t.load("level3_MC_3C_"+net+"_fCF.network");
-	        //t.load("level3_"+net+"_fCF.network");//level3_MC_
-            //t.load("etc/networks/network-level3-0c-rgc.network");
+            //t.load("level3_MC_"+net+".network");
+            //t.load("level3_MC_2C_t4t1_"+net+"_AI.network");
+            t.load("level3_MC_2C_test_"+net+"_AI.network");
 	        t.evaluateFile(file2,10000,tags);
 
         }else {
