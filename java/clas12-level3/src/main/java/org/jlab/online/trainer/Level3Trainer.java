@@ -321,6 +321,7 @@ public class Level3Trainer {
 
         // HttpDataServer.getInstance().getDirectory().list();
         HttpDataServer.getInstance().getDirectory().show();
+        
 
         for (int i = 0; i < nEpochs; i++) {
             long then = System.currentTimeMillis();
@@ -441,10 +442,25 @@ public class Level3Trainer {
                 // Want particle sector to be non null (ids[2]) for positive only
                 if (ids[2] > 0) { //V2 data requires  && npos<nneg
                     Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                    Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                    int nHits=Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
                     Level3Utils.fillLabels(OUTArray, 1, counter);
-                    counter++;
-                    npos++;
+                    
+                    // if the NHits is small then this is BG that crept into the tag
+                    if (nHits > 7) {
+                        counter++;
+                        npos++;
+                    } else {
+                        // erase last entry as NHits was small
+                        DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
+                        ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
+                        for (int k = 0; k < 2; k++) {
+                            OUTArray.putScalar(new int[] { counter, k }, 0);
+                        }
+                    }
+                        
+                    
                 }
             } else {
                 // always have more neg than pos, balance dataset by only adding neg after pos
@@ -530,26 +546,26 @@ public class Level3Trainer {
 
             List<String> files= new ArrayList<>();
             for (int file=0;file<5;file+=5){
-                files.add(baseLoc+String.valueOf(file)+".h5");
+                files.add(baseLoc+String.valueOf(file)+"_v2.h5");
             }
 
 	        t.cnnModel = net;
 
             //if not transfer learning
-	        //t.initNetwork();
+	        t.initNetwork();
 
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 1500;
-	        //t.trainManyFilesNuevo(files,200000);//10
-	        //t.save("level3");
+	        t.nEpochs = 4000;
+	        t.trainManyFilesNuevo(files,100000);//10
+	        t.save("level3");
 	    
-	        String file2=baseLoc+"5.h5";
+	        //String file2=baseLoc+"5.h5";
 
-	        t.load("level3_"+net+"_fCF.network");//_rga
+	        //t.load("level3_"+net+"_fCF.network");//_rga
             //t.load("etc/networks/network-level3-0c-rgc.network");
-	        t.evaluateFileNuevo(file2,100000);
+	        //t.evaluateFileNuevo(file2,100000);
 
         }else {
 

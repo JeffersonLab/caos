@@ -104,10 +104,7 @@ public class Level3Converter_MultiClass {
     }
 
     public static double getPartE(Bank PartBank, int pIndex,double massPart){
-        double px=PartBank.getFloat("px", pIndex);
-        double py=PartBank.getFloat("py", pIndex);
-        double pz=PartBank.getFloat("pz", pIndex);
-        double p=Math.sqrt(px*px+py*py+pz*pz);
+        double p=calcP(PartBank, pIndex);
         double energy=Math.sqrt(p*p+massPart*massPart);
         return energy;
     }
@@ -160,28 +157,14 @@ public class Level3Converter_MultiClass {
         return 0;
     }
 
-    public static int getPID_inSector(List<Integer> pIndices,Bank PartBank) {
-        // pid=-1 denotes no track in sector
-        int pid = -1;
-        // check if there's at least 1 track in sector
-        if (pIndices.size() > 0) {
-            pid = PartBank.getInt(0, 0);
-            // loop over particle indices in sector to check if there's an electron in
-            // sector
-            for (int i = 0; i < pIndices.size(); i++) {
-                if (PartBank.getInt(0, i) == 11) {
-                    pid = 11;
-                }
-                // if there's already an electron we don't want
-                // to overwrite it
-                // if not check if there's a pi-
-                if (pid != 11 && PartBank.getInt(0, i) == -211) {
-                    pid = -211;
-                }
-            }
-        }
-        return pid;
+    public static double calcP(Bank PartBank,int pIndex){
+        double px=PartBank.getFloat("px", pIndex);
+        double py=PartBank.getFloat("py", pIndex);
+        double pz=PartBank.getFloat("pz", pIndex);
+        double p=Math.sqrt(px*px+py*py+pz*pz);
+        return p;
     }
+
 
     public static double getTotal_neutralE_inSector(List<Integer> pIndices_fCal, Bank PartBank) {
         double nEnergy = 0;
@@ -198,6 +181,30 @@ public class Level3Converter_MultiClass {
         }
         return nEnergy;
     }
+
+    public static int getPTag(double p) {
+        int tag = 0;
+        if (p >= 0.5 && p < 1.5) {
+            tag = 1;
+        } else if (p >= 1.5 && p < 2.5) {
+            tag = 2;
+        } else if (p >= 2.5 && p < 3.5) {
+            tag = 3;
+        } else if (p >= 3.5 && p < 4.5) {
+            tag = 4;
+        } else if (p >= 4.5 && p < 5.5) {
+            tag = 5;
+        } else if (p >= 5.5 && p < 6.5) {
+            tag = 6;
+        } else if (p >= 6.5 && p < 7.5) {
+            tag = 7;
+        } else if (p >= 7.5 && p < 8.5) {
+            tag = 8;
+        } else if (p>=8.5) {
+            tag = 9;
+        }
+        return tag;
+    }
     
     public static void convertFile(String file, String output){
         HipoReader r = new HipoReader(file);
@@ -210,8 +217,6 @@ public class Level3Converter_MultiClass {
         
         CompositeNode nodeDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nodeEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
-
-        int nTag1=0,nTag2=0,nTag3=0,nTag4=0,nTag5=0,nTag6=0,nTag7=0;
         
         while(r.hasNext()){
             
@@ -224,8 +229,29 @@ public class Level3Converter_MultiClass {
             for (int sect = 1; sect < 7; sect++) {
                 // get a list of pIndices in the sector associated with tracks
                 List<Integer> pIndices = Level3Converter_MultiClass.getPIndices_fSector(dsts[1], sect);
-                //find if there's an electron, pion, other or no track in the track pindices in sector
-                int pid=getPID_inSector(pIndices,dsts[0]);
+                double p = 0;
+                // pid=-1 denotes no track in sector
+                int pid = -1;
+                // check if there's at least 1 track in sector
+                if (pIndices.size() > 0) {
+                    pid = dsts[0].getInt(0, 0);
+                    p = calcP(dsts[0], 0);
+                    // loop over particle indices in sector to check if there's an electron in
+                    // sector
+                    for (int i = 0; i < pIndices.size(); i++) {
+                        if (dsts[0].getInt(0, i) == 11) {
+                            pid = 11;
+                            p = calcP(dsts[0], i);
+                        }
+                        // if there's already an electron we don't want
+                        // to overwrite it
+                        // if not check if there's a pi-
+                        if (pid != 11 && dsts[0].getInt(0, i) == -211) {
+                            pid = -211;
+                            p = calcP(dsts[0], i);
+                        }
+                    }
+                }
 
                 // get a list of pIndices in the sector associated with calorimeter
                 List<Integer> pIndices_fCal = Level3Converter_MultiClass.getPIndices_fSector_fCal(dsts[2], sect);
@@ -249,37 +275,29 @@ public class Level3Converter_MultiClass {
                     // tag=1 means there's an electron
                     if (pid == 11) {
                         tag = 1;
-                        nTag1++;
                     } // tag 5 means there's a pion and neutral
                     else if (pid == -211) {
                         tag = 5;
-                        nTag5++;
                     } // tag 7 means there's no track and a neutral
                     else if (pid == -1) {
                         tag = 7;
-                        nTag7++;
                     } // tag 6 means there's another particle (not el not pion) and neutral
                     else {
                         tag = 6;
-                        nTag6++;
                     }
                 } else {
                     // tag=1 means there's an electron
                     if (pid == 11) {
                         tag = 1;
-                        nTag1++;
                     } // tag 2 means there's a negative pion but no neutral
                     else if (pid == -211) {
                         tag = 2;
-                        nTag2++;
                     } // tag 4 means there's no track and no neutral
                     else if (pid == -1 ) {
                         tag = 4;
-                        nTag4++;
                     } // tag 3 means there's another particle (not el or pi-) but no neutral
                     else {
                         tag = 3;
-                        nTag3++;
                     }
                 }
 
@@ -290,7 +308,7 @@ public class Level3Converter_MultiClass {
                 int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
                 int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);*/
 
-                int[] labels = new int[] { pid, tag, sect };
+                int[] labels = new int[] { pid, getPTag(p), sect };
                 
                 // nodeDC.print();
                 // nodeEC.print();
@@ -316,9 +334,9 @@ public class Level3Converter_MultiClass {
         }
         w.close();
 
-        System.out.println("Number of events from:");
+        /*System.out.println("Number of events from:");
         System.out.printf("Tags 1 (%d), 2 (%d), 3 (%d)\n",nTag1,nTag2,nTag3);
-        System.out.printf("Tags 4 (%d), 5 (%d), 6 (%d), 7 (%d)\n",nTag4,nTag5,nTag6,nTag7);
+        System.out.printf("Tags 4 (%d), 5 (%d), 6 (%d), 7 (%d)\n",nTag4,nTag5,nTag6,nTag7);*/
     }
     
     public static void extract(String file){
@@ -342,7 +360,10 @@ public class Level3Converter_MultiClass {
         /*String dir="/Users/tyson/data_repo/trigger_data/rga/";
         String base="rec_clas_005197.evio.";*/
 
-        String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";
+        /*String dir="/Users/tyson/data_repo/trigger_data/rgc/016246/";
+        String base="rec_clas_016246.evio.";*/
+
+        String dir="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/";
         String base="rec_clas_018437.evio.";
 
         for (int file=0;file<10;file+=5){
@@ -354,8 +375,11 @@ public class Level3Converter_MultiClass {
             String zeros2="0000";
             if(file>9){zeros="000";}
             if((file+4)>9){zeros2="000";}
+            //rga, rgd
             String fName=dir+base+zeros+fileS+"-"+zeros2+fileS2+".hipo";
-            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+".h5");
+            //rgc
+            //String fName=dir+base+zeros+fileS+".hipo";
+            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+"_v2.h5");
 
         }
 

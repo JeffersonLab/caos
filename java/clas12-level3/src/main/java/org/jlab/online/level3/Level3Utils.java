@@ -142,10 +142,11 @@ public class Level3Utils {
         }
     }
 
-    public static void fillEC(INDArray dc, CompositeNode ecBank, int sector , int order){
+    public static int fillEC(INDArray dc, CompositeNode ecBank, int sector , int order){
         int   nrows = ecBank.getRows();
         int[] index = new int[]{0,0,0,0};
         double dcIncrement = 1./6.0;
+        int nHits=0;
 
         for(int row = 0; row < nrows; row++){
             
@@ -169,13 +170,16 @@ public class Level3Utils {
                     }
                     
                     
-                    if(index[3]<72&&index[2]<6)
+                    if(index[3]<72&&index[2]<6){
+                        nHits++;
                         dc.putScalar(index, energy);
+                    }
                 }
                 //----------------
                 
             }
         }
+        return nHits;
     }
     
     //energies just for testing
@@ -197,7 +201,9 @@ public class Level3Utils {
                 energies.add(energy); //for testing
  
                 //----------------
-                if(energy>=0.0&&energy<1.0&&sect==sector){
+                //=0.0004, 
+                if(energy>0.0&&energy<1.0&&sect==sector){
+                    
                     index[0]   = order;                    
                     index[1]   = 0;
                     index[2]   = (layer-1);
