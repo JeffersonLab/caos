@@ -187,9 +187,8 @@ public class Level3Trainer_MultiClass {
                 List<Double> energies = new ArrayList<Double>();
                 Level3Utils.fillEC(ECArray, nEC, ids[2], counter,energies);
                 for(double energy:energies){h.fill(energy);}
-                if(energies.size()!=0){
-                    h2.fill(energies.size());
-                }
+                h2.fill(energies.size());
+               
                 counter++;
             }
             if (added_tags == 0) {
@@ -274,21 +273,7 @@ public class Level3Trainer_MultiClass {
                 int nHits=Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
 
                 Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
-                //if tag corresponds to no track or no track+neutral
-                    //we don't care about how many hits there are
-                    if(tag!=4 && tag!=7){
-                        //if the NHits is small then this is BG that crept into the tag
-                        if(nHits>7){
-                            counter++;
-                        } else{
-                            //erase last entry as NHits was small
-                            DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
-			                ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
-                            for (int k=0;k<tags.size();k++){OUTArray.putScalar(new int[] {counter,k}, 0);}
-                        }
-                    }else{
-                        counter++;
-                    }
+                counter++;
 
             }
             File fileEC = new File(out + "EC_tag_" + String.valueOf(tag) + ".npy");
@@ -347,21 +332,24 @@ public class Level3Trainer_MultiClass {
                     Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
                     int nHits=Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
                     Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
-                    //if tag corresponds to no track or no track+neutral
-                    //we don't care about how many hits there are
-                    if(tag!=4 && tag!=7){
+                    counter++;
+
+                    //if we want to make electron sample v clean
+                    //I don't think we especially care at this point in time
+                    //keping code here though because it could be useful
+                    /*if(tag==11){
                         //if the NHits is small then this is BG that crept into the tag
                         if(nHits>7){
                             counter++;
                         } else{
                             //erase last entry as NHits was small
                             DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
-			                ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
+			                ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 72));
                             for (int k=0;k<tags.size();k++){OUTArray.putScalar(new int[] {counter,k}, 0);}
                         }
                     }else{
                         counter++;
-                    }
+                    }*/
                     
                 }
 
@@ -409,51 +397,51 @@ public class Level3Trainer_MultiClass {
 
         } else if(mode<0){
 
-            String file="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_0_v2.h5";
-            String file2="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_5_v2.h5";
+            String file="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_0.h5";
+            String file2="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_5.h5";
             String out="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/python/";
 
-            /*String file="/Users/tyson/data_repo/trigger_data/rga/daq_MC_0_v2.h5";
-            String file2="/Users/tyson/data_repo/trigger_data/rga/daq_MC_5_v2.h5";
+            /*String file="/Users/tyson/data_repo/trigger_data/rga/daq_MC_0.h5";
+            String file2="/Users/tyson/data_repo/trigger_data/rga/daq_MC_5.h5";
             String out="/Users/tyson/data_repo/trigger_data/rga/python/";*/
 
-            /*String file="/Users/tyson/data_repo/trigger_data/rgc/016246/daq_MC_0_v2.h5";
-            String file2="/Users/tyson/data_repo/trigger_data/rgc/016246/daq_MC_0_v2.h5";
+            /*String file="/Users/tyson/data_repo/trigger_data/rgc/016246/daq_MC_0.h5";
+            String file2="/Users/tyson/data_repo/trigger_data/rgc/016246/daq_MC_0.h5";
             String out="/Users/tyson/data_repo/trigger_data/rgc/016246/python/";*/
 
             
 
             List<Integer> tags= new ArrayList<>();
-            //for(int i=1;i<8;i++){tags.add(i);}
+            for(int i=1;i<8;i++){tags.add(i);}
             //tags.add(7);
-            tags.add(4);
+            //tags.add(4);
             //tags.add(2);
-            tags.add(1);
+            //tags.add(1);
             
             String net="0b";
 	        Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
 
-            //t.getEnergiesForTagsFromFile(file, 10000, tags);
-            //t.histTags(file, 10000, tags);
-            //t.saveTags(file2, out, 50000, tags);
-            //t.saveTags(file, out, 50000, tags);
+            t.getEnergiesForTagsFromFile(file, 10000, tags);
+            t.histTags(file, 10000, tags);
+            t.saveTags(file2, out, 50000, tags);
+            t.saveTags(file, out, 50000, tags);
 
 	        //t.cnnModel = net;
 
             //if not transfer learning
-	        t.initNetwork(tags.size());
+	        //t.initNetwork(tags.size());
 
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 4000;
-	        t.trainFile(file,file2,50000,tags);//10
-	        t.save("level3_MC");
+	        //t.nEpochs = 4000;
+	        //t.trainFile(file,file2,50000,tags);//10
+	        //t.save("level3_MC");
 
-            t.load("level3_MC_"+net+".network");
+            //t.load("level3_MC_"+net+".network");
             //t.load("level3_MC_2C_t2t1_"+net+"_rga_s5GeV.network");
             //t.load("level3_MC_2C_test_"+net+"_AI.network");
-	        t.evaluateFile(file2,10000,tags,true);
+	        //t.evaluateFile(file2,10000,tags,true);
 
         }else {
 

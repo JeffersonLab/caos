@@ -12,6 +12,8 @@ import j4np.hipo5.io.HipoReader;
 import j4np.hipo5.io.HipoWriter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.lang.Math;
 
@@ -225,38 +227,75 @@ public class Level3Converter_MultiClass {
             
             e.read(dsts);
 
+            //list of helpful arrays
+            List<Integer> elIndexes = new ArrayList<Integer>();
+            List<Integer> elSectors = new ArrayList<Integer>();
+            Map<Integer, Double> elpByIndex = new HashMap<Integer, Double>();
+            Map<Integer, Double> elpBySector = new HashMap<Integer, Double>();
+            List<Integer> piIndexes = new ArrayList<Integer>();
+            List<Integer> piSectors = new ArrayList<Integer>();
+            Map<Integer, Double> pipByIndex = new HashMap<Integer, Double>();
+            Map<Integer, Double> pipBySector = new HashMap<Integer, Double>();//get el pIndex and p
+            List<Integer> otherIndexes = new ArrayList<Integer>();
+            List<Integer> otherSectors = new ArrayList<Integer>();
+            Map<Integer, Double> otherpByIndex = new HashMap<Integer, Double>();
+            Map<Integer, Double> otherpBySector = new HashMap<Integer, Double>();
+
+            ////get part pIndex and p
+            for (int i = 0; i < dsts[0].getRows(); i++) {
+                int pid = dsts[0].getInt("pid", i);
+                int status = dsts[0].getInt("status", i);
+                double p=calcP(dsts[0], i);
+                if (Math.abs(status) >= 2000 && Math.abs(status) < 4000) {
+                    if (pid == 11) {
+                        elIndexes.add(i);
+                        elpByIndex.put(i, p);
+                    } else if(pid==-211){
+                        piIndexes.add(i);
+                        pipByIndex.put(i, p);
+                    } else if(pid!=2112 && pid!=22 && pid!=0){
+                        otherIndexes.add(i);
+                        otherpByIndex.put(i,p);
+                    }
+                }
+            }
+            //get part sector and put part p by sector
+            for (int k = 0; k < dsts[1].getRows(); k++) {
+                int pindex = dsts[1].getInt("pindex", k);
+                int sectorTrk = dsts[1].getInt("sector", k);
+                if (elIndexes.contains(pindex)) {
+                    elSectors.add(sectorTrk);
+                    elpBySector.put(sectorTrk, elpByIndex.get(pindex));
+                } else if (piIndexes.contains(pindex)) {
+                    piSectors.add(sectorTrk);
+                    pipBySector.put(sectorTrk, pipByIndex.get(pindex));
+                } else if (otherIndexes.contains(pindex)) {
+                    otherSectors.add(sectorTrk);
+                    otherpBySector.put(sectorTrk, otherpByIndex.get(pindex));
+                }
+                
+            }
+
             //loop over sectors
             for (int sect = 1; sect < 7; sect++) {
-                // get a list of pIndices in the sector associated with tracks
-                List<Integer> pIndices = Level3Converter_MultiClass.getPIndices_fSector(dsts[1], sect);
                 double p = 0;
                 // pid=-1 denotes no track in sector
                 int pid = -1;
-                // check if there's at least 1 track in sector
-                if (pIndices.size() > 0) {
-                    pid = dsts[0].getInt(0, 0);
-                    p = calcP(dsts[0], 0);
-                    // loop over particle indices in sector to check if there's an electron in
-                    // sector
-                    for (int i = 0; i < pIndices.size(); i++) {
-                        if (dsts[0].getInt(0, i) == 11) {
-                            pid = 11;
-                            p = calcP(dsts[0], i);
-                        }
-                        // if there's already an electron we don't want
-                        // to overwrite it
-                        // if not check if there's a pi-
-                        if (pid != 11 && dsts[0].getInt(0, i) == -211) {
-                            pid = -211;
-                            p = calcP(dsts[0], i);
-                        }
-                    }
+                if(elSectors.contains(sect)){
+                    pid=11;
+                    p=elpBySector.get(sect);}
+                else if(piSectors.contains(sect)){
+                    pid=-211;
+                    p=pipBySector.get(sect);
                 }
+                else if(otherSectors.contains(sect)){
+                    pid=2212;//choose proton pid, doesn't really matter though
+                    p=otherpBySector.get(sect);}
 
                 // get a list of pIndices in the sector associated with calorimeter
                 List<Integer> pIndices_fCal = Level3Converter_MultiClass.getPIndices_fSector_fCal(dsts[2], sect);
                 //if there's neutrals in cal pindices in sector, get their total energy
-                double nEnergy=getTotal_neutralE_inSector(pIndices_fCal,dsts[0]);
+                double nEnergy=Level3Converter_MultiClass.getTotal_neutralE_inSector(pIndices_fCal,dsts[0]);
 
                 // get DC and EC for the sector
                 Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
@@ -308,7 +347,7 @@ public class Level3Converter_MultiClass {
                 int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
                 int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);*/
 
-                int[] labels = new int[] { pid, getPTag(p), sect };
+                int[] labels = new int[] { pid, Level3Converter_MultiClass.getPTag(p), sect };
                 
                 // nodeDC.print();
                 // nodeEC.print();
@@ -379,7 +418,7 @@ public class Level3Converter_MultiClass {
             String fName=dir+base+zeros+fileS+"-"+zeros2+fileS2+".hipo";
             //rgc
             //String fName=dir+base+zeros+fileS+".hipo";
-            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+"_v2.h5");
+            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+"_v3.h5");
 
         }
 

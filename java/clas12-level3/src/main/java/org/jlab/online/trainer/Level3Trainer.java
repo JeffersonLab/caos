@@ -444,22 +444,8 @@ public class Level3Trainer {
                     Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
                     int nHits=Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
                     Level3Utils.fillLabels(OUTArray, 1, counter);
-                    
-                    // if the NHits is small then this is BG that crept into the tag
-                    if (nHits > 7) {
-                        counter++;
-                        npos++;
-                    } else {
-                        // erase last entry as NHits was small
-                        DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
-                        ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
-                        for (int k = 0; k < 2; k++) {
-                            OUTArray.putScalar(new int[] { counter, k }, 0);
-                        }
-                    }
-                        
+                    counter++;
+                    npos++;
                     
                 }
             } else {
@@ -540,13 +526,13 @@ public class Level3Trainer {
 
         } else if(mode<0){
             //String baseLoc="/Users/tyson/data_repo/trigger_data/rga/daq_MC_";
-            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_";
+            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_";
             String net="0b";
 	        Level3Trainer t = new Level3Trainer();
 
             List<String> files= new ArrayList<>();
             for (int file=0;file<5;file+=5){
-                files.add(baseLoc+String.valueOf(file)+"_v2.h5");
+                files.add(baseLoc+String.valueOf(file)+".h5");
             }
 
 	        t.cnnModel = net;
