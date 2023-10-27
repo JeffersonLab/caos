@@ -328,30 +328,34 @@ public class Level3Trainer_MultiClass {
                 //System.out.printf("event tag (%d) & ID (%d)\n", ids[1], ids[0]);
                 //System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
 
-                if (ids[1] > 5) {
-                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                    int nHits=Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                    Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
-                    counter++;
+                Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
+                counter++;
 
-                    //if we want to make electron sample v clean
-                    //I don't think we especially care at this point in time
-                    //keping code here though because it could be useful
-                    /*if(tag==11){
-                        //if the NHits is small then this is BG that crept into the tag
-                        if(nHits>7){
-                            counter++;
-                        } else{
-                            //erase last entry as NHits was small
-                            DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
-			                ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 72));
-                            for (int k=0;k<tags.size();k++){OUTArray.putScalar(new int[] {counter,k}, 0);}
-                        }
-                    }else{
-                        counter++;
-                    }*/
+                // if we want to make electron sample v clean
+                // I don't think we especially care at this point in time
+                // keping code here though because it could be useful
+                /*
+                 * if(tag==11){
+                 * //if the NHits is small then this is BG that crept into the tag
+                 * if(nHits>7){
+                 * counter++;
+                 * } else{
+                 * //erase last entry as NHits was small
+                 * DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
+                 * NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
+                 * ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
+                 * NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 72));
+                 * for (int k=0;k<tags.size();k++){OUTArray.putScalar(new int[] {counter,k},
+                 * 0);}
+                 * }
+                 * }else{
+                 * counter++;
+                 * }
+                 */
                     
-                }
+                
 
             }
 

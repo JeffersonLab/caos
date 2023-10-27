@@ -440,14 +440,13 @@ public class Level3Trainer {
             // do we care if trigger is right (&& ids[1] == ids[2])? - no
             if (ids[0] == 11) {
                 // Want particle sector to be non null (ids[2]) for positive only
-                if (ids[2] > 0) { //V2 data requires  && npos<nneg
-                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                    int nHits=Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                    Level3Utils.fillLabels(OUTArray, 1, counter);
-                    counter++;
-                    npos++;
+                Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                int nHits=Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                Level3Utils.fillLabels(OUTArray, 1, counter);
+                counter++;
+                npos++;
                     
-                }
+                
             } else {
                 // always have more neg than pos, balance dataset by only adding neg after pos
                 // do we care if trigger is wrong (&& ids[1] == ids[2])? - means training in
