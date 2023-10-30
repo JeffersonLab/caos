@@ -72,7 +72,7 @@ public class Level3Trainer_MultiClass {
     }
 
 
-    public void evaluateFile(String file, int nEvents_pSample,List<Integer> tags, Boolean doPlots) {
+    public void evaluateFile(String file, int nEvents_pSample,List<long[]> tags, Boolean doPlots) {
 
         INDArray[] inputs = this.getTagsFromFile(file,nEvents_pSample,tags);
 
@@ -85,7 +85,7 @@ public class Level3Trainer_MultiClass {
 
     }
 
-    public void trainFile(String file,String fileTest, int nEvents_pSample,List<Integer> tags) {
+    public void trainFile(String file,String fileTest, int nEvents_pSample,List<long[]> tags) {
 
         INDArray[] inputs = this.getTagsFromFile(file,nEvents_pSample,tags);
         INDArray[] inputs_test = this.getTagsFromFile(fileTest,nEvents_pSample,tags);
@@ -151,24 +151,25 @@ public class Level3Trainer_MultiClass {
         cL.draw(gEff).draw(gLoss, "same");*/
     }
 
-    public void getEnergiesForTagsFromFile(String file, int max,List<Integer> tags) {
+    public void getEnergiesForTagsFromFile(String file, int max,List<long[]> tags) {
         int added_tags=0;
         //for testing
         TGCanvas c = new TGCanvas();
         c.setTitle("Calorimeter Energy");
         TGCanvas c2 = new TGCanvas();
         c2.setTitle("Number of Hits in Calorimeter");
-        for (int tag : tags) {
+        for (long[] tag : tags) {
+            int n4=0, nOther=0;
             H1F h = new H1F("E", 101, -0.01, 1);
-            h.attr().setLineColor(tag+1);// tags start at 1
+            h.attr().setLineColor((int)tag[0]+1);// tags start at 1
             h.attr().setTitleX("Calorimeter Energy [AU]");
             h.attr().setLineWidth(3);
-            h.attr().setTitle("Tag "+String.valueOf(tag));
+            h.attr().setTitle("Tags "+Arrays.toString(tag));
             H1F h2 = new H1F("E", 51, 0, 51);
-            h2.attr().setLineColor(tag+1);// tags start at 1
+            h2.attr().setLineColor((int)tag[0]+1);// tags start at 1
             h2.attr().setTitleX("N Hits in Calorimeter");
             h2.attr().setLineWidth(3);
-            h2.attr().setTitle("Tag "+String.valueOf(tag));
+            h2.attr().setTitle("Tags "+Arrays.toString(tag));
             HipoReader r = new HipoReader();
             r.setTags(tag);
             r.open(file);
@@ -184,12 +185,32 @@ public class Level3Trainer_MultiClass {
                 event.read(nEC, 11, 2);
                 Node node = event.read(5, 4);
                 int[] ids = node.getInt();
-                List<Double> energies = new ArrayList<Double>();
-                Level3Utils.fillEC(ECArray, nEC, ids[2], counter,energies);
-                for(double energy:energies){h.fill(energy);}
-                h2.fill(energies.size());
-               
-                counter++;
+                
+
+                // Event tag==4 is much more prevalent than others
+                // in the case where we have more than one tag per class
+                // probably don't want tag 4 to dominate
+                if (event.getEventTag() == 4) {
+                    if (n4 < nOther || tag.length == 1) {
+                        List<Double> energies = new ArrayList<Double>();
+                        Level3Utils.fillEC(ECArray, nEC, ids[2], counter, energies);
+                        for (double energy : energies) {
+                            h.fill(energy);
+                        }
+                        h2.fill(energies.size());
+                        counter++;
+                        n4++;
+                    }
+                } else {
+                    List<Double> energies = new ArrayList<Double>();
+                    Level3Utils.fillEC(ECArray, nEC, ids[2], counter, energies);
+                    for (double energy : energies) {
+                        h.fill(energy);
+                    }
+                    h2.fill(energies.size());
+                    counter++;
+                    nOther++;
+                }
             }
             if (added_tags == 0) {
                 c.draw(h);
@@ -202,16 +223,17 @@ public class Level3Trainer_MultiClass {
         }
     }
 
-    public void histTags(String file, int max,List<Integer> tags) {
+    public void histTags(String file, int max,List<long[]> tags) {
         int added_tags=0;
         TGCanvas c = new TGCanvas();
         c.setTitle("Tags");
-        for (int tag : tags) {
+        for (long[] tag : tags) {
+            int n4=0,nOther=0;
             H1F h = new H1F("E", 71, 0, 71);
-            h.attr().setLineColor(tag+1);// tags start at 1
+            h.attr().setLineColor((int)tag[0]+1);// tags start at 1
             h.attr().setTitleX("Tag");
             h.attr().setLineWidth(3);
-            h.attr().setTitle("Tag "+String.valueOf(tag));
+            h.attr().setTitle("Tags "+Arrays.toString(tag));
             HipoReader r = new HipoReader();
             r.setTags(tag);
             r.open(file);
@@ -224,8 +246,21 @@ public class Level3Trainer_MultiClass {
                 r.nextEvent(event);
                 Node node = event.read(5, 4);
                 int[] ids = node.getInt();
-                h.fill(tag*10+ids[1]);
-                counter++;
+                
+                //Event tag==4 is much more prevalent than others
+                //in the case where we have more than one tag per class
+                //probably don't want tag 4 to dominate
+                if (event.getEventTag() == 4) {
+                    if (n4 < nOther || tag.length == 1) {
+                        h.fill(event.getEventTag()*10+ids[1]);
+                        counter++;
+                        n4++;
+                    }
+                } else {
+                    h.fill(event.getEventTag()*10+ids[1]);
+                    counter++;
+                    nOther++;
+                }
             }
             if (added_tags == 0) {
                 c.draw(h);
@@ -236,11 +271,12 @@ public class Level3Trainer_MultiClass {
         }
     }
 
-    public void saveTags(String file,String out, int max,List<Integer> tags) {
+    public void saveTags(String file,String out, int max,List<long[]> tags) {
 
         int added_tags=0;
 
-        for (int tag : tags) {
+        for (long[] tag : tags) {
+            int n4=0,nOther=0;
 
             HipoReader r = new HipoReader();
            
@@ -269,11 +305,25 @@ public class Level3Trainer_MultiClass {
                 Node node = event.read(5, 4);
 
                 int[] ids = node.getInt();
-                Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                int nHits=Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
 
-                Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
-                counter++;
+                //Event tag==4 is much more prevalent than others
+                //in the case where we have more than one tag per class
+                //probably don't want tag 4 to dominate
+                if (event.getEventTag() == 4) {
+                    if (n4 < nOther || tag.length == 1) {
+                        Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                        int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                        Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), added_tags, counter);// tag
+                        counter++;
+                        n4++;
+                    }
+                } else {
+                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                    int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                    Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), added_tags, counter);// tag
+                    counter++;
+                    nOther++;
+                }
 
             }
             File fileEC = new File(out + "EC_tag_" + String.valueOf(tag) + ".npy");
@@ -291,16 +341,21 @@ public class Level3Trainer_MultiClass {
 
     }
 
-    public INDArray[] getTagsFromFile(String file, int max,List<Integer> tags) {
+    public INDArray[] getTagsFromFile(String file, int max,List<long[]> tags) {
         INDArray[] inputs = new INDArray[3];
         int added_tags=0;
 
-        for (int tag : tags) {
+        for (long[] tag : tags) {
+
+            int n4=0,nOther=0;
 
             HipoReader r = new HipoReader();
            
             r.setTags(tag);
             r.open(file);
+
+            System.out.println("Reading tags:");
+            Arrays.stream(tag).forEach(System.out::println);
 
             int nMax = max;
 
@@ -328,10 +383,25 @@ public class Level3Trainer_MultiClass {
                 //System.out.printf("event tag (%d) & ID (%d)\n", ids[1], ids[0]);
                 //System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
 
-                Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                Level3Utils.fillLabels_MultiClass(OUTArray, tags, tag, counter);// tag
-                counter++;
+                //Event tag==4 is much more prevalent than others
+                //in the case where we have more than one tag per class
+                //probably don't want tag 4 to dominate
+                if (event.getEventTag() == 4) {
+                    if (n4 < nOther || tag.length == 1) {
+                        Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                        int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                        Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), added_tags, counter);// tag
+                        counter++;
+                        n4++;
+                    }
+                } else {
+                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                    int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                    Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), added_tags, counter);// tag
+                    counter++;
+                    nOther++;
+                }
+                
 
                 // if we want to make electron sample v clean
                 // I don't think we especially care at this point in time
@@ -363,7 +433,7 @@ public class Level3Trainer_MultiClass {
             System.out.print(OUTArray);
             System.out.print("\n\n");*/
 
-            System.out.printf("loaded samples (%d) for tag %d\n\n\n", counter, tag);
+            System.out.printf("loaded samples (%d)\n\n\n", counter);
             if (added_tags == 0) {
                 inputs=new INDArray[] { DCArray, ECArray, OUTArray };
             } else{
@@ -390,8 +460,8 @@ public class Level3Trainer_MultiClass {
 
         if (mode > 0) {
 
-            List<Integer> tags= new ArrayList<>();
-            for(int i=1;i<6;i++){tags.add(i);}
+            List<long[]> tags= new ArrayList<>();
+            for(int i=1;i<6;i++){tags.add(new long[]{i});}
 
             Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
             t.load("level3_model_0a_1000_epochs.network_0a.network");
@@ -415,22 +485,22 @@ public class Level3Trainer_MultiClass {
 
             
 
-            List<Integer> tags= new ArrayList<>();
-            for(int i=1;i<8;i++){tags.add(i);}
-            //tags.add(7);
-            //tags.add(4);
-            //tags.add(2);
-            //tags.add(1);
+            List<long[]> tags= new ArrayList<>();
+            for(int i=1;i<8;i++){tags.add(new long[]{i});}
+            //tags.add(new long[]{7});
+            //tags.add(new long[]{4,7});
+            //tags.add(new long[]{2,5});
+            //tags.add(new long[]{1});
             
             String net="0b";
 	        Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
 
             t.getEnergiesForTagsFromFile(file, 10000, tags);
             t.histTags(file, 10000, tags);
-            t.saveTags(file2, out, 50000, tags);
-            t.saveTags(file, out, 50000, tags);
+            //t.saveTags(file2, out, 50000, tags);
+            //t.saveTags(file, out, 50000, tags);
 
-	        //t.cnnModel = net;
+	        t.cnnModel = net;
 
             //if not transfer learning
 	        //t.initNetwork(tags.size());
@@ -442,10 +512,10 @@ public class Level3Trainer_MultiClass {
 	        //t.trainFile(file,file2,50000,tags);//10
 	        //t.save("level3_MC");
 
+            t.load("level3_"+net+".network");
             //t.load("level3_MC_"+net+".network");
-            //t.load("level3_MC_2C_t2t1_"+net+"_rga_s5GeV.network");
-            //t.load("level3_MC_2C_test_"+net+"_AI.network");
-	        //t.evaluateFile(file2,10000,tags,true);
+            //t.load("level3_MC_"+net+"_2C_t2t1.network");
+	        t.evaluateFile(file2,10000,tags,true);
 
         }else {
 

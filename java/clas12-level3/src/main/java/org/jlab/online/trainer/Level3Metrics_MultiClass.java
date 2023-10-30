@@ -5,6 +5,7 @@
 package org.jlab.online.trainer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,7 +23,7 @@ import twig.data.GraphErrors;
  */
 public class Level3Metrics_MultiClass {
     
-    public Level3Metrics_MultiClass(long NEvents,INDArray predictions, INDArray Labels,List<Integer> tags,Boolean makePlots){
+    public Level3Metrics_MultiClass(long NEvents,INDArray predictions, INDArray Labels,List<long[]> tags,Boolean makePlots){
 
 		System.out.print(Labels);
 
@@ -37,7 +38,7 @@ public class Level3Metrics_MultiClass {
     }
 
     public static INDArray getMetrics(long NEvents, INDArray predictions, INDArray Labels, double RespTh,
-			List<Integer> tags) {
+	List<long[]> tags) {
 
 		int el_tag_index=findIndexTagN(tags, 1);
 		INDArray metrics = Nd4j.zeros(2, 1);
@@ -70,7 +71,7 @@ public class Level3Metrics_MultiClass {
 		return metrics;
 	}// End of getMetrics
 
-	public static void PlotMetricsVsResponse(long NEvents, INDArray predictions, INDArray Labels,List<Integer> tags) {
+	public static void PlotMetricsVsResponse(long NEvents, INDArray predictions, INDArray Labels,List<long[]> tags) {
 
 		GraphErrors gEff = new GraphErrors();
 		gEff.attr().setMarkerColor(2);
@@ -111,15 +112,17 @@ public class Level3Metrics_MultiClass {
 
 	}// End of PlotMetricsVSResponse
 
-	public static int findIndexTagN(List<Integer> tags,int tagN){
+	public static int findIndexTagN(List<long[]> tags,int tagN){
 		int index=-1;
 		for (int i=0;i<tags.size();i++) {
-			if (tags.get(i)==tagN){index=i;}
+			for(int j=0;j<tags.get(i).length;j++){
+				if (tags.get(i)[j]==tagN){index=i;}
+			}
 		}
 		return index;
 	}
 
-    public static void PlotResponse(long NEvents, INDArray output, INDArray Labels, List<Integer> tags) {
+    public static void PlotResponse(long NEvents, INDArray output, INDArray Labels, List<long[]> tags) {
 
 		int index_tag1=findIndexTagN(tags,1);
 
@@ -128,15 +131,15 @@ public class Level3Metrics_MultiClass {
 
 		int tag_counter=0;
 		//loop over tags/classes
-		for (int tag : tags) {
+		for (long[] tag : tags) {
 			H1F hResp = new H1F("Positive Sample", 101, 0, 1.01);
-			hResp.attr().setLineColor(tag+1);//tags start at 1
+			hResp.attr().setLineColor((int)tag[0]+1);//tags start at 1
 			/*if (tag == 1) {
 				hResp.attr().setFillColor(2);
 			}*/
 			hResp.attr().setLineWidth(3);
 			hResp.attr().setTitleX("Response");
-			hResp.attr().setTitle("Tag "+String.valueOf(tag));
+			hResp.attr().setTitle("Tags "+Arrays.toString(tag));
 
 			//System.out.printf("\n Plot response in class %d of tag %d \n\n",index_tag1,tag);
 

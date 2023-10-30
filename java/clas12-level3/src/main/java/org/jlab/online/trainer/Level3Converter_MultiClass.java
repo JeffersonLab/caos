@@ -402,8 +402,11 @@ public class Level3Converter_MultiClass {
         /*String dir="/Users/tyson/data_repo/trigger_data/rgc/016246/";
         String base="rec_clas_016246.evio.";*/
 
-        String dir="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/";
+        String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";
         String base="rec_clas_018437.evio.";
+
+        /*String dir="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/";
+        String base="rec_clas_018437.evio.";*/
 
         for (int file=0;file<10;file+=5){
     
@@ -418,7 +421,7 @@ public class Level3Converter_MultiClass {
             String fName=dir+base+zeros+fileS+"-"+zeros2+fileS2+".hipo";
             //rgc
             //String fName=dir+base+zeros+fileS+".hipo";
-            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+"_v3.h5");
+            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+".h5");
 
         }
 
