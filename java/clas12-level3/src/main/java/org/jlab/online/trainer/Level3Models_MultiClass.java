@@ -185,7 +185,7 @@ public class Level3Models_MultiClass {
             case "0a": return Level3Models_MultiClass.getModel0a(nClasses);
             case "0b": return Level3Models_MultiClass.getModel0b(nClasses);
             case "0c": return Level3Models_MultiClass.getModel0c(nClasses);
-            case "0d": return Level3Models_MultiClass.getModel0c(nClasses);
+            case "0d": return Level3Models_MultiClass.getModel0d(nClasses);
             default: return null;
         }
     }
