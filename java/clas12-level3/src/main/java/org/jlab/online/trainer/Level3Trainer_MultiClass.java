@@ -19,6 +19,7 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.deeplearning4j.datasets.iterator.loader.MultiDataSetLoaderIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.jlab.online.level3.Level3Utils;
@@ -26,8 +27,11 @@ import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 //import org.deeplearning4j.parallelism.ParallelInference;
 //import org.deeplearning4j.parallelism.inference.InferenceMode;
+import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
 
 import twig.data.GraphErrors;
 import twig.data.H1F;
@@ -79,21 +83,21 @@ public class Level3Trainer_MultiClass {
 
     public void evaluateFile(String file, int nEvents_pSample,List<long[]> tags, Boolean doPlots) {
 
-        INDArray[] inputs = this.getTagsFromFile(file,nEvents_pSample,tags);
+        MultiDataSet data = this.getTagsFromFile(file,nEvents_pSample,tags);
 
-        INDArray[] outputs = network.output(inputs[0], inputs[1]);
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
 
-        long nTestEvents = inputs[0].shape()[0];
+        long nTestEvents = data.getFeatures()[0].shape()[0];
 
         // System.out.println("Number of Test Events "+nTestEvents);
-        Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], inputs[2],tags,doPlots);
+        Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], data.getLabels()[0],tags,doPlots);
 
     }
 
-    public void trainFile(String file,String fileTest, int nEvents_pSample, int nEvents_pSample_test,List<long[]> tags) {
+    public void trainFile(String file,String fileTest, int nEvents_pSample, int nEvents_pSample_test,int batchSize,List<long[]> tags) {
 
-        INDArray[] inputs = this.getTagsFromFile(file,nEvents_pSample,tags);
-        INDArray[] inputs_test = this.getTagsFromFile(fileTest,nEvents_pSample_test,tags);
+        MultiDataSet data = this.getTagsFromFile(file,nEvents_pSample,tags);
+        MultiDataSet data_test = this.getTagsFromFile(fileTest,nEvents_pSample_test,tags);
 
         /*HttpServerConfig config = new HttpServerConfig();
         config.serverPort = 8525;
@@ -129,14 +133,24 @@ public class Level3Trainer_MultiClass {
 
         for (int i = 0; i < nEpochs; i++) {
             long then = System.currentTimeMillis();
-            network.fit(new INDArray[] { inputs[0], inputs[1] }, new INDArray[] { inputs[2] });
+
+            int nBatches=nEvents_pSample/batchSize;
+            for(int batch=0;batch<nBatches;batch++){
+                int bS=batch*batchSize;
+		        int bE=(batch+1)*batchSize;
+                INDArray DC_b=data.getFeatures()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+		        INDArray EC_b=data.getFeatures()[1].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray Lab_b=data.getLabels()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                network.fit(new INDArray[] {DC_b,EC_b}, new INDArray[] {Lab_b});
+            }
+
             long now = System.currentTimeMillis();
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d ms\n",
                     i, network.score(), now - then);
             //gLoss.addPoint(i,network.score(), 0, 0);
-            INDArray[] outputs = network.output(inputs_test[0], inputs_test[1]);
+            INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1]);
             
-		    eval.eval(inputs_test[2], outputs[0]);
+		    eval.eval(data_test.getLabels()[0], outputs[0]);
             System.out.printf("Test Purity: %f, Efficiency: %f\n",eval.precision(),eval.recall());
             //gPur.addPoint(i, eval.precision(), 0, 0);
 			//gEff.addPoint(i, eval.recall(), 0, 0);
@@ -346,8 +360,9 @@ public class Level3Trainer_MultiClass {
 
     }
 
-    public INDArray[] getTagsFromFile(String file, int max,List<long[]> tags) {
-        INDArray[] inputs = new INDArray[3];
+    public MultiDataSet getTagsFromFile(String file, int max,List<long[]> tags) {
+        INDArray[] inputs = new INDArray[2];
+        INDArray[] outputs = new INDArray[1];
         int added_tags=0;
 
         for (long[] tag : tags) {
@@ -440,24 +455,19 @@ public class Level3Trainer_MultiClass {
 
             System.out.printf("loaded samples (%d)\n\n\n", counter);
             if (added_tags == 0) {
-                inputs=new INDArray[] { DCArray, ECArray, OUTArray };
+                inputs=new INDArray[] { DCArray, ECArray};
+                outputs=new INDArray[]{OUTArray };
             } else{
                 inputs[0] = Nd4j.vstack(inputs[0], DCArray);
                 inputs[1] = Nd4j.vstack(inputs[1], ECArray);
-                inputs[2] = Nd4j.vstack(inputs[2], OUTArray);
+                outputs[0] = Nd4j.vstack(outputs[0], OUTArray);
             }
             added_tags++;
         }
-
-        //can't figure this out
-        //List<int[]> dimensions = Arrays.asList(new int[]{0}, new int[]{0}, new int[]{0});
-        //Nd4j.shuffle(Arrays.asList(inputs[0], inputs[1],inputs[2]), new Random(12345), dimensions);
-        //Random r=new Random(12345);
-        /*Nd4j.shuffle(inputs[0], new Random(12345), 0);
-        Nd4j.shuffle(inputs[1], new Random(12345), 0);
-        Nd4j.shuffle(inputs[2], new Random(12345), 0);*/
         
-        return inputs;
+        MultiDataSet dataset = new MultiDataSet(inputs,outputs);
+        dataset.shuffle();
+        return dataset;
     }
 
     public static void main(String[] args) {
@@ -476,9 +486,12 @@ public class Level3Trainer_MultiClass {
 
         } else if(mode<0){
 
-            String file="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_0.h5";
+            String file="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_0.h5";
+            String file2="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_5.h5";
+            
+            /*String file="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_0.h5";
             String file2="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_5.h5";
-            String out="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/python/";
+            String out="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/python/";*/
 
             /*String file="/Users/tyson/data_repo/trigger_data/rga/daq_MC_0.h5";
             String file2="/Users/tyson/data_repo/trigger_data/rga/daq_MC_5.h5";
@@ -512,21 +525,21 @@ public class Level3Trainer_MultiClass {
 	        t.cnnModel = net;
 
             //if not transfer learning
-	        //t.initNetwork(tags.size());
+	        t.initNetwork(tags.size());
 
             //transfer learning
             //t.load("level3_"+net+".network");
 
 	        t.nEpochs = 1000;
-	        //t.trainFile(file,file2,1000,1000,tags);//10
-	        //t.save("level3_MC_test");
+	        t.trainFile(file,file2,100000,1000,10000,tags);//10
+	        t.save("level3_MC");
 
             //t.load("level3_"+net+".network");
-            //t.load("level3_MC_test_"+net+".network");
+            t.load("level3_MC_"+net+".network");
             //t.load("level3_MC_"+net+"_3C_t7_t2t3t4_t1.network");
-            t.load("level3_MC_"+net+"_3C_t5t6t7_t2t3t4_t1.network");
+            //t.load("level3_MC_"+net+"_3C_t5t6t7_t2t3t4_t1.network");
             //t.load("level3_MC_"+net+"_4C_t6t7_t3t4_t2t5_t1.network");
-	        t.evaluateFile(file2,10000,tags,true);
+	        t.evaluateFile(file2,10000,tags,false);
 
         }else {
 

@@ -524,9 +524,10 @@ public class Level3Trainer {
             t.evaluateFileNuevo(file, 10000);
 
         } else if(mode<0){
-            //String baseLoc="/Users/tyson/data_repo/trigger_data/rga/daq_MC_";
-            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_";
-            //String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437/daq_MC_";
+
+            String baseLoc="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_";
+
+            //String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_";
             String net="0b";
 	        Level3Trainer t = new Level3Trainer();
 
@@ -543,15 +544,15 @@ public class Level3Trainer {
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        //t.nEpochs = 4000;
-	        //t.trainManyFilesNuevo(files,100000);//10
-	        //t.save("level3");
+	        t.nEpochs = 2000;
+	        t.trainManyFilesNuevo(files,100000);//10
+	        t.save("level3");
 	    
 	        String file2=baseLoc+"5.h5";
 
-	        t.load("level3_"+net+".network");//_rga _noAI
+	        //t.load("level3_"+net+".network");//_rga _noAI
             //t.load("etc/networks/network-level3-0c-rgc.network");
-	        t.evaluateFileNuevo(file2,100000);
+	        //t.evaluateFileNuevo(file2,100000);
 
         }else {
 
