@@ -29,8 +29,8 @@ public class Level3Converter_MultiClass {
     
     public static void analyzer(String file){
         
-        CompositeNode nodeRC = new CompositeNode(  5, 1,  "b", 10);
-        CompositeNode nodeET = new CompositeNode(  5, 2,  "b", 10);
+        CompositeNode nodeRC = new CompositeNode(  5, 1,  "b", 25);
+        CompositeNode nodeET = new CompositeNode(  5, 2,  "b", 25);
         HipoReader r = new HipoReader(file);
         Event e = new Event();
         
@@ -49,16 +49,19 @@ public class Level3Converter_MultiClass {
             }
         }
     }
-    
+
     public static int[] convertTriggerLong(long  bits){
-        int[] trigger = new int[7];
+        int[] trigger = new int[21];
+        
+        //System.out.printf("%X - %X\n", bits,bits&0xF);
         for(int i = 0; i < trigger.length; i++) {
             trigger[i] = 0;
-            if( ((bits>>i)&(1L)) != 0L) trigger[i] = 1;
+            if( ((bits>>i)&(1L)) != 0L) trigger[i] = 1;           
             //System.out.println(Arrays.toString(trigger));
         }
         return trigger;
     }
+
     public static boolean contains(int[] array, int value){
         for(int i = 0; i < array.length; i++) if(array[i]==value) return true;
         return false;

@@ -57,9 +57,9 @@ public class Level3Tester {
     }
 
     public static int isTriggerInSector(int[] trigger,int sector){
-        if(trigger[0]<1) return 0;
-        for(int s = 1; s < trigger.length; s++) 
-            if(trigger[s]>0 && s==sector) return 1;              
+        if(trigger[7]<1) return 0;
+        for(int s = 8; s < 14; s++) 
+            if(trigger[s]>0 && (s-7)==sector) return 1;              
         return 0;
     }
    
@@ -89,8 +89,8 @@ public class Level3Tester {
             e.read(banks);
             e.read(dsts);
 
-            //long bits = banks[2].getLong("trigger", 0);
-            //int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
+            long bits = banks[2].getLong("trigger", 0);
+            int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
             //System.out.println(Arrays.toString(trigger));
 
             //list of helpful arrays
@@ -128,7 +128,6 @@ public class Level3Tester {
                 int gotEl = 0;
                 double q2=0;
                 if(elSectors.contains(sect)){
-                    nEls++;
                     gotEl=1;
                     q2=q2BySector.get(sect);
                 }
@@ -147,8 +146,11 @@ public class Level3Tester {
                     INDArray EventECArray=ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.all());
 
                     if (EventDCArray.any() && EventECArray.any()) { // check that the images aren't all empty
-                        long hasL1 = (banks[2].getLong("trigger", 0) & (1 << sect));
-                        if(hasL1>0){nL1++;}
+
+                        long hasL1 = isTriggerInSector(trigger, sect);
+                        if(hasL1>0){nL1++;} 
+                        if(gotEl>0){nEls++;}
+                        
                         OUTArray.putScalar(new int[] { counter, 0 }, gotEl);
                         OUTArray.putScalar(new int[] { counter, 1 }, hasL1);
                         OUTArray.putScalar(new int[]{counter,2},q2);
@@ -165,7 +167,7 @@ public class Level3Tester {
         //System.out.print(OUTArray);
         //System.out.print(DCArray);
         //System.out.print(ECArray);
-        System.out.printf("counter, nEl, nL1 %d\n\n",counter,nEls,nL1);
+        System.out.printf("counter %d, nEl %d, nL1 %d\n\n",counter,nEls,nL1);
 
 
         INDArray[] inputs = new INDArray[2];
@@ -233,8 +235,8 @@ public class Level3Tester {
         }
 	    double Eff=TP/(TP+FN);
 	    metrics.putScalar(new int[] {0,0}, Eff);
-        /*double Eff_l1=TP_l1/(TP_l1+FN_l1);
-	    metrics.putScalar(new int[] {1,0}, Eff_l1);*/
+        double Eff_l1=TP_l1/(TP_l1+FN_l1);
+	    metrics.putScalar(new int[] {1,0}, Eff_l1);
 
         return metrics;
     }
@@ -276,10 +278,10 @@ public class Level3Tester {
 	    double Eff=TP/(TP+FN);
 	    metrics.putScalar(new int[] {0,0}, Pur);
 	    metrics.putScalar(new int[] {1,0}, Eff);
-        /*double Pur_l1=TP_l1/(TP_l1+FP_l1);
+        double Pur_l1=TP_l1/(TP_l1+FP_l1);
 	    double Eff_l1=TP_l1/(TP_l1+FN_l1);
         metrics.putScalar(new int[] {2,0}, Pur_l1);
-	    metrics.putScalar(new int[] {3,0}, Eff_l1);*/
+	    metrics.putScalar(new int[] {3,0}, Eff_l1);
 
         /*System.out.printf("Theres %d electrons in sample\n", nEls);
         System.out.printf("L1 trigger fired %d times in sample\n", nTrig);*/
@@ -355,8 +357,7 @@ public class Level3Tester {
 
         TGCanvas c = new TGCanvas();
         c.setTitle("Efficiency vs Q^2");
-        c.draw(gEff);
-        //c.draw(gEff_l1, "same");
+        c.draw(gEff).draw(gEff_l1, "same");
         c.region().showLegend(0.05, 0.95);
         
 
@@ -380,7 +381,7 @@ public class Level3Tester {
         Level3Tester t=new Level3Tester();
         t.load("level3_0b.network");
         int elClass=1;
-        MultiDataSet data=Level3Tester.getData(file2, 100000,10.547);
+        MultiDataSet data=Level3Tester.getData(file2, 1000000,10.547);
         double bestTh=t.findBestThreshold(data,elClass,0.995);
         t.compareL1ToL3(data, bestTh, elClass);//0.09
         
