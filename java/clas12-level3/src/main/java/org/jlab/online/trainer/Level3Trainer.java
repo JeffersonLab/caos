@@ -19,7 +19,9 @@ import java.util.logging.Logger;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.jlab.online.level3.Level3Utils;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import twig.data.GraphErrors;
@@ -245,26 +247,32 @@ public class Level3Trainer {
         }
     }
 
-    public void trainManyFilesNuevo(List<String> files, int nEvents, int batchSize) {
+    public void trainManyFilesNuevo(List<String> files,String fileTest, int nEvents, int nEventsTest, int batchSize) {
 
         // INDArray[] inputs = this.getFromFileNuevo(files.get(0), nEvents);
 
-        INDArray[] inputs = new INDArray[3];
+        INDArray[] inputs_train = new INDArray[2];
+        INDArray[] outputs_train = new INDArray[1];
         int count = 0;
         for (String file : files) {
             INDArray[] inputs_temp = this.getFromFileNuevo(file, nEvents);
             if (count == 0) {
-                inputs[0] = inputs_temp[0];
-                inputs[1] = inputs_temp[1];
-                inputs[2] = inputs_temp[2];
+                inputs_train[0] = inputs_temp[0];
+                inputs_train[1] = inputs_temp[1];
+                outputs_train[0] = inputs_temp[2];
             } else {
-                inputs[0] = Nd4j.vstack(inputs[0], inputs_temp[0]);
-                inputs[1] = Nd4j.vstack(inputs[1], inputs_temp[1]);
-                inputs[2] = Nd4j.vstack(inputs[2], inputs_temp[2]);
+                inputs_train[0] = Nd4j.vstack(inputs_train[0], inputs_temp[0]);
+                inputs_train[1] = Nd4j.vstack(inputs_train[1], inputs_temp[1]);
+                outputs_train[0] = Nd4j.vstack(outputs_train[0], inputs_temp[2]);
             }
         }
 
-        long NTotEvents = inputs[0].shape()[0];
+        MultiDataSet data = new MultiDataSet(inputs_train,outputs_train);
+        data.shuffle();
+
+        INDArray[] inputs_test = this.getFromFileNuevo(fileTest, nEvents);
+
+        long NTotEvents = inputs_train[0].shape()[0];
 
         HttpServerConfig config = new HttpServerConfig();
         config.serverPort = 8525;
@@ -277,6 +285,8 @@ public class Level3Trainer {
         // HttpDataServer.getInstance().getDirectory().list();
         HttpDataServer.getInstance().getDirectory().show();
 
+        Evaluation eval = new Evaluation(2);
+
         for (int i = 0; i < nEpochs; i++) {
             long then = System.currentTimeMillis();
 
@@ -284,9 +294,9 @@ public class Level3Trainer {
             for(int batch=0;batch<nBatches;batch++){
                 int bS=batch*batchSize;
 		        int bE=(batch+1)*batchSize;
-                INDArray DC_b=inputs[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-		        INDArray EC_b=inputs[1].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-                INDArray Lab_b=inputs[2].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
+                INDArray DC_b=data.getFeatures()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+		        INDArray EC_b=data.getFeatures()[1].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray Lab_b=data.getLabels()[2].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
                 network.fit(new INDArray[] {DC_b,EC_b}, new INDArray[] {Lab_b});
             }
 
@@ -294,6 +304,12 @@ public class Level3Trainer {
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
                     i, network.score(), now - then);
             graph.addPoint(i, network.score());
+
+            INDArray[] outputs = network.output(inputs_test[0], inputs_test[1]);
+            
+		    eval.eval(inputs_test[2], outputs[0]);
+            System.out.printf("Test Purity: %f, Efficiency: %f\n",eval.precision(),eval.recall());
+
             if (i % 500 == 0 && i != 0) {
                 this.save("tmp_models/level3_model_" + this.cnnModel + "_" + i + "_epochs.network");
             }
@@ -538,6 +554,7 @@ public class Level3Trainer {
         } else if(mode<0){
 
             String baseLoc="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_";
+            String file2=baseLoc+"5.h5";
 
             //String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_";
             String net="0b";
@@ -557,10 +574,10 @@ public class Level3Trainer {
             //t.load("level3_"+net+".network");
 
 	        t.nEpochs = 2000;
-	        t.trainManyFilesNuevo(files,600000,100000);//10
+	        t.trainManyFilesNuevo(files,file2,400000,10000,50000);//10
 	        t.save("level3");
 	    
-	        String file2=baseLoc+"5.h5";
+	        
 
 	        //t.load("level3_"+net+".network");//_rga _noAI
             //t.load("etc/networks/network-level3-0c-rgc.network");
@@ -585,7 +602,7 @@ public class Level3Trainer {
             t.nEpochs = parser.getOption("-e").intValue();
             int max = parser.getOption("-max").intValue();
 
-            t.trainManyFilesNuevo(parser.getInputList(), max,10000);
+            t.trainManyFilesNuevo(parser.getInputList(),parser.getInputList().get(0), max,10000,10000);
             t.save(parser.getOption("-n").stringValue());
 
         }

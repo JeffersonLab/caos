@@ -57,9 +57,9 @@ public class Level3Tester {
     }
 
     public static int isTriggerInSector(int[] trigger,int sector){
-        if(trigger[7]<1) return 0;
-        for(int s = 8; s < 14; s++) 
-            if(trigger[s]>0 && (s-7)==sector) return 1;              
+        //if(trigger[8]<1) return 0;
+        for(int s = 1; s < 8; s++) //8 to <14 with DC roads, 15 to <21 without, rga is 1 to 8
+            if(trigger[s]>0 && (s)==sector) return 1;     //s-7 with DC roads, s-14 without      
         return 0;
     }
    
@@ -338,14 +338,14 @@ public class Level3Tester {
         gEff.attr().setMarkerColor(2);
         gEff.attr().setMarkerSize(10);
         gEff.attr().setTitle("Level3 Efficiency");
-        gEff.attr().setTitleX("Response");
+        gEff.attr().setTitleX("Q^2 [GeV^2]");
         gEff.attr().setTitleY("Metrics");
 
         GraphErrors gEff_l1 = new GraphErrors();
         gEff_l1.attr().setMarkerColor(4);
         gEff_l1.attr().setMarkerSize(10);
         gEff_l1.attr().setTitle("Level1 Efficiency");
-        gEff_l1.attr().setTitleX("Response");
+        gEff_l1.attr().setTitleX("Q^2 [GeV^2]");
         gEff_l1.attr().setTitleY("Metrics");
 
         double q2Step=1.0;
