@@ -270,7 +270,7 @@ public class Level3Trainer {
         MultiDataSet data = new MultiDataSet(inputs_train,outputs_train);
         data.shuffle();
 
-        INDArray[] inputs_test = this.getFromFileNuevo(fileTest, nEvents);
+        INDArray[] inputs_test = this.getFromFileNuevo(fileTest, nEventsTest);
 
         long NTotEvents = inputs_train[0].shape()[0];
 
@@ -296,7 +296,7 @@ public class Level3Trainer {
 		        int bE=(batch+1)*batchSize;
                 INDArray DC_b=data.getFeatures()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
 		        INDArray EC_b=data.getFeatures()[1].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-                INDArray Lab_b=data.getLabels()[2].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
+                INDArray Lab_b=data.getLabels()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
                 network.fit(new INDArray[] {DC_b,EC_b}, new INDArray[] {Lab_b});
             }
 
@@ -553,10 +553,11 @@ public class Level3Trainer {
 
         } else if(mode<0){
 
-            String baseLoc="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_";
+            //String baseLoc="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_";
+            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_";
+
             String file2=baseLoc+"5.h5";
 
-            //String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_";
             String net="0b";
 	        Level3Trainer t = new Level3Trainer();
 
@@ -573,15 +574,13 @@ public class Level3Trainer {
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 2000;
-	        t.trainManyFilesNuevo(files,file2,400000,10000,50000);//10
-	        t.save("level3");
+	        //t.nEpochs = 2000;
+	        //t.trainManyFilesNuevo(files,file2,400000,10000,50000);//10
+	        //t.save("level3");
 	    
-	        
-
-	        //t.load("level3_"+net+".network");//_rga _noAI
+	        t.load("level3_"+net+".network");//_rga _noAI
             //t.load("etc/networks/network-level3-0c-rgc.network");
-	        //t.evaluateFileNuevo(file2,100000);
+	        t.evaluateFileNuevo(file2,100000);
 
         }else {
 

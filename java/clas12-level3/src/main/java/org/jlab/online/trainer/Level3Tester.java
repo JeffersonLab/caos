@@ -58,8 +58,8 @@ public class Level3Tester {
 
     public static int isTriggerInSector(int[] trigger,int sector){
         //if(trigger[8]<1) return 0;
-        for(int s = 1; s < 8; s++) //8 to <14 with DC roads, 15 to <21 without, rga is 1 to 8
-            if(trigger[s]>0 && (s)==sector) return 1;     //s-7 with DC roads, s-14 without      
+        for(int s = 8; s < 14; s++) //8 to <14 with DC roads, 15 to <21 without, rga is 1 to 8
+            if(trigger[s]>0 && (s-7)==sector) return 1;     //s-7 with DC roads, s-14 without      
         return 0;
     }
    
@@ -182,12 +182,12 @@ public class Level3Tester {
 
     public static void PlotResponse(INDArray output, INDArray Labels,int elClass) {
         long NEvents = output.shape()[0];
-        H1F hRespPos = new H1F("Positive Sample", 100, 0, 1);
+        H1F hRespPos = new H1F("Electron in Sector", 100, 0, 1);
         hRespPos.attr().setLineColor(2);
         hRespPos.attr().setFillColor(2);
         hRespPos.attr().setLineWidth(3);
         hRespPos.attr().setTitleX("Response");
-        H1F hRespNeg = new H1F("Negative Sample", 100, 0, 1);
+        H1F hRespNeg = new H1F("No Electron in Sector", 100, 0, 1);
         hRespNeg.attr().setLineColor(5);
         hRespNeg.attr().setLineWidth(3);
         hRespNeg.attr().setTitleX("Response");
@@ -380,8 +380,9 @@ public class Level3Tester {
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
         Level3Tester t=new Level3Tester();
         t.load("level3_0b.network");
-        int elClass=1;
-        MultiDataSet data=Level3Tester.getData(file2, 1000000,10.547);
+        //t.load("level3_MC_0b_3C_t5t6t7_t2t3t4_t1.network");
+        int elClass=1;//1 for 2 classes, 2 for 3 classes
+        MultiDataSet data=Level3Tester.getData(file2, 100000,10.547);
         double bestTh=t.findBestThreshold(data,elClass,0.995);
         t.compareL1ToL3(data, bestTh, elClass);//0.09
         
