@@ -245,7 +245,7 @@ public class Level3Trainer {
         }
     }
 
-    public void trainManyFilesNuevo(List<String> files, int nEvents) {
+    public void trainManyFilesNuevo(List<String> files, int nEvents, int batchSize) {
 
         // INDArray[] inputs = this.getFromFileNuevo(files.get(0), nEvents);
 
@@ -264,6 +264,8 @@ public class Level3Trainer {
             }
         }
 
+        long NTotEvents = inputs[0].shape()[0];
+
         HttpServerConfig config = new HttpServerConfig();
         config.serverPort = 8525;
         HttpDataServer.create(config);
@@ -277,7 +279,17 @@ public class Level3Trainer {
 
         for (int i = 0; i < nEpochs; i++) {
             long then = System.currentTimeMillis();
-            network.fit(new INDArray[] { inputs[0], inputs[1] }, new INDArray[] { inputs[2] });
+
+            long nBatches=NTotEvents/batchSize;
+            for(int batch=0;batch<nBatches;batch++){
+                int bS=batch*batchSize;
+		        int bE=(batch+1)*batchSize;
+                INDArray DC_b=inputs[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+		        INDArray EC_b=inputs[1].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray Lab_b=inputs[2].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
+                network.fit(new INDArray[] {DC_b,EC_b}, new INDArray[] {Lab_b});
+            }
+
             long now = System.currentTimeMillis();
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d\n",
                     i, network.score(), now - then);
@@ -545,7 +557,7 @@ public class Level3Trainer {
             //t.load("level3_"+net+".network");
 
 	        t.nEpochs = 2000;
-	        t.trainManyFilesNuevo(files,100000);//10
+	        t.trainManyFilesNuevo(files,600000,100000);//10
 	        t.save("level3");
 	    
 	        String file2=baseLoc+"5.h5";
@@ -573,7 +585,7 @@ public class Level3Trainer {
             t.nEpochs = parser.getOption("-e").intValue();
             int max = parser.getOption("-max").intValue();
 
-            t.trainManyFilesNuevo(parser.getInputList(), max);
+            t.trainManyFilesNuevo(parser.getInputList(), max,10000);
             t.save(parser.getOption("-n").stringValue());
 
         }

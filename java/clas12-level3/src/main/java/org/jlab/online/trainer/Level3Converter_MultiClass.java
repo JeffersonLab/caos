@@ -12,6 +12,7 @@ import j4np.hipo5.io.HipoReader;
 import j4np.hipo5.io.HipoWriter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -106,7 +107,7 @@ public class Level3Converter_MultiClass {
     }
 
     public static double getPartE(Bank PartBank, int pIndex,double massPart){
-        double p=calcP(PartBank, pIndex);
+        double p=calcPThetaPhi(PartBank, pIndex)[0];
         double energy=Math.sqrt(p*p+massPart*massPart);
         return energy;
     }
@@ -159,12 +160,15 @@ public class Level3Converter_MultiClass {
         return 0;
     }
 
-    public static double calcP(Bank PartBank,int pIndex){
+    public static double[] calcPThetaPhi(Bank PartBank,int pIndex){
         double px=PartBank.getFloat("px", pIndex);
         double py=PartBank.getFloat("py", pIndex);
         double pz=PartBank.getFloat("pz", pIndex);
-        double p=Math.sqrt(px*px+py*py+pz*pz);
-        return p;
+        double[] pthetaphi= new double[3];
+        pthetaphi[0]=Math.sqrt(px*px+py*py+pz*pz);
+        pthetaphi[1]=Math.acos(pz/pthetaphi[0]);//Math.atan2(Math.sqrt(px*px+py*py),pz);
+        pthetaphi[1]=Math.atan2(py,px);
+        return pthetaphi;
     }
 
 
@@ -245,7 +249,7 @@ public class Level3Converter_MultiClass {
             for (int i = 0; i < dsts[0].getRows(); i++) {
                 int pid = dsts[0].getInt("pid", i);
                 int status = dsts[0].getInt("status", i);
-                double p=calcP(dsts[0], i);
+                double p=calcPThetaPhi(dsts[0], i)[0];
                 if (Math.abs(status) >= 2000 && Math.abs(status) < 4000) {
                     if (pid == 11) {
                         elIndexes.add(i);
@@ -345,7 +349,8 @@ public class Level3Converter_MultiClass {
                 //eg requiring conventional trigger to be wrong
                 /*long bits = banks[2].getLong("trigger", 0);
                 int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
-                int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);*/
+                int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);
+                System.out.println(Arrays.toString(trigger));*/
 
                 int[] labels = new int[] { pid, Level3Converter_MultiClass.getPTag(p), sect };
                 

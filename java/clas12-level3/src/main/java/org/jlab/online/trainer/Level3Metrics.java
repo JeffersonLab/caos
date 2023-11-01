@@ -99,6 +99,7 @@ public class Level3Metrics {
 	TGCanvas c = new TGCanvas();
 	c.setTitle("Metrics vs Response");
 	c.draw(gAcc).draw(gEff,"same").draw(gPur,"same");
+	c.region().showLegend(0.05, 0.95);
 		
 	return bestRespTh;
     }//End of PlotMetricsVSResponse
@@ -125,6 +126,7 @@ public class Level3Metrics {
 	TGCanvas c = new TGCanvas();
 	c.setTitle("Response");
 	c.draw(hRespPos).draw(hRespNeg,"same");
+	c.region().showLegend(0.05, 0.95);
 		
     }//End of PlotResponse
 

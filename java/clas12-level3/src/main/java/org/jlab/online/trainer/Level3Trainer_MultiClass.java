@@ -140,7 +140,7 @@ public class Level3Trainer_MultiClass {
 		        int bE=(batch+1)*batchSize;
                 INDArray DC_b=data.getFeatures()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
 		        INDArray EC_b=data.getFeatures()[1].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-                INDArray Lab_b=data.getLabels()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray Lab_b=data.getLabels()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
                 network.fit(new INDArray[] {DC_b,EC_b}, new INDArray[] {Lab_b});
             }
 
@@ -530,7 +530,7 @@ public class Level3Trainer_MultiClass {
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 1000;
+	        t.nEpochs = 2000;
 	        t.trainFile(file,file2,100000,1000,10000,tags);//10
 	        t.save("level3_MC");
 

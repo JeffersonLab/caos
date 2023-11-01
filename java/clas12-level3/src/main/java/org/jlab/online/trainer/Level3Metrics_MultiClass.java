@@ -109,6 +109,7 @@ public class Level3Metrics_MultiClass {
 		TGCanvas c = new TGCanvas();
 		c.setTitle("Electron Metrics vs Response");
 		c.draw(gEff).draw(gPur, "same");
+		c.region().showLegend(0.05, 0.95);
 
 	}// End of PlotMetricsVSResponse
 
@@ -157,12 +158,14 @@ public class Level3Metrics_MultiClass {
 
 			if(tag_counter==0){
 				c.draw(hResp);
+				
 			} else{
 				c.draw(hResp,"same");
 			}
 			tag_counter++;
 
 		}
+		c.region().showLegend(0.05, 0.95);
 		
     }//End of PlotResponse
 
