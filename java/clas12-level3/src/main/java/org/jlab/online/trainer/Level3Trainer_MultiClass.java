@@ -177,50 +177,36 @@ public class Level3Trainer_MultiClass {
         c.setTitle("Calorimeter Energy");
         TGCanvas c2 = new TGCanvas();
         c2.setTitle("Number of Hits in Calorimeter");
-        for (long[] tag : tags) {
-            int n4=0, nOther=0;
+        for (long[] tag_arr : tags) {
+            int n4 = 0, nOther = 0;
             H1F h = new H1F("E", 101, -0.01, 1);
-            h.attr().setLineColor((int)tag[0]+1);// tags start at 1
+            h.attr().setLineColor((int) tag_arr[0] + 1);// tags start at 1
             h.attr().setTitleX("Calorimeter Energy [AU]");
             h.attr().setLineWidth(3);
-            h.attr().setTitle("Tags "+Arrays.toString(tag));
+            h.attr().setTitle("Tags " + Arrays.toString(tag_arr));
             H1F h2 = new H1F("E", 51, 0, 51);
-            h2.attr().setLineColor((int)tag[0]+1);// tags start at 1
+            h2.attr().setLineColor((int) tag_arr[0] + 1);// tags start at 1
             h2.attr().setTitleX("N Hits in Calorimeter");
             h2.attr().setLineWidth(3);
-            h2.attr().setTitle("Tags "+Arrays.toString(tag));
-            HipoReader r = new HipoReader();
-            r.setTags(tag);
-            r.open(file);
-            int nMax = max;
-            if (r.entries() < max)
-                nMax = r.entries();
-            CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
-            INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-            Event event = new Event();
-            int counter = 0;
-            while (r.hasNext() == true && counter < nMax) {
-                r.nextEvent(event);
-                event.read(nEC, 11, 2);
-                Node node = event.read(5, 4);
-                int[] ids = node.getInt();
-                
+            h2.attr().setTitle("Tags " + Arrays.toString(tag_arr));
+            for (int j = 0; j < tag_arr.length; j++) {
+                long tag = tag_arr[j];
+                HipoReader r = new HipoReader();
+                r.setTags(tag);
+                r.open(file);
+                int nMax = max/tag_arr.length;
+                if (r.entries() < nMax)
+                    nMax = r.entries();
+                CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+                INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
+                Event event = new Event();
+                int counter = 0;
+                while (r.hasNext() == true && counter < nMax) {
+                    r.nextEvent(event);
+                    event.read(nEC, 11, 2);
+                    Node node = event.read(5, 4);
+                    int[] ids = node.getInt();
 
-                // Event tag==4 is much more prevalent than others
-                // in the case where we have more than one tag per class
-                // probably don't want tag 4 to dominate
-                if (event.getEventTag() == 4) {
-                    if (n4 < nOther || tag.length == 1) {
-                        List<Double> energies = new ArrayList<Double>();
-                        Level3Utils.fillEC(ECArray, nEC, ids[2], counter, energies);
-                        for (double energy : energies) {
-                            h.fill(energy);
-                        }
-                        h2.fill(energies.size());
-                        counter++;
-                        n4++;
-                    }
-                } else {
                     List<Double> energies = new ArrayList<Double>();
                     Level3Utils.fillEC(ECArray, nEC, ids[2], counter, energies);
                     for (double energy : energies) {
@@ -228,7 +214,6 @@ public class Level3Trainer_MultiClass {
                     }
                     h2.fill(energies.size());
                     counter++;
-                    nOther++;
                 }
             }
             if (added_tags == 0) {
@@ -243,48 +228,44 @@ public class Level3Trainer_MultiClass {
     }
 
     public void histTags(String file, int max,List<long[]> tags) {
-        int added_tags=0;
+        int added_tags = 0;
         TGCanvas c = new TGCanvas();
         c.setTitle("Tags");
-        for (long[] tag : tags) {
-            int n4=0,nOther=0;
+        for (long[] tag_arr : tags) {
             H1F h = new H1F("E", 71, 0, 71);
-            h.attr().setLineColor((int)tag[0]+1);// tags start at 1
+            h.attr().setLineColor((int) tag_arr[0] + 1);// tags start at 1
             h.attr().setTitleX("Tag");
             h.attr().setLineWidth(3);
-            h.attr().setTitle("Tags "+Arrays.toString(tag));
-            HipoReader r = new HipoReader();
-            r.setTags(tag);
-            r.open(file);
-            int nMax = max;
-            if (r.entries() < max)
-                nMax = r.entries();
-            Event event = new Event();
-            int counter = 0;
-            while (r.hasNext() == true && counter < nMax) {
-                r.nextEvent(event);
-                Node node = event.read(5, 4);
-                int[] ids = node.getInt();
+            h.attr().setTitle("Tags " + Arrays.toString(tag_arr));
+            for (int j = 0; j < tag_arr.length; j++) {
+                long tag = tag_arr[j];
+                int n4 = 0, nOther = 0;
                 
-                //Event tag==4 is much more prevalent than others
-                //in the case where we have more than one tag per class
-                //probably don't want tag 4 to dominate
-                if (event.getEventTag() == 4) {
-                    if (n4 < nOther || tag.length == 1) {
-                        h.fill(event.getEventTag()*10+ids[1]);
-                        counter++;
-                        n4++;
-                    }
-                } else {
-                    h.fill(event.getEventTag()*10+ids[1]);
+                HipoReader r = new HipoReader();
+                r.setTags(tag);
+                r.open(file);
+                int nMax = max/tag_arr.length;
+                if (r.entries() < nMax)
+                    nMax = r.entries();
+                Event event = new Event();
+                int counter = 0;
+                while (r.hasNext() == true && counter < nMax) {
+                    r.nextEvent(event);
+                    Node node = event.read(5, 4);
+                    int[] ids = node.getInt();
+
+                    // Event tag==4 is much more prevalent than others
+                    // in the case where we have more than one tag per class
+                    // probably don't want tag 4 to dominate
+
+                    h.fill(event.getEventTag() * 10 + ids[1]);
                     counter++;
-                    nOther++;
                 }
             }
             if (added_tags == 0) {
                 c.draw(h);
             } else {
-                c.draw(h,"same");
+                c.draw(h, "same");
             }
             added_tags++;
         }
@@ -292,70 +273,60 @@ public class Level3Trainer_MultiClass {
 
     public void saveTags(String file,String out, int max,List<long[]> tags) {
 
-        int added_tags=0;
+        int added_tags = 0, classs = 0;
 
-        for (long[] tag : tags) {
-            int n4=0,nOther=0;
+        for (long[] tag_arr : tags) {
 
-            HipoReader r = new HipoReader();
-           
-            r.setTags(tag);
-            r.open(file);
+            for (int j = 0; j < tag_arr.length; j++) {
+                long tag=tag_arr[j];
 
-            int nMax = max;
+                HipoReader r = new HipoReader();
 
-            if (r.entries() < max)
-                nMax = r.entries();
+                r.setTags(tag);
+                r.open(file);
 
-            CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
-            CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+                int nMax = max/tag_arr.length;
 
-            INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
-            INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-            INDArray OUTArray = Nd4j.zeros(nMax, tags.size());
-            Event event = new Event();
-            int counter = 0;
-            while (r.hasNext() == true && counter < nMax) {
-                r.nextEvent(event);
-                    
-                event.read(nDC, 12, 1);
-                event.read(nEC, 11, 2);
+                if (r.entries() < nMax)
+                    nMax = r.entries();
 
-                Node node = event.read(5, 4);
+                CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
+                CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
 
-                int[] ids = node.getInt();
+                INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+                INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
+                INDArray OUTArray = Nd4j.zeros(nMax, tags.size());
+                Event event = new Event();
+                int counter = 0;
+                while (r.hasNext() == true && counter < nMax) {
+                    r.nextEvent(event);
 
-                //Event tag==4 is much more prevalent than others
-                //in the case where we have more than one tag per class
-                //probably don't want tag 4 to dominate
-                if (event.getEventTag() == 4) {
-                    if (n4 < nOther || tag.length == 1) {
-                        Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                        int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                        Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), added_tags, counter);// tag
-                        counter++;
-                        n4++;
-                    }
-                } else {
+                    event.read(nDC, 12, 1);
+                    event.read(nEC, 11, 2);
+
+                    Node node = event.read(5, 4);
+
+                    int[] ids = node.getInt();
+
                     Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
                     int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                    Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), added_tags, counter);// tag
+                    Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), classs, counter);// tag
                     counter++;
-                    nOther++;
-                }
 
+                }
+                File fileEC = new File(out + "EC_tag_" + String.valueOf(tag) + ".npy");
+                File fileDC = new File(out + "DC_tag_" + String.valueOf(tag) + ".npy");
+                File fileOut = new File(out + "Labels_tag_" + String.valueOf(tag) + ".npy");
+                try {
+                    Nd4j.writeAsNumpy(ECArray, fileEC);
+                    Nd4j.writeAsNumpy(DCArray, fileDC);
+                    Nd4j.writeAsNumpy(OUTArray, fileOut);
+                } catch (IOException e) {
+                    System.out.println("Could not write file");
+                }
+                added_tags++;
             }
-            File fileEC = new File(out + "EC_tag_" + String.valueOf(tag) + ".npy");
-            File fileDC = new File(out + "DC_tag_" + String.valueOf(tag) + ".npy");
-            File fileOut = new File(out + "Labels_tag_" + String.valueOf(tag) + ".npy");
-            try {
-                Nd4j.writeAsNumpy(ECArray, fileEC);
-                Nd4j.writeAsNumpy(DCArray, fileDC);
-                Nd4j.writeAsNumpy(OUTArray, fileOut);
-            } catch (IOException e) {
-                System.out.println("Could not write file");
-            }
-            added_tags++;
+            classs++;
         }
 
     }
@@ -363,107 +334,75 @@ public class Level3Trainer_MultiClass {
     public MultiDataSet getTagsFromFile(String file, int max,List<long[]> tags) {
         INDArray[] inputs = new INDArray[2];
         INDArray[] outputs = new INDArray[1];
-        int added_tags=0;
+        //added tag is for individual tag
+        //classs is for each array of tags ie class
+        int added_tags=0, classs=0;
 
-        for (long[] tag : tags) {
+        for (long[] tag_arr : tags) {
 
-            int n4=0,nOther=0;
+            for (int j = 0; j < tag_arr.length; j++) {
+                long tag = tag_arr[j];
+                HipoReader r = new HipoReader();
 
-            HipoReader r = new HipoReader();
-           
-            r.setTags(tag);
-            r.open(file);
+                r.setTags(tag);
+                r.open(file);
 
-            System.out.println("Reading tags:");
-            Arrays.stream(tag).forEach(System.out::println);
+                System.out.printf("Reading tag: %d\n", tag);
 
-            int nMax = max;
+                int nMax = max/tag_arr.length;
 
-            if (r.entries() < max)
-                nMax = r.entries();
+                if (r.entries() < nMax)
+                    nMax = r.entries();
 
-            CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
-            CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+                CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
+                CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
 
-            INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
-            INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-            INDArray OUTArray = Nd4j.zeros(nMax, tags.size());
-            Event event = new Event();
-            int counter = 0;
-            while (r.hasNext() == true && counter < nMax) {
-                r.nextEvent(event);
-                    
-                event.read(nDC, 12, 1);
-                event.read(nEC, 11, 2);
+                INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+                INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
+                INDArray OUTArray = Nd4j.zeros(nMax, tags.size());
+                Event event = new Event();
+                int counter = 0;
+                while (r.hasNext() == true && counter < nMax) {
+                    r.nextEvent(event);
 
-                Node node = event.read(5, 4);
+                    event.read(nDC, 12, 1);
+                    event.read(nEC, 11, 2);
 
-                int[] ids = node.getInt();
+                    Node node = event.read(5, 4);
 
-                //System.out.printf("event tag (%d) & ID (%d)\n", ids[1], ids[0]);
-                //System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
+                    int[] ids = node.getInt();
 
-                //Event tag==4 is much more prevalent than others
-                //in the case where we have more than one tag per class
-                //probably don't want tag 4 to dominate
-                if (event.getEventTag() == 4) {
-                    if (n4 < nOther || tag.length == 1) {
-                        Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                        int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                        Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), added_tags, counter);// tag
-                        counter++;
-                        n4++;
-                    }
-                } else {
+                    // System.out.printf("event tag (%d) & ID (%d)\n", ids[1], ids[0]);
+                    // System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
+
                     Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
                     int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                    Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), added_tags, counter);// tag
+                    Level3Utils.fillLabels_MultiClass(OUTArray, tags.size(), classs, counter);// tag
                     counter++;
-                    nOther++;
+
                 }
-                
-
-                // if we want to make electron sample v clean
-                // I don't think we especially care at this point in time
-                // keping code here though because it could be useful
                 /*
-                 * if(tag==11){
-                 * //if the NHits is small then this is BG that crept into the tag
-                 * if(nHits>7){
-                 * counter++;
-                 * } else{
-                 * //erase last entry as NHits was small
-                 * DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
-                 * NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
-                 * ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
-                 * NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 72));
-                 * for (int k=0;k<tags.size();k++){OUTArray.putScalar(new int[] {counter,k},
-                 * 0);}
-                 * }
-                 * }else{
-                 * counter++;
-                 * }
+                 * System.out.printf("tag (%d)",tag);
+                 * System.out.print(OUTArray);
+                 * System.out.print("\n\n");
                  */
-                    
-                
+
+                System.out.printf("loaded samples (%d)\n\n\n", counter);
+                if (added_tags == 0) {
+                    inputs = new INDArray[] { DCArray, ECArray };
+                    outputs = new INDArray[] { OUTArray };
+                } else {
+                    inputs[0] = Nd4j.vstack(inputs[0], DCArray);
+                    inputs[1] = Nd4j.vstack(inputs[1], ECArray);
+                    outputs[0] = Nd4j.vstack(outputs[0], OUTArray);
+                }
+                added_tags++;
 
             }
+            classs++;  
 
-            /*System.out.printf("tag (%d)",tag);
-            System.out.print(OUTArray);
-            System.out.print("\n\n");*/
-
-            System.out.printf("loaded samples (%d)\n\n\n", counter);
-            if (added_tags == 0) {
-                inputs=new INDArray[] { DCArray, ECArray};
-                outputs=new INDArray[]{OUTArray };
-            } else{
-                inputs[0] = Nd4j.vstack(inputs[0], DCArray);
-                inputs[1] = Nd4j.vstack(inputs[1], ECArray);
-                outputs[0] = Nd4j.vstack(outputs[0], OUTArray);
-            }
-            added_tags++;
         }
+        
         
         MultiDataSet dataset = new MultiDataSet(inputs,outputs);
         dataset.shuffle();
@@ -505,16 +444,18 @@ public class Level3Trainer_MultiClass {
 
             List<long[]> tags= new ArrayList<>();
             //for(int i=1;i<8;i++){tags.add(new long[]{i});}
-            tags.add(new long[]{5,6,7});
-            tags.add(new long[]{2,3,4});
+            /*tags.add(new long[]{5,6,7});
+            tags.add(new long[]{2,3,4});*/
 
             /*tags.add(new long[]{6,7});
             tags.add(new long[]{3,4});
             tags.add(new long[]{2,5});*/
 
+            tags.add(new long[]{2,3,4,5,6,7});
+
             tags.add(new long[]{1});
             
-            String net="0b";
+            String net="0d";
 	        Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
 
             //t.getEnergiesForTagsFromFile(file, 10000, tags);
@@ -530,12 +471,12 @@ public class Level3Trainer_MultiClass {
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 2000;
-	        t.trainFile(file,file2,100000,1000,10000,tags);//10
-	        t.save("level3_MC");
+	        t.nEpochs = 500;
+	        t.trainFile(file,file2,180000,10000,10000,tags);//100000 10000 10000
+	        t.save("level3_");
 
-            //t.load("level3_"+net+".network");
-            t.load("level3_MC_"+net+".network");
+            t.load("level3_"+net+".network");
+            //t.load("level3_MC_"+net+".network");
             //t.load("level3_MC_"+net+"_3C_t7_t2t3t4_t1.network");
             //t.load("level3_MC_"+net+"_3C_t5t6t7_t2t3t4_t1.network");
             //t.load("level3_MC_"+net+"_4C_t6t7_t3t4_t2t5_t1.network");
