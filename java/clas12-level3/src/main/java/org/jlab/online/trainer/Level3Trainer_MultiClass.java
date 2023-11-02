@@ -156,7 +156,7 @@ public class Level3Trainer_MultiClass {
 			//gEff.addPoint(i, eval.recall(), 0, 0);
 
             //graph.addPoint(i, network.score());
-            if (i % 500 == 0 && i != 0) {
+            if (i % 50 == 0 && i != 0) {
                 this.save("tmp_models/level3_model_" + this.cnnModel + "_" + i + "_epochs.network");
             }
         }
