@@ -131,10 +131,11 @@ public class Level3Trainer_MultiClass {
 
         Evaluation eval = new Evaluation(tags.size());
 
+        long NTotEvents = data.getFeatures()[0].shape()[0];
         for (int i = 0; i < nEpochs; i++) {
             long then = System.currentTimeMillis();
 
-            int nBatches=nEvents_pSample/batchSize;
+            long nBatches=NTotEvents/batchSize;
             for(int batch=0;batch<nBatches;batch++){
                 int bS=batch*batchSize;
 		        int bE=(batch+1)*batchSize;
@@ -344,7 +345,11 @@ public class Level3Trainer_MultiClass {
                 long tag = tag_arr[j];
                 HipoReader r = new HipoReader();
 
+                
                 r.setTags(tag);
+                //hardcoding something in to augment stats
+                //if(tag==2){r.setTags(2,5);}
+                
                 r.open(file);
 
                 System.out.printf("Reading tag: %d\n", tag);
@@ -425,12 +430,16 @@ public class Level3Trainer_MultiClass {
 
         } else if(mode<0){
 
-            String file="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_0.h5";
-            String file2="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_5.h5";
+            /*String file="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_0.h5";
+            String file2="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_5.h5";*/
             
             /*String file="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_0.h5";
             String file2="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_5.h5";
             String out="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/python/";*/
+
+            String file="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/daq_MC_100.h5";
+            String file2="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/daq_MC_105.h5";
+            String out="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/python/";
 
             /*String file="/Users/tyson/data_repo/trigger_data/rga/daq_MC_0.h5";
             String file2="/Users/tyson/data_repo/trigger_data/rga/daq_MC_5.h5";
@@ -443,7 +452,7 @@ public class Level3Trainer_MultiClass {
             
 
             List<long[]> tags= new ArrayList<>();
-            //for(int i=1;i<8;i++){tags.add(new long[]{i});}
+            for(int i=1;i<8;i++){tags.add(new long[]{i});}
             /*tags.add(new long[]{5,6,7});
             tags.add(new long[]{2,3,4});*/
 
@@ -451,15 +460,19 @@ public class Level3Trainer_MultiClass {
             tags.add(new long[]{3,4});
             tags.add(new long[]{2,5});*/
 
-            tags.add(new long[]{2,3,4,5,6,7});
+            /*tags.add(new long[]{7});
+            tags.add(new long[]{4});
+            tags.add(new long[]{2,3});*/
+
+            //tags.add(new long[]{2,3,4,5,6,7});
 
             tags.add(new long[]{1});
             
             String net="0d";
 	        Level3Trainer_MultiClass t = new Level3Trainer_MultiClass();
 
-            //t.getEnergiesForTagsFromFile(file, 10000, tags);
-            //t.histTags(file, 10000, tags);
+            t.getEnergiesForTagsFromFile(file, 10000, tags);
+            t.histTags(file, 10000, tags);
             //t.saveTags(file2, out, 50000, tags);
             //t.saveTags(file, out, 50000, tags);
 
@@ -471,16 +484,17 @@ public class Level3Trainer_MultiClass {
             //transfer learning
             //t.load("level3_"+net+".network");
 
-	        t.nEpochs = 500;
-	        t.trainFile(file,file2,180000,10000,10000,tags);//100000 10000 10000
-	        t.save("level3_");
+	        //t.nEpochs = 500;
+	        //t.trainFile(file,file2,180000,10000,10000,tags);//100000 10000 10000
+	        //t.save("level3_");
 
-            t.load("level3_"+net+".network");
+            //t.load("level3_"+net+".network");
             //t.load("level3_MC_"+net+".network");
             //t.load("level3_MC_"+net+"_3C_t7_t2t3t4_t1.network");
             //t.load("level3_MC_"+net+"_3C_t5t6t7_t2t3t4_t1.network");
             //t.load("level3_MC_"+net+"_4C_t6t7_t3t4_t2t5_t1.network");
-	        t.evaluateFile(file2,10000,tags,false);
+            //t.load("level3_0d_4C_t7_t4_t2t3_t1_in.network");
+	        //t.evaluateFile(file2,10000,tags,true);
 
         }else {
 

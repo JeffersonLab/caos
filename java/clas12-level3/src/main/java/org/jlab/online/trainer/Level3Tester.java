@@ -56,12 +56,7 @@ public class Level3Tester {
         }
     }
 
-    public static int isTriggerInSector(int[] trigger,int sector){
-        //if(trigger[8]<1) return 0;
-        for(int s = 8; s < 14; s++) //8 to <14 with DC roads, 15 to <21 without, rga is 1 to 8
-            if(trigger[s]>0 && (s-7)==sector) return 1;     //s-7 with DC roads, s-14 without      
-        return 0;
-    }
+    
    
     public static MultiDataSet getData(String file,int max,double beamE){
 
@@ -74,7 +69,7 @@ public class Level3Tester {
 
         INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
         INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-        INDArray OUTArray = Nd4j.zeros(nMax, 3);
+        INDArray OUTArray = Nd4j.zeros(nMax, 4);
         
         Bank[] banks = r.getBanks("DC::tdc","ECAL::adc","RUN::config");
         Bank[]  dsts = r.getBanks("REC::Particle","REC::Track","REC::Calorimeter");
@@ -82,7 +77,7 @@ public class Level3Tester {
         CompositeNode nodeDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nodeEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
         
-        int counter=0,nEls=0,nL1=0;
+        int counter=0,nEls=0,nL1=0,nOther=0;
         while(r.hasNext() && counter<(nMax-6)){
             
             r.nextEvent(e);
@@ -98,6 +93,10 @@ public class Level3Tester {
             List<Integer> elSectors = new ArrayList<Integer>();
             Map<Integer, Double> q2ByIndex=new HashMap<Integer, Double>();
             Map<Integer, Double> q2BySector=new HashMap<Integer, Double>();
+            List<Integer> otherIndexes = new ArrayList<Integer>();
+            List<Integer> otherSectors = new ArrayList<Integer>();
+            Map<Integer, Double> otherpByIndex = new HashMap<Integer, Double>();
+            Map<Integer, Double> otherpBySector = new HashMap<Integer, Double>();
 
             ////get part pIndex and p
             for (int i = 0; i < dsts[0].getRows(); i++) {
@@ -109,6 +108,10 @@ public class Level3Tester {
                         double[] pthetaphi=Level3Converter_MultiClass.calcPThetaPhi(dsts[0], i);
                         double q2=2*beamE*pthetaphi[0]*(1-Math.cos(pthetaphi[1]));
                         q2ByIndex.put(i, q2);
+                    } else if(pid!=2112 && pid!=22 && pid!=0 && pid!=11){
+                        otherIndexes.add(i);
+                        double[] pthetaphi=Level3Converter_MultiClass.calcPThetaPhi(dsts[0], i);
+                        otherpByIndex.put(i,pthetaphi[0]);
                     }
                 }
             }
@@ -119,7 +122,10 @@ public class Level3Tester {
                 if (elIndexes.contains(pindex)) {
                     elSectors.add(sectorTrk);
                     q2BySector.put(sectorTrk, q2ByIndex.get(pindex));
-                }  
+                }  else if (otherIndexes.contains(pindex)) {
+                    otherSectors.add(sectorTrk);
+                    otherpBySector.put(sectorTrk, otherpByIndex.get(pindex));
+                }
             }
 
             //loop over sectors
@@ -130,6 +136,9 @@ public class Level3Tester {
                 if(elSectors.contains(sect)){
                     gotEl=1;
                     q2=q2BySector.get(sect);
+                } else if(otherSectors.contains(sect)){
+                    gotEl=2;
+                    q2=otherpBySector.get(sect);
                 }
 
                 // get DC and EC for the sector
@@ -137,7 +146,7 @@ public class Level3Tester {
                 double nEdep = Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
 
 
-                if (nodeEC.getRows() > 0 && nodeDC.getRows() > 0 ) { //&& trigger[0]>1
+                if (nodeEC.getRows() > 0 && nodeDC.getRows() > 0 ) { //&& trigger[0]>1  //&& trigger[31]==1
                 
                     Level3Utils.fillDC(DCArray, nodeDC, sect, counter);
                     Level3Utils.fillEC(ECArray, nodeEC, sect, counter);
@@ -145,15 +154,20 @@ public class Level3Tester {
                     INDArray EventDCArray=DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.all());
                     INDArray EventECArray=ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.all());
 
-                    if (EventDCArray.any() && EventECArray.any()) { // check that the images aren't all empty
+                    long hasL1 = Level3Converter_MultiClass.isTriggerInSector(trigger, sect);
+                    if(hasL1>0){nL1++;}
 
-                        long hasL1 = isTriggerInSector(trigger, sect);
-                        if(hasL1>0){nL1++;} 
-                        if(gotEl>0){nEls++;}
+                    // && hasL1==1
+                    if (EventDCArray.any() && EventECArray.any() ) { // check that the images aren't all empty
+
+                         
+                        if(gotEl==1){nEls++;}
+                        if(gotEl==2){nOther++;}
                         
                         OUTArray.putScalar(new int[] { counter, 0 }, gotEl);
                         OUTArray.putScalar(new int[] { counter, 1 }, hasL1);
                         OUTArray.putScalar(new int[]{counter,2},q2);
+                        OUTArray.putScalar(new int[]{counter,3},sect);
                         counter++;
                     } else {
                         //erase last entry
@@ -180,22 +194,22 @@ public class Level3Tester {
         return dataset;
     }
 
-    public static void PlotResponse(INDArray output, INDArray Labels,int elClass) {
+    public static void PlotResponse(INDArray output, INDArray Labels,int LabelVal,int elClass,String part) {
         long NEvents = output.shape()[0];
-        H1F hRespPos = new H1F("Electron in Sector", 100, 0, 1);
+        H1F hRespPos = new H1F(part+" in Sector", 100, 0, 1);
         hRespPos.attr().setLineColor(2);
         hRespPos.attr().setFillColor(2);
         hRespPos.attr().setLineWidth(3);
         hRespPos.attr().setTitleX("Response");
-        H1F hRespNeg = new H1F("No Electron in Sector", 100, 0, 1);
+        H1F hRespNeg = new H1F("No "+part+" in Sector", 100, 0, 1);
         hRespNeg.attr().setLineColor(5);
         hRespNeg.attr().setLineWidth(3);
         hRespNeg.attr().setTitleX("Response");
         //Sort predictions into those made on the positive/or negative samples
         for(long i=0;i<NEvents;i+=1) {
-            if(Labels.getFloat(i,0)==1) {
+            if(Labels.getFloat(i,0)==LabelVal) {
             hRespPos.fill(output.getFloat(i,elClass));
-            } else if(Labels.getFloat(i,0)==0) {
+            } else {
             hRespNeg.fill(output.getFloat(i,elClass));
             }
         }
@@ -211,15 +225,15 @@ public class Level3Tester {
     //Labels col 0 is 1 if there's an e-, 0 otherwise
     //Labels col 1 is 1 if l1 trigger fired, 0 otherwise
     //Labels col 2 is q2 when col 1 is 1, 0 otherwise
-    public static INDArray getEffForQ2Bin(INDArray outputs, INDArray Labels,double thresh,int elClass,double q2Low,double q2High){
-        INDArray metrics = Nd4j.zeros(2,1);
+    public static INDArray getMetsForBin(INDArray outputs, INDArray Labels,int LabelVal,double thresh,int elClass,int cutVar,double low,double high){
+        INDArray metrics = Nd4j.zeros(4,1);
         long nEvents = outputs.shape()[0];
 
-        double TP=0,FN=0;
-        double TP_l1=0,FN_l1=0;
+        double TP=0,FN=0,FP=0;
+        double TP_l1=0,FN_l1=0,FP_l1=0;
         for (int i = 0; i < nEvents; i++) {
-            if (Labels.getFloat(i, 2) > q2Low && Labels.getFloat(i, 2)<q2High) {
-                if (Labels.getFloat(i, 0) == 1) {
+            if (Labels.getFloat(i, cutVar) > low && Labels.getFloat(i,cutVar)<high) {
+                if (Labels.getFloat(i, 0) == LabelVal) {
                     if (outputs.getFloat(i, elClass) > thresh) {
                         TP++;
                     } else {
@@ -230,28 +244,39 @@ public class Level3Tester {
                     } else {
                         FN_l1++;
                     }
-                }
+                } else {
+                    if (outputs.getFloat(i, elClass) > thresh) {
+                        FP++;
+                    }
+                    if (Labels.getFloat(i, 1) == 1) {
+                        FP_l1++;
+                    }
+                } // Check true label
             }
         }
+	    double Pur=TP/(TP+FP);
 	    double Eff=TP/(TP+FN);
-	    metrics.putScalar(new int[] {0,0}, Eff);
-        double Eff_l1=TP_l1/(TP_l1+FN_l1);
-	    metrics.putScalar(new int[] {1,0}, Eff_l1);
+	    metrics.putScalar(new int[] {0,0}, Pur);
+	    metrics.putScalar(new int[] {1,0}, Eff);
+        double Pur_l1=TP_l1/(TP_l1+FP_l1);
+	    double Eff_l1=TP_l1/(TP_l1+FN_l1);
+        metrics.putScalar(new int[] {2,0}, Pur_l1);
+	    metrics.putScalar(new int[] {3,0}, Eff_l1);
 
         return metrics;
     }
 
     //Labels col 0 is 1 if there's an e-, 0 otherwise
     //Labels col 1 is 1 if l1 trigger fired, 0 otherwise
-    public static INDArray getMetrics(INDArray outputs, INDArray Labels,double thresh,int elClass){
-        INDArray metrics = Nd4j.zeros(4,1);
+    public static INDArray getMetrics(INDArray outputs, INDArray Labels,int LabelVal,double thresh,int elClass){
+        INDArray metrics = Nd4j.zeros(7,1);
         long nEvents = outputs.shape()[0];
 
         int nEls=0,nTrig=0;
         double TP=0,FP=0,FN=0;
         double TP_l1=0,FP_l1=0,FN_l1=0;
         for (int i = 0; i < nEvents; i++) {
-            if (Labels.getFloat(i, 0) == 1) {
+            if (Labels.getFloat(i, 0) == LabelVal) {
                 nEls++;
                 if (outputs.getFloat(i, elClass) > thresh) {
                     TP++;
@@ -264,7 +289,7 @@ public class Level3Tester {
                 } else{
                     FN_l1++;
                 }
-            } else if (Labels.getFloat(i, 0) == 0) {
+            } else {
                 if (outputs.getFloat(i, elClass) > thresh) {
                     FP++;
                 } 
@@ -282,13 +307,16 @@ public class Level3Tester {
 	    double Eff_l1=TP_l1/(TP_l1+FN_l1);
         metrics.putScalar(new int[] {2,0}, Pur_l1);
 	    metrics.putScalar(new int[] {3,0}, Eff_l1);
+        metrics.putScalar(new int[] {4,0}, TP);
+	    metrics.putScalar(new int[] {5,0}, FP);
+        metrics.putScalar(new int[] {6,0}, FN);
 
         /*System.out.printf("Theres %d electrons in sample\n", nEls);
         System.out.printf("L1 trigger fired %d times in sample\n", nTrig);*/
         return metrics;
     }
 
-    public double findBestThreshold(MultiDataSet data,int elClass,double effLow){
+    public double findBestThreshold(MultiDataSet data,int elClass,double effLow,int LabelVal){
         INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
         
         GraphErrors gEff = new GraphErrors();
@@ -308,7 +336,7 @@ public class Level3Tester {
 
         // Loop over threshold on the response
         for (double RespTh = 0.01; RespTh < 0.99; RespTh += 0.01) {
-            INDArray metrics=Level3Tester.getMetrics(outputs[0],data.getLabels()[0],RespTh, elClass);
+            INDArray metrics=Level3Tester.getMetrics(outputs[0],data.getLabels()[0],LabelVal,RespTh, elClass);
             double Pur = metrics.getFloat(0, 0);
             double Eff = metrics.getFloat(1, 0);
             gPur.addPoint(RespTh, Pur, 0, 0);
@@ -321,8 +349,8 @@ public class Level3Tester {
             }
         } // Increment threshold on response
 
-        System.out.format("%n Best Purity at Efficiency above 0.995: %.3f at a threshold on the response of %.3f %n%n",
-                bestPuratEffLow, bestRespTh);
+        System.out.format("%n Best Purity at Efficiency above %f: %.3f at a threshold on the response of %.3f %n%n",
+                effLow,bestPuratEffLow, bestRespTh);
 
         TGCanvas c = new TGCanvas();
         c.setTitle("Metrics vs Response");
@@ -332,59 +360,112 @@ public class Level3Tester {
         return bestRespTh;
     }
 
-    public static void plotQ2Dep(MultiDataSet data,INDArray outputs,double thresh,int elClass){
+    public static void plotVarDep(MultiDataSet data, INDArray outputs, double thresh, int elClass, int LabelVal,
+            Boolean addPur, Boolean addL1, int cutVar, String varName, String varUnits,double low, double high,double step) {
+
+        String yTitle="Metrics";
+        if(!addPur){yTitle="Efficiency";}
 
         GraphErrors gEff = new GraphErrors();
         gEff.attr().setMarkerColor(2);
         gEff.attr().setMarkerSize(10);
         gEff.attr().setTitle("Level3 Efficiency");
-        gEff.attr().setTitleX("Q^2 [GeV^2]");
-        gEff.attr().setTitleY("Metrics");
+        gEff.attr().setTitleX(varName+" "+varUnits);
+        gEff.attr().setTitleY(yTitle);
 
         GraphErrors gEff_l1 = new GraphErrors();
-        gEff_l1.attr().setMarkerColor(4);
+        gEff_l1.attr().setMarkerColor(9);
         gEff_l1.attr().setMarkerSize(10);
         gEff_l1.attr().setTitle("Level1 Efficiency");
-        gEff_l1.attr().setTitleX("Q^2 [GeV^2]");
-        gEff_l1.attr().setTitleY("Metrics");
+        gEff_l1.attr().setTitleX(varName+" "+varUnits);
+        gEff_l1.attr().setTitleY(yTitle);
 
-        double q2Step=1.0;
-        for (double q2=0.0;q2<11;q2+=q2Step){
-            INDArray metrics=Level3Tester.getEffForQ2Bin(outputs,data.getLabels()[0],thresh, elClass,q2,q2+q2Step);
-            gEff.addPoint(q2+q2Step/2, metrics.getFloat(0, 0), 0, 0);
-            gEff_l1.addPoint(q2+q2Step/2, metrics.getFloat(1, 0), 0, 0);
+        GraphErrors gPur = new GraphErrors();
+        gPur.attr().setMarkerColor(5);
+        gPur.attr().setMarkerSize(10);
+        gPur.attr().setTitle("Level3 Purity");
+        gPur.attr().setTitleX(varName+" "+varUnits);
+        gPur.attr().setTitleY(yTitle);
+
+        GraphErrors gPur_l1 = new GraphErrors();
+        gPur_l1.attr().setMarkerColor(8);
+        gPur_l1.attr().setMarkerSize(10);
+        gPur_l1.attr().setTitle("Level1 Purity");
+        gPur_l1.attr().setTitleX(varName+" "+varUnits);
+        gPur_l1.attr().setTitleY(yTitle);
+
+        for (double q2=low;q2<high;q2+=step){
+            INDArray metrics=Level3Tester.getMetsForBin(outputs,data.getLabels()[0],LabelVal,thresh, elClass,cutVar,q2,q2+step);
+            gEff.addPoint(q2+step/2, metrics.getFloat(1, 0), 0, 0);
+            gPur.addPoint(q2+step/2, metrics.getFloat(0, 0), 0, 0);
+            gEff_l1.addPoint(q2+step/2, metrics.getFloat(3, 0), 0, 0);
+            gPur_l1.addPoint(q2+step/2, metrics.getFloat(2, 0), 0, 0);
         } // Increment threshold on response
 
         TGCanvas c = new TGCanvas();
-        c.setTitle("Efficiency vs Q^2");
-        c.draw(gEff).draw(gEff_l1, "same");
+        c.setTitle("Efficiency vs "+varName);
+        c.draw(gEff);
+        if(addPur){c.draw(gPur, "same");}
+        if(addL1){
+            c.draw(gEff_l1, "same");
+            if(addPur){c.draw(gPur_l1, "same");}
+        }
         c.region().showLegend(0.05, 0.95);
         
 
     }
 
 
-    public void compareL1ToL3(MultiDataSet data,double thresh,int elClass) {
+    public void test(MultiDataSet data,double thresh,int elClass,int LabelVal, String Part) {
+        Boolean compL1=true;
+        String varName="Q^2";
+        String unitName="[GeV^2]";
+        if(Part!="Electron"){
+            compL1=false;
+            varName="P";
+            unitName="[GeV]";
+        }
         
         INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
-        Level3Tester.PlotResponse(outputs[0], data.getLabels()[0],elClass);
-        Level3Tester.plotQ2Dep(data,outputs[0],thresh,elClass);
-        INDArray metrics=Level3Tester.getMetrics(outputs[0],data.getLabels()[0],thresh, elClass);
+        Level3Tester.PlotResponse(outputs[0], data.getLabels()[0],LabelVal,elClass,Part);
+        Level3Tester.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,false,compL1,2,varName,unitName,0.0,11.0,1.);
+        Level3Tester.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,compL1,3,"Sector","",0.5,6.5,1.0);
+        INDArray metrics=Level3Tester.getMetrics(outputs[0],data.getLabels()[0],LabelVal,thresh, elClass);
         System.out.printf("\n Threshold: %f\n", thresh);
         System.out.printf("Level3 Purity: %f Efficiency: %f\n",metrics.getFloat(0,0),metrics.getFloat(1,0));
+        System.out.printf("TP: %f, FP: %f, FN: %f\n",metrics.getFloat(4,0),metrics.getFloat(5,0),metrics.getFloat(6,0));
         System.out.printf("Level1 Purity: %f Efficiency: %f\n\n",metrics.getFloat(2,0),metrics.getFloat(3,0));
     }
     
     public static void main(String[] args){        
-        String file2="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/rec_clas_018437.evio.00005-00009.hipo";//_AI
+        //String file2="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/rec_clas_018437.evio.00005-00009.hipo";//_AI
+        //String file2="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/rec_clas_018331.evio.00105-00109.hipo";
+        //String file2="/Users/tyson/data_repo/trigger_data/rgd/018326/run_018326_2.h5";
+        //String file2="/Users/tyson/data_repo/trigger_data/rgd/018740/run_018740.h5";
+        String file2="/Users/tyson/data_repo/trigger_data/sims/el_test.hipo";
+
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
+
+
         Level3Tester t=new Level3Tester();
-        t.load("level3_0b.network");
-        //t.load("level3_MC_0b_3C_t5t6t7_t2t3t4_t1.network");
-        int elClass=1;//1 for 2 classes, 2 for 3 classes
+        //t.load("level3_0d_wrongTrigger.network");
+        //t.load("level3_0d_v3.network");//_v3 best
+        t.load("level3_0d_in.network");//_wrongTrigger
+        //t.load("level3_0d_4C_t7_t4_t2t3_t1.network");
+        //t.load("level3_0d_4C_t7_t4_t2t3_t1_in.network");
+
+        //Get vals for electron
+        int elClass=1;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes
+        int elLabelVal=1;
         MultiDataSet data=Level3Tester.getData(file2, 100000,10.547);
-        double bestTh=t.findBestThreshold(data,elClass,0.995);
-        t.compareL1ToL3(data, bestTh, elClass);//0.09
+        double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal);
+        t.test(data, bestTh, elClass,elLabelVal,"Electron");//0.09
+
+        //Get vals for other tracks
+        /*int otherClass=2;//2 for 4 classes
+        int otherLableVal=2;
+        double bestThOther=t.findBestThreshold(data,otherClass,0.9,otherLableVal);
+        t.test(data, bestThOther, otherClass,otherLableVal,"Charged Track");//0.09*/
         
     }
 }

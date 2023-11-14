@@ -50,8 +50,15 @@ public class Level3Converter_MultiClass {
         }
     }
 
+    public static int isTriggerInSector(int[] trigger,int sector){
+        //if(trigger[8]<1) return 0;
+        for(int s = 8; s < 14; s++) //8 to <14 with DC roads, 15 to <21 without, rga is 1 to 8
+            if(trigger[s]>0 && (s-7)==sector) return 1;     //s-7 with DC roads, s-14 without, s for rga 
+        return 0;
+    }
+
     public static int[] convertTriggerLong(long  bits){
-        int[] trigger = new int[21];
+        int[] trigger = new int[32];
         
         //System.out.printf("%X - %X\n", bits,bits&0xF);
         for(int i = 0; i < trigger.length; i++) {
@@ -350,10 +357,10 @@ public class Level3Converter_MultiClass {
                 //for each data entry we could record trigger
                 //could help with some logic in training data
                 //eg requiring conventional trigger to be wrong
-                /*long bits = banks[2].getLong("trigger", 0);
+                long bits = banks[2].getLong("trigger", 0);
                 int[] trigger = Level3Converter_MultiClass.convertTriggerLong(bits);
-                int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);
-                System.out.println(Arrays.toString(trigger));*/
+                //int trigSector = Level3Converter_MultiClass.getTriggerSector(trigger);
+                //System.out.println(Arrays.toString(trigger));
 
                 int[] labels = new int[] { pid, Level3Converter_MultiClass.getPTag(p), sect };
                 
@@ -366,6 +373,7 @@ public class Level3Converter_MultiClass {
 
                 if (nodeEC.getRows() > 0 && nodeDC.getRows() > 0 && tag>0) {
                     
+                    // all data
                     e_out.reset();
                     e_out.write(nodeEC);
                     e_out.write(nodeDC);
@@ -374,6 +382,26 @@ public class Level3Converter_MultiClass {
                     e_out.setEventTag(tag);
 
                     w.addEvent(e_out);
+
+                    //only write negative when trigger is wrong
+                    /*if(tag==1){
+                        e_out.reset();
+                        e_out.write(nodeEC);
+                        e_out.write(nodeDC);
+                        e_out.write(tnode);
+                        e_out.setEventTag(tag);
+                        w.addEvent(e_out);
+                    } else{
+                        long hasL1 = Level3Converter_MultiClass.isTriggerInSector(trigger, sect);
+                        if(hasL1==1){
+                            e_out.reset();
+                            e_out.write(nodeEC);
+                            e_out.write(nodeDC);
+                            e_out.write(tnode);
+                            e_out.setEventTag(tag);
+                            w.addEvent(e_out);
+                        }
+                    }*/
                 }
 
 
@@ -410,13 +438,23 @@ public class Level3Converter_MultiClass {
         /*String dir="/Users/tyson/data_repo/trigger_data/rgc/016246/";
         String base="rec_clas_016246.evio.";*/
 
-        String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";
-        String base="rec_clas_018437.evio.";
+        /*String dir="/Users/tyson/data_repo/trigger_data/rgd/018437/";
+        String base="rec_clas_018437.evio.";*/
 
         /*String dir="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/";
         String base="rec_clas_018437.evio.";*/
 
-        for (int file=0;file<10;file+=5){
+        /*String dir="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/";
+        String base="rec_clas_018331.evio.";*/
+
+        /*String dir="/Users/tyson/data_repo/trigger_data/rgd/018326/"; //_AI
+        String base="run_018326_";*/
+
+        String dir="/Users/tyson/data_repo/trigger_data/rgd/018740/"; //_AI
+        String base="run_018740_";
+
+        //for (int file=100;file<110;file+=5){
+        for (int file=1;file<3;file+=1){
     
             String fileS=String.valueOf(file);
             String fileS2=String.valueOf(file+4);
@@ -424,12 +462,17 @@ public class Level3Converter_MultiClass {
             String zeros="0000";
             String zeros2="0000";
             if(file>9){zeros="000";}
+            if(file>99){zeros="00";}
             if((file+4)>9){zeros2="000";}
+            if((file+4)>99){zeros2="00";}
+            
             //rga, rgd
-            String fName=dir+base+zeros+fileS+"-"+zeros2+fileS2+".hipo";
+            //String fName=dir+base+zeros+fileS+"-"+zeros2+fileS2+".hipo";
             //rgc
             //String fName=dir+base+zeros+fileS+".hipo";
-            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+".h5");
+
+            String fName=dir+base+fileS+".h5";
+            Level3Converter_MultiClass.convertFile(fName, dir+"daq_MC_"+fileS+".h5"); //_wrongTriggerOnly
 
         }
 

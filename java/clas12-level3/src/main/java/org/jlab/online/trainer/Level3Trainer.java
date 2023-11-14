@@ -310,7 +310,7 @@ public class Level3Trainer {
 		    eval.eval(inputs_test[2], outputs[0]);
             System.out.printf("Test Purity: %f, Efficiency: %f\n",eval.precision(),eval.recall());
 
-            if (i % 500 == 0 && i != 0) {
+            if (i % 50 == 0 && i != 0) {
                 this.save("tmp_models/level3_model_" + this.cnnModel + "_" + i + "_epochs.network");
             }
         }
@@ -554,16 +554,18 @@ public class Level3Trainer {
         } else if(mode<0){
 
             //String baseLoc="/scratch/clasrun/caos/rgd/018437_AI/daq_MC_";
-            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_";
+            //String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018437_AI/daq_MC_";
 
-            String file2=baseLoc+"5.h5";
+            String baseLoc="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/daq_MC_";
 
-            String net="0b";
+            String file2=baseLoc+"105_wrongTriggerOnly.h5";
+
+            String net="0d";
 	        Level3Trainer t = new Level3Trainer();
 
             List<String> files= new ArrayList<>();
-            for (int file=0;file<5;file+=5){
-                files.add(baseLoc+String.valueOf(file)+".h5");
+            for (int file=100;file<105;file+=5){
+                files.add(baseLoc+String.valueOf(file)+"_wrongTriggerOnly.h5");
             }
 
 	        t.cnnModel = net;
@@ -578,9 +580,9 @@ public class Level3Trainer {
 	        //t.trainManyFilesNuevo(files,file2,400000,10000,50000);//10
 	        //t.save("level3");
 	    
-	        t.load("level3_"+net+".network");//_rga _noAI
+	        t.load("level3_"+net+"_in_wrongTrigger.network");//_rga _noAI v3 best
             //t.load("etc/networks/network-level3-0c-rgc.network");
-	        t.evaluateFileNuevo(file2,100000);
+	        t.evaluateFileNuevo(file2,10000);
 
         }else {
 
