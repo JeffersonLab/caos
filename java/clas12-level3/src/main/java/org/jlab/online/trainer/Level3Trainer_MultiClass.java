@@ -80,6 +80,16 @@ public class Level3Trainer_MultiClass {
         }
     }
 
+    public static int findIndexTagN(List<long[]> tags,int tagN){
+		int index=-1;
+		for (int i=0;i<tags.size();i++) {
+			for(int j=0;j<tags.get(i).length;j++){
+				if (tags.get(i)[j]==tagN){index=i;}
+			}
+		}
+		return index;
+	}
+
 
     public void evaluateFile(String file, int nEvents_pSample,List<long[]> tags, Boolean doPlots) {
 
@@ -89,8 +99,10 @@ public class Level3Trainer_MultiClass {
 
         long nTestEvents = data.getFeatures()[0].shape()[0];
 
+        int el_tag_index=findIndexTagN(tags,1);
+
         // System.out.println("Number of Test Events "+nTestEvents);
-        Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], data.getLabels()[0],tags,doPlots);
+        Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], data.getLabels()[0],el_tag_index,tags.size(),doPlots);
 
     }
 

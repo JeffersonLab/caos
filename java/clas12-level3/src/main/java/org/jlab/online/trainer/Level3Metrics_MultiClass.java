@@ -23,24 +23,23 @@ import twig.data.GraphErrors;
  */
 public class Level3Metrics_MultiClass {
     
-    public Level3Metrics_MultiClass(long NEvents,INDArray predictions, INDArray Labels,List<long[]> tags,Boolean makePlots){
+    public Level3Metrics_MultiClass(long NEvents,INDArray predictions, INDArray Labels,int el_tag_index,int nTags,Boolean makePlots){
 
-		System.out.print(Labels);
+		//System.out.print(Labels);
 
-		Evaluation eval = new Evaluation(tags.size());
+		Evaluation eval = new Evaluation(nTags);
 		eval.eval(Labels, predictions);
 		System.out.println(eval.stats());
 		System.out.println(eval.confusionToString());
 		if(makePlots){
-        	PlotMetricsVsResponse(NEvents,predictions,Labels,tags);
-			PlotResponse(NEvents,predictions,Labels,tags);
+        	PlotMetricsVsResponse(NEvents,predictions,Labels,el_tag_index);
+			PlotResponse(NEvents,predictions,Labels,el_tag_index,nTags);
 		}
     }
 
     public static INDArray getMetrics(long NEvents, INDArray predictions, INDArray Labels, double RespTh,
-	List<long[]> tags) {
+	int el_tag_index) {
 
-		int el_tag_index=findIndexTagN(tags, 1);
 		INDArray metrics = Nd4j.zeros(2, 1);
 
 		//System.out.printf("\n Electron tag at index: %d \n\n",el_tag_index);
@@ -71,7 +70,7 @@ public class Level3Metrics_MultiClass {
 		return metrics;
 	}// End of getMetrics
 
-	public static void PlotMetricsVsResponse(long NEvents, INDArray predictions, INDArray Labels,List<long[]> tags) {
+	public static void PlotMetricsVsResponse(long NEvents, INDArray predictions, INDArray Labels,int el_index) {
 
 		GraphErrors gEff = new GraphErrors();
 		gEff.attr().setMarkerColor(2);
@@ -90,7 +89,7 @@ public class Level3Metrics_MultiClass {
 
 		// Loop over threshold on the response
 		for (double RespTh = 0.01; RespTh < 0.99; RespTh += 0.01) {
-			INDArray metrics = getMetrics(NEvents, predictions, Labels, RespTh,tags);
+			INDArray metrics = getMetrics(NEvents, predictions, Labels, RespTh,el_index);
 			double Pur = metrics.getFloat(0, 0);
 			double Eff = metrics.getFloat(1, 0);
 			gPur.addPoint(RespTh, Pur, 0, 0);
@@ -113,34 +112,22 @@ public class Level3Metrics_MultiClass {
 
 	}// End of PlotMetricsVSResponse
 
-	public static int findIndexTagN(List<long[]> tags,int tagN){
-		int index=-1;
-		for (int i=0;i<tags.size();i++) {
-			for(int j=0;j<tags.get(i).length;j++){
-				if (tags.get(i)[j]==tagN){index=i;}
-			}
-		}
-		return index;
-	}
-
-    public static void PlotResponse(long NEvents, INDArray output, INDArray Labels, List<long[]> tags) {
-
-		int index_tag1=findIndexTagN(tags,1);
+    public static void PlotResponse(long NEvents, INDArray output, INDArray Labels, int index_tag1,int NTags) {
 
 		TGCanvas c = new TGCanvas();
 		c.setTitle("Response");
 
 		int tag_counter=0;
 		//loop over tags/classes
-		for (long[] tag : tags) {
+		for (int j=0;j<NTags;j++) {
 			H1F hResp = new H1F("Positive Sample", 101, 0, 1.01);
-			hResp.attr().setLineColor((int)tag[0]+1);//tags start at 1
+			hResp.attr().setLineColor(j+2);//tags start at 1
 			/*if (tag == 1) {
 				hResp.attr().setFillColor(2);
 			}*/
 			hResp.attr().setLineWidth(3);
 			hResp.attr().setTitleX("Response");
-			hResp.attr().setTitle("Tags "+Arrays.toString(tag));
+			hResp.attr().setTitle("Class "+Integer.toString(j));
 
 			//System.out.printf("\n Plot response in class %d of tag %d \n\n",index_tag1,tag);
 
