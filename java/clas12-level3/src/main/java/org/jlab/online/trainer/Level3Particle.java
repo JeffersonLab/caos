@@ -73,6 +73,14 @@ public class Level3Particle {
         }
     }
 
+    public void find_sector_cal(Bank CalBank){
+        for (int k = 0; k < CalBank.getRows(); k++) {
+            int pindex = CalBank.getInt("pindex", k);
+            int sectorTrk = CalBank.getInt("sector", k);
+            if(pindex==PIndex){Sector=sectorTrk;}
+        }
+    }
+
     public void read_HTCC_bank(Bank HTCCBank){
         for (int k = 0; k < HTCCBank.getRows(); k++) {
             int pindex = HTCCBank.getInt("pindex", k);
