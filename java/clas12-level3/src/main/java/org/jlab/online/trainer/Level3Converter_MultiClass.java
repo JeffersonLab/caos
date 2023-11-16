@@ -177,7 +177,7 @@ public class Level3Converter_MultiClass {
         double[] pthetaphi= new double[3];
         pthetaphi[0]=Math.sqrt(px*px+py*py+pz*pz);
         pthetaphi[1]=Math.acos(pz/pthetaphi[0]);//Math.atan2(Math.sqrt(px*px+py*py),pz);
-        pthetaphi[1]=Math.atan2(py,px);
+        pthetaphi[2]=Math.atan2(py,px);
         return pthetaphi;
     }
 
