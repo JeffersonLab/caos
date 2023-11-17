@@ -181,6 +181,42 @@ public class Level3Utils {
         }
         return nHits;
     }
+
+    public static void fillEC_noNorm(INDArray dc, CompositeNode ecBank, int sector , int order){
+        int   nrows = ecBank.getRows();
+        int[] index = new int[]{0,0,0,0};
+
+        for(int row = 0; row < nrows; row++){
+            
+            int   sect = ecBank.getInt(0, row);
+            int  layer = ecBank.getInt(1, row);
+            int  strip = ecBank.getInt(2, row);
+            int    ADC = ecBank.getInt(4, row);
+
+            if(ADC>0){
+                double energy = ADC; 
+ 
+                //----------------
+                if(energy>=0.0 && sect==sector){
+                    index[0]   = order;                    
+                    index[1]   = 0;
+                    index[2]   = (layer-1);
+                    index[3]   = strip-1;
+                    if(layer>6){
+                        index[2] = layer - 3 - 1;
+                        index[3] = (strip + 36)-1;
+                    }
+                    
+                    
+                    if(index[3]<72&&index[2]<6){
+                        dc.putScalar(index, energy);
+                    }
+                }
+                //----------------
+                
+            }
+        }
+    }
     
     //energies just for testing
     public static void fillEC(INDArray dc, CompositeNode ecBank, int sector , int order,List<Double> energies){

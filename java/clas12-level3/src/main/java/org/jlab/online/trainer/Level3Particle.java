@@ -193,20 +193,33 @@ public class Level3Particle {
         double px = PartBank.getFloat("px", pindex);
         double py = PartBank.getFloat("py", pindex);
         double pz = PartBank.getFloat("pz", pindex);
-        double[] pthetaphi = new double[3];
-        pthetaphi[0] = Math.sqrt(px * px + py * py + pz * pz);
-        pthetaphi[1] = Math.acos(pz / pthetaphi[0]);// Math.atan2(Math.sqrt(px*px+py*py),pz);
-        pthetaphi[2] = Math.atan2(py, px);
         if (Math.abs(status) >= 2000 && Math.abs(status) < 4000) {
             PID = pid;
             Charge = charge;
             Px = px;
             Py = py;
             Pz = pz;
-            P = pthetaphi[0];
-            Theta = pthetaphi[1];
-            Phi = pthetaphi[2];
+            P = Math.sqrt(px * px + py * py + pz * pz);
+            Theta = Math.acos(pz / P);// Math.atan2(Math.sqrt(px*px+py*py),pz);
+            Phi = Math.atan2(py, px);
             PIndex = pindex;
+        }
+    }
+
+    public double getM(int pid){
+        switch(pid){
+            case 22: return 0;
+            case 11: return 0.000511;
+            case -11: return 0.000511;
+            case 211: return 0.13957;
+            case -211: return 0.13957;
+            case 13: return 0.10566;
+            case -13: return 0.10566;
+            case 321: return 0.49368;
+            case -321: return 0.49368;
+            case 2212: return 0.938272;
+            case 2112: return 0.939565;
+            default: return -1;
         }
     }
 
