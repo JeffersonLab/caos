@@ -112,9 +112,9 @@ public class Level3Converter_Simulation {
         
 
         String dir="/Users/tyson/data_repo/trigger_data/sims/"; //_AI
-        String[] base={"el","pim","gamma"};
-        int[] tags={1,2,7};
-        int[] pid={11,-211,22};//not sure if this is useful yet
+        String[] base={"el","pim","gamma","pos"};
+        int[] tags={1,2,7,3};
+        int[] pid={11,-211,22,-11};//not sure if this is useful yet
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
         sectors.add(1);
         sectors.add(6);

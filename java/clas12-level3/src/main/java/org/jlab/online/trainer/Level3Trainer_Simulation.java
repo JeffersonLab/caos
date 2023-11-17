@@ -310,11 +310,9 @@ public class Level3Trainer_Simulation{
                 System.out.printf("loaded samples (%d)\n\n\n", counter);
                 File fileEC = new File(out + "EC_" + String.valueOf(names.get(classs)[j]) + ".npy");
                 File fileDC = new File(out + "DC_" + String.valueOf(names.get(classs)[j]) + ".npy");
-                File fileOut = new File(out + "Labels_" + String.valueOf(names.get(classs)[j]) + ".npy");
                 try {
                     Nd4j.writeAsNumpy(ECArray, fileEC);
                     Nd4j.writeAsNumpy(DCArray, fileDC);
-                    Nd4j.writeAsNumpy(OUTArray, fileOut);
                 } catch (IOException e) {
                     System.out.println("Could not write file");
                 }

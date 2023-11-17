@@ -58,7 +58,7 @@ public class Level3Tester_Simulation {
 
     
    
-    public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,double beamE, List<Integer> Sectors,double trainTestP){
+    public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,List<Integer> Classes, List<Integer> Sectors,double beamE,double trainTestP){
         INDArray[] inputs = new INDArray[2];
         INDArray[] outputs = new INDArray[1];
         int nEls = 0, nOther = 0, added_files = 0, classs = 0,counter_tot=0;
@@ -119,22 +119,28 @@ public class Level3Tester_Simulation {
                             double p = 0;
                             double theta = 0;
                             Boolean keepEvent = false;
-                            int gotEl = 0;
+                            
                             // keep sectors with at least one particle
                             for (Level3Particle part : particles) {
                                 if (part.Sector == sect) {
                                     // some fiducial cuts if needed
-                                    if (part.check_Energy_Dep_Cut() == true
+                                    //
+                                        
+                                    
+                                    if (part.P > 0) {
+                                        if(Classes.get(classs)==1){
+                                            if (part.check_Energy_Dep_Cut() == true
                                             && part.check_FID_Cal_Clusters(dsts[4]) == true
                                             && part.check_SF_cut() == true) {
-                                        gotEl = 1;
-                                    } else {
-                                        nOther = 2;
-                                    }
-                                    if (part.P > 0) {
-                                        keepEvent = true;
-                                        p = part.P;
-                                        theta = part.Theta;
+                                                keepEvent = true;
+                                                p = part.P;
+                                                theta = part.Theta*(180/Math.PI);
+                                            }
+                                        }else {
+                                            keepEvent = true;
+                                            p = part.P;
+                                            theta = part.Theta*(180/Math.PI);
+                                        }
                                     }
                                 }
                             }
@@ -158,14 +164,14 @@ public class Level3Tester_Simulation {
                                 // check that the images aren't all empty, allow empty DC for neutrals
                                 if (EventECArray.any()) { // EventDCArray.any()
 
-                                    if (gotEl == 1) {
+                                    if (Classes.get(classs) == 1) {
                                         nEls++;
                                     }
-                                    if (gotEl == 2) {
+                                    if (Classes.get(classs) == 2) {
                                         nOther++;
                                     }
 
-                                    OUTArray.putScalar(new int[] { counter, 0 }, gotEl);
+                                    OUTArray.putScalar(new int[] { counter, 0 }, Classes.get(classs));
                                     OUTArray.putScalar(new int[] { counter, 1 }, p);
                                     OUTArray.putScalar(new int[] { counter, 2 }, theta);
                                     OUTArray.putScalar(new int[] { counter, 3 }, sect);
@@ -339,7 +345,7 @@ public class Level3Tester_Simulation {
         TGCanvas c = new TGCanvas();
         c.setTitle("Metrics vs Response");
         c.draw(gEff).draw(gPur, "same");
-        c.region().showLegend(0.05, 0.95);
+        c.region().showLegend(0.25, 0.25);
 
         return bestRespTh;
     }
@@ -371,11 +377,14 @@ public class Level3Tester_Simulation {
             gPur.addPoint(q2+step/2, metrics.getFloat(0, 0), 0, 0);
         } // Increment threshold on response
 
+        
+
         TGCanvas c = new TGCanvas();
         c.setTitle("Efficiency vs "+varName);
         c.draw(gEff);
         if(addPur){c.draw(gPur, "same");}
-        c.region().showLegend(0.05, 0.95);
+        c.region().axisLimitsY(gPur.getVectorY().getMin()-0.1, 1.05);
+        c.region().showLegend(0.6, 0.5);
         
 
     }
@@ -400,18 +409,22 @@ public class Level3Tester_Simulation {
         String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
 
         List<String[]> files = new ArrayList<>();
-        /*files.add(new String[] { dir+"pim",dir+"gamma"});
-        files.add(new String[] { dir+"el" });*/
-        files.add(new String[] { dir+"pim"});
-        files.add(new String[] { dir+"gamma"});
+        files.add(new String[] {dir+"pim",dir+"gamma" });//dir+"pim"
         files.add(new String[] { dir+"el" });
+        /*files.add(new String[] { dir+"pim"});
+        files.add(new String[] { dir+"gamma"});
+        files.add(new String[] { dir+"el" });*/
 
         List<Integer[]> maxes = new ArrayList<>();
-        /*maxes.add(new Integer[] {10000,10000});
+        maxes.add(new Integer[] {5000,5000});//,5000
+        maxes.add(new Integer[] {10000});
+        /*maxes.add(new Integer[] {10000});
+        maxes.add(new Integer[] {10000});
         maxes.add(new Integer[] {10000});*/
-        maxes.add(new Integer[] {10000});
-        maxes.add(new Integer[] {10000});
-        maxes.add(new Integer[] {10000});
+
+        List<Integer> classes=new ArrayList<>();
+        classes.add(0);
+        classes.add(1);
 
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
         sectors.add(1);
@@ -423,9 +436,9 @@ public class Level3Tester_Simulation {
         t.load("level3_sim_0d.network");//_wrongTrigger
 
         //Get vals for electron
-        int elClass=2;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes
+        int elClass=1;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes
         int elLabelVal=1;
-        MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,10.547,sectors,0.7);
+        MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,classes,sectors,10.547,0.7);
         double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal);
         t.test(data, bestTh, elClass,elLabelVal,"Electron");//0.09
 
