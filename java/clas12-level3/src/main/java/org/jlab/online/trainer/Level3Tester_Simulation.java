@@ -22,7 +22,6 @@ import java.util.logging.Logger;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.jlab.online.level3.Level3Utils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu.add;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
