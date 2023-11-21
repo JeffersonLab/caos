@@ -26,7 +26,7 @@ import twig.graphics.TGCanvas;
 public class Level3Utils {
 
     
-     public static void fillDC(INDArray dc, CompositeNode dcBank, int sector, int order){
+    public static void fillDC(INDArray dc, CompositeNode dcBank, int sector, int order){
         int   nrows = dcBank.getRows();
         int[] index = new int[]{0,0,0,0};
         double dcIncrement = 1./6.0;
@@ -47,6 +47,30 @@ public class Level3Utils {
             if(sect==sector){
                 double previous = dc.getDouble(index);
                 dc.putScalar(index, previous + dcIncrement);
+            }
+        }
+    }
+
+    public static void fillDC_wLayers(INDArray dc, CompositeNode dcBank, int sector, int order){
+        int   nrows = dcBank.getRows();
+        int[] index = new int[]{0,0,0,0};
+        
+        for(int row = 0; row < nrows; row++){
+            int  sect = dcBank.getInt(0, row);
+            int  layer = dcBank.getInt(1, row);
+            int   wire = dcBank.getInt(2, row);
+            
+            index[0]   = order;
+            //index[1]   = (layer-1)/6;
+            index[1]   = 0;
+            index[2]   = (layer-1);
+            index[3]   = wire - 1;
+
+
+            //System.out.println(Arrays.toString(index));
+            //System.out.println(Arrays.toString(index));
+            if(sect==sector){
+                dc.putScalar(index, 1);
             }
         }
     }
