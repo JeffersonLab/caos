@@ -93,7 +93,7 @@ public class Level3Trainer_Simulation{
 
     public void evaluateFile(List<String[]> files, int nEvents_pSample, Boolean doPlots) {
 
-        MultiDataSet data = this.getClassesFromFile(files,nEvents_pSample,0.7);
+        MultiDataSet data = this.getClassesFromFile(files,nEvents_pSample,0.8);
 
         INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
 
@@ -109,7 +109,7 @@ public class Level3Trainer_Simulation{
     public void trainFile(List<String[]> files, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
 
         MultiDataSet data = this.getClassesFromFile(files,nEvents_pSample,0);
-        MultiDataSet data_test = this.getClassesFromFile(files,nEvents_pSample_test,0.7);
+        MultiDataSet data_test = this.getClassesFromFile(files,nEvents_pSample_test,0.8);
 
         Evaluation eval = new Evaluation(files.size());
 
@@ -352,7 +352,7 @@ public class Level3Trainer_Simulation{
                 CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
                 CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
 
-                INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+                INDArray DCArray = Nd4j.zeros(nMax, 1, 36, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
                 INDArray OUTArray = Nd4j.zeros(nMax, files.size());
                 Event event = new Event();
@@ -372,7 +372,7 @@ public class Level3Trainer_Simulation{
 
                     //allows us to keep N last events for testing
                     if (eventNb >= start) {
-                        Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                        Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
                         int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
                         Level3Utils.fillLabels_MultiClass(OUTArray, files.size(), classs, counter);// tag
                         counter++;
@@ -411,25 +411,27 @@ public class Level3Trainer_Simulation{
         List<String[]> files = new ArrayList<>();
         /*files.add(new String[] { dir+"pim"});
         files.add(new String[] { dir+"gamma"});
+        files.add(new String[] { dir+"pos"});
         files.add(new String[] { dir+"el" });*/
 
-        files.add(new String[] { dir+"pim", dir+"gamma" });
+        files.add(new String[] { dir+"pim", dir+"gamma" ,dir+"pos"});
         files.add(new String[] { dir+"el" });
 
         List<String[]> names = new ArrayList<>();
         /*names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
+        names.add(new String[] { "pos" });
         names.add(new String[] { "el" });*/
 
-        names.add(new String[] { "pim", "gamma" });
+        names.add(new String[] { "pim", "gamma" ,"pos"});
         names.add(new String[] { "el" });
 
         String net = "0d";
         Level3Trainer_Simulation t = new Level3Trainer_Simulation();
 
-        /*t.getEnergiesForClassesFromFiles(files,names, 10000);
-        t.histClasses(files,names, 10000);
-        t.saveClasses(files,names, out, 50000);*/
+        //t.getEnergiesForClassesFromFiles(files,names, 10000);
+        //t.histClasses(files,names, 10000);
+        //t.saveClasses(files,names, out, 50000);
 
         t.cnnModel = net;
 
@@ -440,11 +442,11 @@ public class Level3Trainer_Simulation{
         // t.load("level3_sim_"+net+".network");
 
         t.nEpochs = 500;//500
-        t.trainFile(files,50000,10000,10000);//50000 10000 10000
-        t.save("level3_sim");
+        t.trainFile(files,30000,5000,10000);//50000 10000 10000
+        t.save("level3_sim_fullLayers");
 
-        t.load("level3_sim_"+net+".network");
-        t.evaluateFile(files,10000,false);//10000
+        t.load("level3_sim_fullLayers_"+net+".network");
+        t.evaluateFile(files,5000,false);//10000
 
     }
 }

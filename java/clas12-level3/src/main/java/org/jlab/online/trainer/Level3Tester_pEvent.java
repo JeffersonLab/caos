@@ -104,6 +104,7 @@ public class Level3Tester_pEvent {
                 part.find_sector_track(dsts[1]);
                 if(part.PID==11){
                     //if(part.check_Energy_Dep_Cut()==true && part.check_FID_Cal_Clusters(dsts[4])==true){
+                    //if(part.Nphe>2){
                         elSectors.add(part.Sector);
                         fstElSector.put(part.Sector,part);
                     //}
@@ -449,8 +450,9 @@ public class Level3Tester_pEvent {
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/rec_clas_018331.evio.00105-00109.hipo";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018326/run_018326_2.h5";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018740/run_018740.h5";
-        String file2="/Users/tyson/data_repo/trigger_data/rgd/018777/run_018777.h5";
+        //String file2="/Users/tyson/data_repo/trigger_data/rgd/018777/run_018777.h5";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018432/run_018432.h5";
+        String file2="/Users/tyson/data_repo/trigger_data/sims/el_rec.hipo";
 
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
 
@@ -458,8 +460,8 @@ public class Level3Tester_pEvent {
 
         Level3Tester_pEvent t=new Level3Tester_pEvent();
         //ComputationGraph network=t.load("level3_0d_wrongTrigger.network");
-        ComputationGraph network=t.load("level3_0d_v3.network");//_v3 best
-        //ComputationGraph network=t.load("level3_0d_in.network");//_wrongTrigger
+        //ComputationGraph network=t.load("level3_0d_v3.network");//_v3 best
+        ComputationGraph network=t.load("level3_0d_in.network");//_wrongTrigger
         //ComputationGraph network=t.load("level3_0d_4C_t7_t4_t2t3_t1.network");
         //ComputationGraph network=t.load("level3_0d_4C_t7_t4_t2t3_t1_in.network");
 

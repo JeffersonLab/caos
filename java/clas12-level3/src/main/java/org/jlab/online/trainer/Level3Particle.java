@@ -5,6 +5,7 @@ import j4np.hipo5.data.Bank;
 public class Level3Particle {
 
     int PID=0;
+    int MC_PID=0;
 
     int PIndex=0;
     int Sector=0;
@@ -17,6 +18,14 @@ public class Level3Particle {
     double P=0;
     double Theta=0;
     double Phi=0;
+
+    double MC_Px=0;
+    double MC_Py=0;
+    double MC_Pz=0;
+
+    double MC_P=0;
+    double MC_Theta=0;
+    double MC_Phi=0;
 
     double Nphe=0;
 
@@ -184,6 +193,28 @@ public class Level3Particle {
             }
         }
 
+    }
+
+    public Boolean TruthMatch(double Plim,double Thetalim, double Philim){
+        Boolean truthmatched=false;
+        double resP=Math.abs(P-MC_P);
+        double resTheta=Math.abs(Theta-MC_Theta);
+        double resPhi=Math.abs(Phi-MC_Phi);
+        if(resP<Plim && resTheta<Thetalim && resPhi<Philim){
+            truthmatched=true;
+        }
+        return truthmatched;
+
+    }
+
+    public void read_MCParticle_Bank(int pindex, Bank PartBank) {
+        MC_PID = PartBank.getInt("pid", pindex);
+        MC_Px = PartBank.getFloat("px", pindex);
+        MC_Py = PartBank.getFloat("py", pindex);
+        MC_Pz = PartBank.getFloat("pz", pindex);
+        MC_P = Math.sqrt(MC_Px * MC_Px + MC_Py * MC_Py + MC_Pz * MC_Pz);
+        MC_Theta = Math.acos(MC_Pz / MC_P);// Math.atan2(Math.sqrt(px*px+py*py),pz);
+        MC_Phi = Math.atan2(MC_Py, MC_Px);
     }
 
     public void read_Particle_Bank(int pindex, Bank PartBank) {

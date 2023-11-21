@@ -69,7 +69,7 @@ public class Level3PyWriter {
 
             Bank[] banks = r.getBanks("DC::tdc", "ECAL::adc", "RUN::config");
             Bank[] dsts = r.getBanks("REC::Particle", "REC::Track", "REC::Calorimeter", "REC::Cherenkov",
-                    "ECAL::clusters");
+                    "ECAL::clusters","MC::Particle");
 
             CompositeNode nodeDC = new CompositeNode(12, 1, "bbsbil", 4096);
             CompositeNode nodeEC = new CompositeNode(11, 2, "bbsbifs", 4096);
@@ -89,6 +89,7 @@ public class Level3PyWriter {
                 for (int i = 0; i < dsts[0].getRows(); i++) {
                     Level3Particle part = new Level3Particle();
                     part.read_Particle_Bank(i, dsts[0]);
+                    part.read_MCParticle_Bank(0, dsts[5]);
                     part.read_Cal_Bank(dsts[2]);
                     part.read_HTCC_bank(dsts[3]);
                     part.find_sector_cal(dsts[2]);
@@ -107,12 +108,12 @@ public class Level3PyWriter {
                         if(part.Sector==sect){
                             //some fiducial cuts if needed
                             //if(part.check_Energy_Dep_Cut()==true && part.check_FID_Cal_Clusters(dsts[4])==true && part.check_SF_cut()==true){
-                            if(part.P>0){
+                            if(part.P>0 && part.TruthMatch(0.5, 0.5, 0.5)){
                                 keepEvent=true;
                                 p=part.P;
-                                vars[0]=part.Px;
-                                vars[1]=part.Py;
-                                vars[2]=part.Pz;
+                                vars[0]=part.MC_Px;
+                                vars[1]=part.MC_Py;
+                                vars[2]=part.MC_Pz;
                                 vars[3]=part.getM(pids.get(nFile));
                                 //System.out.printf("M: %f",vars[3]);
                             }
@@ -181,7 +182,7 @@ public class Level3PyWriter {
 
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
         sectors.add(1);
-        sectors.add(6);
+        //sectors.add(6);
 
         Level3PyWriter pyw=new Level3PyWriter();
 

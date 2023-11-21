@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.jlab.online.level3.Level3Utils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu.add;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -58,10 +59,10 @@ public class Level3Tester_Simulation {
 
     
    
-    public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,List<Integer> Classes, List<Integer> Sectors,double beamE,double trainTestP){
+    public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,List<Integer> Classes, List<Integer> Sectors,double beamE,double trainTestP,Boolean mixMatchTracks){
         INDArray[] inputs = new INDArray[2];
         INDArray[] outputs = new INDArray[1];
-        int nEls = 0, nOther = 0, added_files = 0, classs = 0,counter_tot=0;
+        int nEls = 0, nOther = 0, added_files = 0, classs = 0,counter_tot=0,nBg=0;
 
         for (String[] file_arr : files) {
 
@@ -81,11 +82,11 @@ public class Level3Tester_Simulation {
 
                 INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-                INDArray OUTArray = Nd4j.zeros(nMax, 4);
+                INDArray OUTArray = Nd4j.zeros(nMax, 5);
 
                 Bank[] banks = r.getBanks("DC::tdc", "ECAL::adc", "RUN::config");
                 Bank[] dsts = r.getBanks("REC::Particle", "REC::Track", "REC::Calorimeter", "REC::Cherenkov",
-                        "ECAL::clusters");
+                        "ECAL::clusters","MC::Particle");
 
                 CompositeNode nodeDC = new CompositeNode(12, 1, "bbsbil", 4096);
                 CompositeNode nodeEC = new CompositeNode(11, 2, "bbsbifs", 4096);
@@ -107,6 +108,7 @@ public class Level3Tester_Simulation {
                         for (int i = 0; i < dsts[0].getRows(); i++) {
                             Level3Particle part = new Level3Particle();
                             part.read_Particle_Bank(i, dsts[0]);
+                            part.read_MCParticle_Bank(0, dsts[5]);
                             part.read_Cal_Bank(dsts[2]);
                             part.read_HTCC_bank(dsts[3]);
                             part.find_sector_cal(dsts[2]);
@@ -118,28 +120,31 @@ public class Level3Tester_Simulation {
 
                             double p = 0;
                             double theta = 0;
+                            double nphe=0;
                             Boolean keepEvent = false;
                             
                             // keep sectors with at least one particle
                             for (Level3Particle part : particles) {
                                 if (part.Sector == sect) {
-                                    // some fiducial cuts if needed
-                                    //
-                                        
                                     
-                                    if (part.P > 0) {
-                                        if(Classes.get(classs)==1){
-                                            if (part.check_Energy_Dep_Cut() == true
-                                            && part.check_FID_Cal_Clusters(dsts[4]) == true
-                                            && part.check_SF_cut() == true) {
-                                                keepEvent = true;
-                                                p = part.P;
-                                                theta = part.Theta*(180/Math.PI);
+                                    if (part.TruthMatch(0.1, 0.1, 0.1)) {
+                                        if (Classes.get(classs) == 1) {
+                                            if (part.P > 0.5) {
+                                                if (part.check_Energy_Dep_Cut() == true
+                                                        && part.check_FID_Cal_Clusters(dsts[4]) == true
+                                                        && part.check_SF_cut() == true) {
+                                                    keepEvent = true;
+                                                    p = part.P;
+                                                    theta = part.Theta * (180.0 / Math.PI);
+                                                    nphe=part.Nphe;
+                                                    //System.out.printf("Nphe %d \f",nphe);
+                                                }
                                             }
-                                        }else {
+                                        } else {
                                             keepEvent = true;
                                             p = part.P;
-                                            theta = part.Theta*(180/Math.PI);
+                                            theta = part.Theta * (180.0 / Math.PI);
+                                            nphe=part.Nphe;
                                         }
                                     }
                                 }
@@ -167,14 +172,21 @@ public class Level3Tester_Simulation {
                                     if (Classes.get(classs) == 1) {
                                         nEls++;
                                     }
-                                    if (Classes.get(classs) == 2) {
+                                    else if (Classes.get(classs) == 2) {
                                         nOther++;
                                     }
+                                    else if (Classes.get(classs) == 0) {
+                                        nBg++;
+                                    }
+
+                                    int nphe_mask=1;
+                                    if(nphe<2.0){nphe_mask=0;}
 
                                     OUTArray.putScalar(new int[] { counter, 0 }, Classes.get(classs));
                                     OUTArray.putScalar(new int[] { counter, 1 }, p);
                                     OUTArray.putScalar(new int[] { counter, 2 }, theta);
                                     OUTArray.putScalar(new int[] { counter, 3 }, sect);
+                                    OUTArray.putScalar(new int[] { counter, 4 }, nphe_mask);
                                     counter++;
                                     counter_tot++;
                                 } else {
@@ -195,6 +207,9 @@ public class Level3Tester_Simulation {
                     outputs = new INDArray[] { OUTArray };
                 } else {
                     inputs[0] = Nd4j.vstack(inputs[0], DCArray);
+                    if(mixMatchTracks==true && Classes.get(classs)==1){
+                        inputs[0] = Nd4j.vstack(DCArray, DCArray);
+                    }
                     inputs[1] = Nd4j.vstack(inputs[1], ECArray);
                     outputs[0] = Nd4j.vstack(outputs[0], OUTArray);
                 }
@@ -205,7 +220,7 @@ public class Level3Tester_Simulation {
         //System.out.print(OUTArray);
         //System.out.print(DCArray);
         //System.out.print(ECArray);
-        System.out.printf("counter %d, nEl %d\n\n",counter_tot,nEls);
+        System.out.printf("counter %d, nEl %d, nBg %d, nOther %d\n\n",counter_tot,nEls,nBg,nOther);
 
         MultiDataSet dataset = new MultiDataSet(inputs,outputs);
         //dataset.shuffle();
@@ -306,8 +321,16 @@ public class Level3Tester_Simulation {
         return metrics;
     }
 
-    public double findBestThreshold(MultiDataSet data,int elClass,double effLow,int LabelVal){
+    public double findBestThreshold(MultiDataSet data,int elClass,double effLow,int LabelVal,Boolean mask_nphe){
+
         INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
+
+        if (mask_nphe) {
+            INDArray mask=data.getLabels()[0].get(NDArrayIndex.all(), NDArrayIndex.point(4));
+            mask=Nd4j.vstack(mask,mask);
+            mask=mask.transpose();
+            outputs[0] = outputs[0].mul(mask);
+        }
         
         GraphErrors gEff = new GraphErrors();
         gEff.attr().setMarkerColor(2);
@@ -384,19 +407,33 @@ public class Level3Tester_Simulation {
         c.draw(gEff);
         if(addPur){c.draw(gPur, "same");}
         c.region().axisLimitsY(gPur.getVectorY().getMin()-0.1, 1.05);
-        c.region().showLegend(0.6, 0.5);
+        c.region().showLegend(0.6, 0.25);
         
 
     }
 
 
-    public void test(MultiDataSet data,double thresh,int elClass,int LabelVal, String Part) {
+    public void test(MultiDataSet data,double thresh,int elClass,int LabelVal, String Part,Boolean mask_nphe) {
         
         INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
+
+        if (mask_nphe) {
+            INDArray mask=data.getLabels()[0].get(NDArrayIndex.all(), NDArrayIndex.point(4));
+            mask=Nd4j.vstack(mask,mask);
+            mask=mask.transpose();
+
+            /*System.out.println(outputs[0]);
+            System.out.println("\n\n");
+            System.out.println(mask);
+            System.out.println("\n\n");*/
+            outputs[0] = outputs[0].mul(mask);
+            //System.out.println(outputs[0]);
+        }
+
         Level3Tester_Simulation.PlotResponse(outputs[0], data.getLabels()[0],LabelVal,elClass,Part);
         Level3Tester_Simulation.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,1,"P","[GeV]",1,9.0,1.0);
-        Level3Tester_Simulation.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,2,"Theta","[Deg]",5.0,35.0,5.);
-        Level3Tester_Simulation.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,3,"Sector","",0.5,6.5,1.0);
+        Level3Tester_Simulation.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,2,"Theta","[Deg]",10.0,35.0,5.);
+        //Level3Tester_Simulation.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,3,"Sector","",0.5,6.5,1.0);
         INDArray metrics=Level3Tester_Simulation.getMetrics(outputs[0],data.getLabels()[0],LabelVal,thresh, elClass);
         System.out.printf("\n Threshold: %f\n", thresh);
         System.out.printf("Level3 Purity: %f Efficiency: %f\n",metrics.getFloat(0,0),metrics.getFloat(1,0));
@@ -409,18 +446,18 @@ public class Level3Tester_Simulation {
         String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
 
         List<String[]> files = new ArrayList<>();
-        files.add(new String[] {dir+"pim",dir+"gamma" });//dir+"pim"
+        files.add(new String[] {dir+"pim",dir+"gamma",dir+"pos" });//dir+"pim"
         files.add(new String[] { dir+"el" });
-        /*files.add(new String[] { dir+"pim"});
-        files.add(new String[] { dir+"gamma"});
+
+        /*files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"el" });*/
 
         List<Integer[]> maxes = new ArrayList<>();
-        maxes.add(new Integer[] {5000,5000});//,5000
-        maxes.add(new Integer[] {10000});
-        /*maxes.add(new Integer[] {10000});
-        maxes.add(new Integer[] {10000});
-        maxes.add(new Integer[] {10000});*/
+        maxes.add(new Integer[] {1600,1600,1600});
+        maxes.add(new Integer[] {4800});
+
+        /*maxes.add(new Integer[] {4800});
+        maxes.add(new Integer[] {4800});*/
 
         List<Integer> classes=new ArrayList<>();
         classes.add(0);
@@ -428,19 +465,23 @@ public class Level3Tester_Simulation {
 
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
         sectors.add(1);
-        sectors.add(6);
 
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
 
         Level3Tester_Simulation t=new Level3Tester_Simulation();
-        t.load("level3_sim_0d.network");//_wrongTrigger
+        //t.load("level3_sim_0d.network");
+        t.load("level3_0d_in.network");
+
+        Boolean mask_nphe=false;
+        //NB: this only works with two samples of same size and assuming the electron sample comes last
+        Boolean mixMatchTracks=false; 
 
         //Get vals for electron
         int elClass=1;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes
         int elLabelVal=1;
-        MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,classes,sectors,10.547,0.7);
-        double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal);
-        t.test(data, bestTh, elClass,elLabelVal,"Electron");//0.09
+        MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,classes,sectors,10.547,0.8,mixMatchTracks);
+        double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal,mask_nphe);
+        t.test(data, bestTh, elClass,elLabelVal,"Electron",mask_nphe);//bestTh
 
         //Get vals for other tracks
         /*int otherClass=2;//2 for 4 classes

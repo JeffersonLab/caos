@@ -34,11 +34,11 @@ public class Level3Converter_Simulation {
         Event e_out = new Event();
         
         Bank[] banks = r.getBanks("DC::tdc","ECAL::adc","RUN::config");
-        Bank[]  dsts = r.getBanks("REC::Particle","REC::Track","REC::Calorimeter","REC::Cherenkov","ECAL::clusters");
+        Bank[]  dsts = r.getBanks("REC::Particle","REC::Track","REC::Calorimeter","REC::Cherenkov","ECAL::clusters","MC::Particle");
         
         CompositeNode nodeDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nodeEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
-        
+        int n=0;
         while(r.hasNext()){
             
             r.nextEvent(e);
@@ -52,6 +52,7 @@ public class Level3Converter_Simulation {
             for(int i=0;i<dsts[0].getRows();i++){
                 Level3Particle part=new Level3Particle();
                 part.read_Particle_Bank(i,dsts[0]);
+                part.read_MCParticle_Bank(0, dsts[5]);
                 part.read_Cal_Bank(dsts[2]);
                 part.read_HTCC_bank(dsts[3]);
                 //part.find_sector_track(dsts[1]);
@@ -67,11 +68,32 @@ public class Level3Converter_Simulation {
                 //keep sectors with at least one particle
                 for (Level3Particle part:particles){
                     if(part.Sector==sect){
-                        //some fiducial cuts if needed
-                        //if(part.check_Energy_Dep_Cut()==true && part.check_FID_Cal_Clusters(dsts[4])==true && part.check_SF_cut()==true){
-                        if(part.P>0){
-                            keepEvent=true;
-                            p=part.P;
+                        if (pid == 11) {
+                            if (part.P > 0.5 && part.TruthMatch(1.0, 1.0, 1.0)) {
+                                if(part.check_Energy_Dep_Cut()==true && part.check_FID_Cal_Clusters(dsts[4])==true && part.check_SF_cut()==true){
+                                    keepEvent=true;
+                                    p=part.MC_P;
+                                    n++;
+                                }
+                            }
+                        } else if (pid == -11) {
+                            if (part.P > 0.5 && part.TruthMatch(1.0, 1.0, 1.0)) {
+                                keepEvent=true;
+                                p=part.MC_P;
+                                n++;
+                            }
+                        } else if (pid == 22) {
+                            if (part.P > 0 && part.TruthMatch(0.5, 0.5, 0.5)) {
+                                keepEvent=true;
+                                p=part.MC_P;
+                                n++;
+                            }
+                        } else if (pid == -211) {
+                            if (part.P > 0.5 && part.TruthMatch(1.0, 1.0, 1.0)) {
+                                keepEvent=true;
+                                p=part.MC_P;
+                                n++;
+                            }
                         }
                     }
                 }
@@ -103,9 +125,8 @@ public class Level3Converter_Simulation {
         }
         w.close();
 
-        /*System.out.println("Number of events from:");
-        System.out.printf("Tags 1 (%d), 2 (%d), 3 (%d)\n",nTag1,nTag2,nTag3);
-        System.out.printf("Tags 4 (%d), 5 (%d), 6 (%d), 7 (%d)\n",nTag4,nTag5,nTag6,nTag7);*/
+        
+        System.out.printf("Particle Type %d, Number of Events: %d\n\n",pid,n);
     }
     
     public static void main(String[] args){        
@@ -117,10 +138,9 @@ public class Level3Converter_Simulation {
         int[] pid={11,-211,22,-11};//not sure if this is useful yet
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
         sectors.add(1);
-        sectors.add(6);
 
         //for (int file=100;file<110;file+=5){
-        for (int file=0;file<3;file+=1){
+        for (int file=0;file<4;file+=1){
 
             String fName=dir+base[file]+"_rec.hipo";
             String out=dir+base[file]+"_daq.h5";
