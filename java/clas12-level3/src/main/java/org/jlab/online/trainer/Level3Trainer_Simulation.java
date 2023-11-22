@@ -91,9 +91,9 @@ public class Level3Trainer_Simulation{
 	}
 
 
-    public void evaluateFile(List<String[]> files, int nEvents_pSample, Boolean doPlots) {
+    public void evaluateFile(List<String[]> files,List<String[]> names, int nEvents_pSample, Boolean doPlots) {
 
-        MultiDataSet data = this.getClassesFromFile(files,nEvents_pSample,0.8);
+        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.8);
 
         INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
 
@@ -106,10 +106,10 @@ public class Level3Trainer_Simulation{
 
     }
 
-    public void trainFile(List<String[]> files, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
+    public void trainFile(List<String[]> files,List<String[]> names, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
 
-        MultiDataSet data = this.getClassesFromFile(files,nEvents_pSample,0);
-        MultiDataSet data_test = this.getClassesFromFile(files,nEvents_pSample_test,0.8);
+        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0);
+        MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.8);
 
         Evaluation eval = new Evaluation(files.size());
 
@@ -323,7 +323,7 @@ public class Level3Trainer_Simulation{
 
     }
 
-    public MultiDataSet getClassesFromFile(List<String[]> files, int max,double trainTestP) {
+    public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names, int max,double trainTestP) {
         INDArray[] inputs = new INDArray[2];
         INDArray[] outputs = new INDArray[1];
         //added tag is for individual tag
@@ -352,7 +352,7 @@ public class Level3Trainer_Simulation{
                 CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
                 CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
 
-                INDArray DCArray = Nd4j.zeros(nMax, 1, 36, 112);
+                INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
                 INDArray OUTArray = Nd4j.zeros(nMax, files.size());
                 Event event = new Event();
@@ -372,6 +372,7 @@ public class Level3Trainer_Simulation{
 
                     //allows us to keep N last events for testing
                     if (eventNb >= start) {
+                        //Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
                         Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
                         int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
                         Level3Utils.fillLabels_MultiClass(OUTArray, files.size(), classs, counter);// tag
@@ -380,6 +381,22 @@ public class Level3Trainer_Simulation{
                     eventNb++;
 
                 }
+
+                if(names.get(classs)[j]=="mixMatch"){
+                    //Shuffle DC and EC arrays independently
+                    //Creates Calorimeter hits uncorrelated to DC tracks
+                    MultiDataSet datasetDC = new MultiDataSet(new INDArray[]{DCArray},new INDArray[]{OUTArray});
+                    datasetDC.shuffle();
+                    MultiDataSet datasetEC = new MultiDataSet(new INDArray[]{ECArray},new INDArray[]{OUTArray});
+                    datasetEC.shuffle();
+                    DCArray=datasetDC.getFeatures()[0];
+                    ECArray=datasetEC.getFeatures()[0];
+                    //Note: OUTArray should be the same at all rows so it doesn't matter
+                    //if it isn't shuffled in same order as DC and EC arrays.
+                    //we only put it in the datasets to have correct dataset declaration
+
+                }
+
                 System.out.printf("loaded samples (%d)\n\n\n", counter);
                 if (added_classes == 0) {
                     inputs = new INDArray[] { DCArray, ECArray };
@@ -414,7 +431,7 @@ public class Level3Trainer_Simulation{
         files.add(new String[] { dir+"pos"});
         files.add(new String[] { dir+"el" });*/
 
-        files.add(new String[] { dir+"pim", dir+"gamma" ,dir+"pos"});
+        files.add(new String[] { dir+"pim", dir+"gamma" ,dir+"pos",dir+"el"});
         files.add(new String[] { dir+"el" });
 
         List<String[]> names = new ArrayList<>();
@@ -423,10 +440,10 @@ public class Level3Trainer_Simulation{
         names.add(new String[] { "pos" });
         names.add(new String[] { "el" });*/
 
-        names.add(new String[] { "pim", "gamma" ,"pos"});
+        names.add(new String[] { "pim", "gamma" ,"pos","mixMatch"});
         names.add(new String[] { "el" });
 
-        String net = "0d";
+        String net = "0d"; //"0d_allLayers"
         Level3Trainer_Simulation t = new Level3Trainer_Simulation();
 
         //t.getEnergiesForClassesFromFiles(files,names, 10000);
@@ -442,11 +459,11 @@ public class Level3Trainer_Simulation{
         // t.load("level3_sim_"+net+".network");
 
         t.nEpochs = 500;//500
-        t.trainFile(files,30000,5000,10000);//50000 10000 10000
-        t.save("level3_sim_fullLayers");
+        t.trainFile(files,names,30000,5000,10000);//50000 10000 10000
+        t.save("level3_sim");
 
-        t.load("level3_sim_fullLayers_"+net+".network");
-        t.evaluateFile(files,5000,false);//10000
+        t.load("level3_sim_"+net+".network");
+        t.evaluateFile(files,names,5000,false);//10000
 
     }
 }

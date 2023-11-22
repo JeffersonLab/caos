@@ -156,6 +156,7 @@ public class Level3Tester_Simulation {
 
                             if (nodeEC.getRows() > 0 && keepEvent == true) {
 
+                                //Level3Utils.fillDC_wLayers(DCArray, nodeDC, sect, counter);
                                 Level3Utils.fillDC(DCArray, nodeDC, sect, counter);
                                 Level3Utils.fillEC(ECArray, nodeEC, sect, counter);
 
@@ -445,18 +446,18 @@ public class Level3Tester_Simulation {
         String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
 
         List<String[]> files = new ArrayList<>();
-        files.add(new String[] {dir+"pim",dir+"gamma",dir+"pos" });//dir+"pim"
-        files.add(new String[] { dir+"el" });
-
-        /*files.add(new String[] { dir+"gamma"});
+        /*files.add(new String[] {dir+"pim",dir+"gamma",dir+"pos" });//dir+"pim"
         files.add(new String[] { dir+"el" });*/
 
-        List<Integer[]> maxes = new ArrayList<>();
-        maxes.add(new Integer[] {1600,1600,1600});
-        maxes.add(new Integer[] {4800});
+        files.add(new String[] { dir+"gamma"});
+        files.add(new String[] { dir+"el" });
 
-        /*maxes.add(new Integer[] {4800});
+        List<Integer[]> maxes = new ArrayList<>();
+        /*maxes.add(new Integer[] {1600,1600,1600});
         maxes.add(new Integer[] {4800});*/
+
+        maxes.add(new Integer[] {4800});
+        maxes.add(new Integer[] {4800});
 
         List<Integer> classes=new ArrayList<>();
         classes.add(0);
@@ -468,12 +469,13 @@ public class Level3Tester_Simulation {
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
 
         Level3Tester_Simulation t=new Level3Tester_Simulation();
-        //t.load("level3_sim_0d.network");
-        t.load("level3_0d_in.network");
+        t.load("level3_sim_0d.network");
+        //t.load("level3_sim_fullLayers_0d.network");
+        //t.load("level3_0d_in.network");
 
         Boolean mask_nphe=false;
         //NB: this only works with two samples of same size and assuming the electron sample comes last
-        Boolean mixMatchTracks=false; 
+        Boolean mixMatchTracks=true; 
 
         //Get vals for electron
         int elClass=1;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes
