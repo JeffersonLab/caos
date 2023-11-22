@@ -373,7 +373,7 @@ public class Level3Trainer_Simulation{
                     //allows us to keep N last events for testing
                     if (eventNb >= start) {
                         //Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
-                        Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
+                        Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
                         int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
                         Level3Utils.fillLabels_MultiClass(OUTArray, files.size(), classs, counter);// tag
                         counter++;
