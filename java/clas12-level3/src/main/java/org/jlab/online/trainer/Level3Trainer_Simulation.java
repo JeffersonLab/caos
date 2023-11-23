@@ -518,35 +518,35 @@ public class Level3Trainer_Simulation{
 
     public static void main(String[] args) {
      
-        String dir = "/Users/tyson/data_repo/trigger_data/sims/";
-        String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
+        //String dir = "/Users/tyson/data_repo/trigger_data/sims/";
+        //String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
 
-        //String dir = "/scratch/clasrun/caos/sims/";
+        String dir = "/scratch/clasrun/caos/sims/";
 
         List<String[]> files = new ArrayList<>();
-        files.add(new String[] { dir+"pim"});
+        /*files.add(new String[] { dir+"pim"});
         files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"pos"});
-        files.add(new String[] { dir+"el" });
-
-        /*files.add(new String[] { dir+"pim", dir+"gamma" ,dir+"pos"});//,dir+"el"});
         files.add(new String[] { dir+"el" });*/
 
+        files.add(new String[] { dir+"pim", dir+"gamma" ,dir+"pos"});//,dir+"el"});
+        files.add(new String[] { dir+"el" });
+
         List<String[]> names = new ArrayList<>();
-        names.add(new String[] { "pim"});
+        /*names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
-        names.add(new String[] { "el" });
-
-        /*names.add(new String[] { "pim", "gamma" ,"pos"});//,"mixMatch"});
         names.add(new String[] { "el" });*/
+
+        names.add(new String[] { "pim", "gamma" ,"pos"});//,"mixMatch"});
+        names.add(new String[] { "el" });
 
         String net = "0d_FTOFHTCC"; //"0d_allLayers"
         Level3Trainer_Simulation t = new Level3Trainer_Simulation();
 
-        t.getEnergiesForClassesFromFiles(files,names, 10000);
-        t.histClasses(files,names, 10000);
-        t.saveClasses(files,names, out, 50000);
+        //t.getEnergiesForClassesFromFiles(files,names, 10000);
+        //t.histClasses(files,names, 10000);
+        //t.saveClasses(files,names, out, 50000);
 
         t.cnnModel = net;
 
@@ -556,12 +556,12 @@ public class Level3Trainer_Simulation{
         // transfer learning
         // t.load("level3_sim_"+net+".network");
 
-        t.nEpochs = 10;//500
-        t.trainFile(files,names,100,10,10);//30000 5000 10000
+        t.nEpochs = 500;//500
+        t.trainFile(files,names,30000,5000,10000);//30000 5000 10000
         t.save("level3_sim_FTOFHTCC");
 
         t.load("level3_sim_FTOFHTCC_"+net+".network");
-        t.evaluateFile(files,names,10,false);//10000
+        t.evaluateFile(files,names,5000,false);//5000
 
     }
 }
