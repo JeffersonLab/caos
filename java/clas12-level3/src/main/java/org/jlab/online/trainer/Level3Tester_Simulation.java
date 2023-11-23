@@ -59,7 +59,7 @@ public class Level3Tester_Simulation {
     
    
     public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,List<Integer> Classes, List<Integer> Sectors,double beamE,double trainTestP,Boolean mixMatchTracks){
-        INDArray[] inputs = new INDArray[2];
+        INDArray[] inputs = new INDArray[4]; //size 2 if not using HTCC & FTOF
         INDArray[] outputs = new INDArray[1];
         int nEls = 0, nOther = 0, added_files = 0, classs = 0,counter_tot=0,nBg=0;
 
@@ -81,14 +81,19 @@ public class Level3Tester_Simulation {
 
                 INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
+                INDArray FTOFArray = Nd4j.zeros(nMax, 62);
+                INDArray HTCCArray = Nd4j.zeros(nMax, 8);
                 INDArray OUTArray = Nd4j.zeros(nMax, 5);
 
-                Bank[] banks = r.getBanks("DC::tdc", "ECAL::adc", "RUN::config");
-                Bank[] dsts = r.getBanks("REC::Particle", "REC::Track", "REC::Calorimeter", "REC::Cherenkov",
-                        "ECAL::clusters","MC::Particle");
+                //r.getSchemaFactory().show();
+
+                Bank[] banks = r.getBanks("DC::tdc","ECAL::adc","RUN::config","FTOF::adc","HTCC::adc");
+                Bank[]  dsts = r.getBanks("REC::Particle","REC::Track","REC::Calorimeter","REC::Cherenkov","ECAL::clusters","MC::Particle");
 
                 CompositeNode nodeDC = new CompositeNode(12, 1, "bbsbil", 4096);
                 CompositeNode nodeEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+                CompositeNode nodeFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
+                CompositeNode nodeHTCC = new CompositeNode( 14, 5, "bbsbifs", 4096);
 
                 int counter = 0,eventNb=0;
 
@@ -96,6 +101,11 @@ public class Level3Tester_Simulation {
 
                     r.nextEvent(e);
                     e.read(banks);
+
+                    /*System.out.println("FTOF");
+                    banks[3].show();
+                    System.out.println("HTCC");
+                    banks[4].show();*/
 
                     e.read(dsts);
 
@@ -151,6 +161,8 @@ public class Level3Tester_Simulation {
 
                             Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
                             Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
+                            Level3Converter_MultiClass.convertFTOF(banks[3], nodeFTOF, sect);
+                            Level3Converter_MultiClass.convertHTCC(banks[4], nodeHTCC, sect);
                             // nodeDC.print();
                             // nodeEC.print();
 
@@ -159,6 +171,8 @@ public class Level3Tester_Simulation {
                                 //Level3Utils.fillDC_wLayers(DCArray, nodeDC, sect, counter);
                                 Level3Utils.fillDC(DCArray, nodeDC, sect, counter);
                                 Level3Utils.fillEC(ECArray, nodeEC, sect, counter);
+                                Level3Utils.fillFTOF(FTOFArray,nodeFTOF,sect,counter);
+                                Level3Utils.fillHTCC(HTCCArray,nodeHTCC,sect,counter);
 
                                 INDArray EventDCArray = DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
                                         NDArrayIndex.all(), NDArrayIndex.all());
@@ -195,6 +209,10 @@ public class Level3Tester_Simulation {
                                             NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
                                     ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
                                             NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 72));
+                                    FTOFArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
+                                            NDArrayIndex.all()).assign(Nd4j.zeros(62));
+                                    HTCCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
+                                            NDArrayIndex.all()).assign(Nd4j.zeros(8));
                                 }
                             }
                         }
@@ -203,14 +221,29 @@ public class Level3Tester_Simulation {
                 }
                 System.out.printf("loaded samples (%d)\n\n\n", counter);
                 if (added_files == 0) {
-                    inputs = new INDArray[] { DCArray, ECArray };
+                    //inputs = new INDArray[] { DCArray, ECArray};
+                    inputs = new INDArray[] { DCArray, ECArray,FTOFArray,HTCCArray };
                     outputs = new INDArray[] { OUTArray };
                 } else {
+                    
                     inputs[0] = Nd4j.vstack(inputs[0], DCArray);
+
+                    //remove if not using ftof or htcc
+                    inputs[2] = Nd4j.vstack(inputs[2], FTOFArray);
+
                     if(mixMatchTracks==true && Classes.get(classs)==1){
                         inputs[0] = Nd4j.vstack(DCArray, DCArray);
+                        //shuffle FTOF so that it's uncorrelated to DC
+                        MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[]{FTOFArray},new INDArray[]{FTOFArray});
+                        datasetFTOF.shuffle();
+                        inputs[2] = Nd4j.vstack(datasetFTOF.getFeatures()[0], datasetFTOF.getFeatures()[0]);
+                        //don't add HTCC as this too clear a signal of electrons
                     }
                     inputs[1] = Nd4j.vstack(inputs[1], ECArray);
+
+                    //remove if not using ftof or htcc
+                    inputs[3] = Nd4j.vstack(inputs[3], HTCCArray);
+
                     outputs[0] = Nd4j.vstack(outputs[0], OUTArray);
                 }
                 added_files++;
@@ -223,7 +256,7 @@ public class Level3Tester_Simulation {
         System.out.printf("counter %d, nEl %d, nBg %d, nOther %d\n\n",counter_tot,nEls,nBg,nOther);
 
         MultiDataSet dataset = new MultiDataSet(inputs,outputs);
-        //dataset.shuffle();
+        dataset.shuffle();
         return dataset;
     }
 
@@ -323,7 +356,8 @@ public class Level3Tester_Simulation {
 
     public double findBestThreshold(MultiDataSet data,int elClass,double effLow,int LabelVal,Boolean mask_nphe){
 
-        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
+        //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[2], data.getFeatures()[3]);
 
         if (mask_nphe) {
             INDArray mask=data.getLabels()[0].get(NDArrayIndex.all(), NDArrayIndex.point(4));
@@ -415,7 +449,8 @@ public class Level3Tester_Simulation {
 
     public void test(MultiDataSet data,double thresh,int elClass,int LabelVal, String Part,Boolean mask_nphe) {
         
-        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
+        //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1],data.getFeatures()[3],data.getFeatures()[4]);
 
         if (mask_nphe) {
             INDArray mask=data.getLabels()[0].get(NDArrayIndex.all(), NDArrayIndex.point(4));

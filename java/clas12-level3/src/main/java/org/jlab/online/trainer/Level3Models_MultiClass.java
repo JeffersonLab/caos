@@ -180,6 +180,55 @@ public class Level3Models_MultiClass {
         return config;
     }
 
+    public static ComputationGraphConfiguration getModel0d_FTOFHTCC(int nClasses){
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                //.l2(0.0005)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(1e-3))//Adam(5e-3) //AdaDelta()
+                .graphBuilder()
+                .addInputs("dc", "ec","ftof","htcc")
+                .addLayer("L1", new ConvolutionLayer.Builder(2,2)
+                        .nIn(1)
+                        .nOut(6)                    
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        , "dc")
+                .addLayer("L3", new ConvolutionLayer.Builder(2,2)
+                        .nIn(6)
+                        .nOut(6)                    
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        , "L1")
+                .addLayer("L2", new ConvolutionLayer.Builder(2,2)
+                        .nIn(1)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        , "ec")    
+                .addLayer("L4", new ConvolutionLayer.Builder(2,2)
+                        .nIn(6)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        , "L2")                
+                .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{2,2}, new int[]{2,2}).build(), "L3")
+                .addLayer("L2Pool", new SubsamplingLayer.Builder(new int[]{2,2}, new int[]{2,2}).build(), "L4")
+                .addLayer("dcDense", new DenseLayer.Builder().nOut(48).dropOut(0.5).build(), "L1Pool")
+                .addLayer("ecDense", new DenseLayer.Builder().nOut(48).dropOut(0.5).build(), "L2Pool")
+                .addVertex("merge", new MergeVertex(), "dcDense", "ecDense","ftof","htcc")
+                .addLayer("dense1", new DenseLayer.Builder().nOut(80).dropOut(0.5).build(), "merge")
+                .addLayer("out", new OutputLayer.Builder()
+                        .nIn(80).nOut(nClasses)
+                        .activation(Activation.SOFTMAX)
+                        .build()
+                        , "dense1")
+                .setOutputs("out")
+                .setInputTypes(InputType.convolutional(6, 112, 1), InputType.convolutional(6, 72, 1),
+                                InputType.feedForward(62), InputType.feedForward(8))
+                .build();
+        return config;
+    }
+
     public static ComputationGraphConfiguration getModel0d_allLayers(int nClasses){
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
                 //.l2(0.0005)
@@ -304,6 +353,7 @@ public class Level3Models_MultiClass {
             case "0b": return Level3Models_MultiClass.getModel0b(nClasses);
             case "0c": return Level3Models_MultiClass.getModel0c(nClasses);
             case "0d": return Level3Models_MultiClass.getModel0d(nClasses);
+            case "0d_FTOFHTCC": return Level3Models_MultiClass.getModel0d_FTOFHTCC(nClasses);
             case "0d_allLayers": return Level3Models_MultiClass.getModel0d_allLayers(nClasses);
             case "0e": return Level3Models_MultiClass.getModel0e(nClasses);
             default: return null;

@@ -33,11 +33,13 @@ public class Level3Converter_Simulation {
         Event e = new Event();
         Event e_out = new Event();
         
-        Bank[] banks = r.getBanks("DC::tdc","ECAL::adc","RUN::config");
+        Bank[] banks = r.getBanks("DC::tdc","ECAL::adc","RUN::config","FTOF::adc","HTCC::adc");
         Bank[]  dsts = r.getBanks("REC::Particle","REC::Track","REC::Calorimeter","REC::Cherenkov","ECAL::clusters","MC::Particle");
         
         CompositeNode nodeDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nodeEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
+        CompositeNode nodeFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
+        CompositeNode nodeHTCC = new CompositeNode( 14, 5, "bbsbifs", 4096);
         int n=0;
         while(r.hasNext()){
             
@@ -101,6 +103,8 @@ public class Level3Converter_Simulation {
                 int[] labels = new int[] { pid, Level3Converter_MultiClass.getPTag(p), sect };
                 Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
                 double nEdep=Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
+                Level3Converter_MultiClass.convertHTCC(banks[4], nodeHTCC, sect);
+                Level3Converter_MultiClass.convertFTOF(banks[3], nodeFTOF, sect);
                 // nodeDC.print();
                 // nodeEC.print();
 
@@ -114,6 +118,8 @@ public class Level3Converter_Simulation {
                     e_out.reset();
                     e_out.write(nodeEC);
                     e_out.write(nodeDC);
+                    e_out.write(nodeHTCC);
+                    e_out.write(nodeFTOF);
                     e_out.write(tnode);
 
                     e_out.setEventTag(tag);

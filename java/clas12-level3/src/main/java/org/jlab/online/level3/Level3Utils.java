@@ -166,6 +166,58 @@ public class Level3Utils {
         }
     }
 
+    public static void fillHTCC(INDArray htcc, CompositeNode htccBank, int sector , int order){
+        int   nrows = htccBank.getRows();
+        int[] index = new int[]{0,0};
+
+        for(int row = 0; row < nrows; row++){
+            
+            int   sect = htccBank.getInt(0, row);
+            int  layer = htccBank.getInt(1, row); //1 or 2
+            int  component = htccBank.getInt(2, row); //1-4
+            int    ADC = htccBank.getInt(4, row);
+
+            if(ADC>0){
+                double energy = (ADC/5000.0); //&&energy<1.0
+ 
+                if(energy>=0.0&&sect==sector){
+                    index[0]   = order;
+                    index[1]   = ((layer-1)*4+component)-1;
+                    
+                    if(index[1]<8){
+                        htcc.putScalar(index, energy);
+                    }
+                }
+            }
+        }
+    }
+
+    public static void fillFTOF(INDArray ftof, CompositeNode ftofBank, int sector , int order){
+        int   nrows = ftofBank.getRows();
+        int[] index = new int[]{0,0};
+
+        for(int row = 0; row < nrows; row++){
+            
+            int   sect = ftofBank.getInt(0, row);
+            int  layer = ftofBank.getInt(1, row); //1 or 2
+            int  component = ftofBank.getInt(2, row); //1-4
+            int    ADC = ftofBank.getInt(4, row);
+
+            if(ADC>0 && layer==2){//only keep layer 1-b for now
+                double energy = (ADC/50000.0); 
+ 
+                if(energy>=0.0&&sect==sector){//&&energy<1.0
+                    index[0]   = order;
+                    index[1]   = component-1;
+                    
+                    if(index[1]<62){
+                     ftof.putScalar(index, energy);
+                    }
+                }
+            }
+        }
+    }
+
     public static int fillEC(INDArray dc, CompositeNode ecBank, int sector , int order){
         int   nrows = ecBank.getRows();
         int[] index = new int[]{0,0,0,0};

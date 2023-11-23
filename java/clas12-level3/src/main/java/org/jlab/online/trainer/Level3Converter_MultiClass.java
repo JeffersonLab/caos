@@ -73,6 +73,7 @@ public class Level3Converter_MultiClass {
         for(int i = 0; i < array.length; i++) if(array[i]==value) return true;
         return false;
     }
+
     
     public static double convertEC(Bank bank, CompositeNode node, int... sectors){
         double totEnergy=0;
@@ -163,6 +164,55 @@ public class Level3Converter_MultiClass {
             }
         }
     }
+
+    public static void convertFTOF(Bank bank, CompositeNode node, int... sectors){
+        node.setRows(0);
+        int nrowsftof = bank.getRows();
+        if(bank.getRows()<4000){
+
+            //node.setRows(nrowsdc);
+            int counter = 0;
+            for(int row = 0; row < nrowsftof; row++){
+                int sector = bank.getInt("sector", row);
+                if(Level3Converter_MultiClass.contains(sectors, sector)==true){
+                    node.setRows(counter+1);                
+                    node.putByte(  0, counter, (byte) bank.getInt("sector", row));
+                    node.putByte(  1, counter, (byte) bank.getInt("layer", row));
+                    node.putShort( 2, counter, (short) bank.getInt("component", row));
+                    node.putByte(  3, counter, (byte) bank.getInt("order", row));
+                    node.putInt(   4, counter,  bank.getInt("ADC", row));
+                    node.putFloat(   5, counter,  bank.getFloat("time", row));
+                    node.putShort( 6, counter, (short) bank.getInt("ped", row));
+                    counter++;
+                }
+            }
+        }
+    }
+
+    public static void convertHTCC(Bank bank, CompositeNode node, int... sectors){
+        node.setRows(0);
+        int nrowshtcc = bank.getRows();
+        if(bank.getRows()<4000){
+
+            //node.setRows(nrowshtcc);
+            int counter = 0;
+            for(int row = 0; row < nrowshtcc; row++){
+                int sector = bank.getInt("sector", row);
+                if(Level3Converter_MultiClass.contains(sectors, sector)==true){
+                    node.setRows(counter+1);                
+                    node.putByte(  0, counter, (byte) bank.getInt("sector", row));
+                    node.putByte(  1, counter, (byte) bank.getInt("layer", row));
+                    node.putShort( 2, counter, (short) bank.getInt("component", row));
+                    node.putByte(  3, counter, (byte) bank.getInt("order", row));
+                    node.putInt(   4, counter,  bank.getInt("ADC", row));
+                    node.putFloat(   5, counter,  bank.getFloat("time", row));
+                    node.putShort( 6, counter, (short) bank.getInt("ped", row));
+                    counter++;
+                }
+            }
+        }
+    }
+
     public static int getTriggerSector(int[] trigger){
         if(trigger[0]<1) return 0;
         for(int s = 1; s < trigger.length; s++) 
