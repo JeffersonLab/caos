@@ -81,8 +81,8 @@ public class Level3Tester_Simulation {
 
                 INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-                INDArray FTOFArray = Nd4j.zeros(nMax, 62);
-                INDArray HTCCArray = Nd4j.zeros(nMax, 8);
+                INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
+                INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
                 INDArray OUTArray = Nd4j.zeros(nMax, 5);
 
                 //r.getSchemaFactory().show();
@@ -450,7 +450,7 @@ public class Level3Tester_Simulation {
     public void test(MultiDataSet data,double thresh,int elClass,int LabelVal, String Part,Boolean mask_nphe) {
         
         //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
-        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1],data.getFeatures()[3],data.getFeatures()[4]);
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1],data.getFeatures()[2],data.getFeatures()[3]);
 
         if (mask_nphe) {
             INDArray mask=data.getLabels()[0].get(NDArrayIndex.all(), NDArrayIndex.point(4));
@@ -484,7 +484,7 @@ public class Level3Tester_Simulation {
         /*files.add(new String[] {dir+"pim",dir+"gamma",dir+"pos" });//dir+"pim"
         files.add(new String[] { dir+"el" });*/
 
-        files.add(new String[] { dir+"gamma"});
+        files.add(new String[] { dir+"pim"});
         files.add(new String[] { dir+"el" });
 
         List<Integer[]> maxes = new ArrayList<>();
@@ -504,9 +504,10 @@ public class Level3Tester_Simulation {
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
 
         Level3Tester_Simulation t=new Level3Tester_Simulation();
-        t.load("level3_sim_0d.network");
+        //t.load("level3_sim_0d.network");
         //t.load("level3_sim_fullLayers_0d.network");
         //t.load("level3_0d_in.network");
+        t.load("level3_sim_0d_FTOFHTCC.network");
 
         Boolean mask_nphe=false;
         //NB: this only works with two samples of same size and assuming the electron sample comes last
