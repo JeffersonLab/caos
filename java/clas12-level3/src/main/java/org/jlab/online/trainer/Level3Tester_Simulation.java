@@ -241,8 +241,10 @@ public class Level3Tester_Simulation {
                     }
                     inputs[1] = Nd4j.vstack(inputs[1], ECArray);
 
+                    MultiDataSet datasetHTCC = new MultiDataSet(new INDArray[]{HTCCArray},new INDArray[]{HTCCArray});
+                    datasetHTCC.shuffle();
                     //remove if not using ftof or htcc
-                    inputs[3] = Nd4j.vstack(inputs[3], HTCCArray);
+                    inputs[3] = Nd4j.vstack(inputs[3], datasetHTCC.getFeatures()[0]);
 
                     outputs[0] = Nd4j.vstack(outputs[0], OUTArray);
                 }
@@ -484,7 +486,7 @@ public class Level3Tester_Simulation {
         /*files.add(new String[] {dir+"pim",dir+"gamma",dir+"pos" });//dir+"pim"
         files.add(new String[] { dir+"el" });*/
 
-        files.add(new String[] { dir+"pim"});
+        files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"el" });
 
         List<Integer[]> maxes = new ArrayList<>();
@@ -507,14 +509,16 @@ public class Level3Tester_Simulation {
         //t.load("level3_sim_0d.network");
         //t.load("level3_sim_fullLayers_0d.network");
         //t.load("level3_0d_in.network");
-        t.load("level3_sim_0d_FTOFHTCC.network");
+        //t.load("level3_sim_0d_FTOFHTCC.network");
+        //t.load("level3_sim_wMixMatch_0d_FTOFHTCC.network");
+        t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC.network");
 
         Boolean mask_nphe=false;
         //NB: this only works with two samples of same size and assuming the electron sample comes last
         Boolean mixMatchTracks=true; 
 
         //Get vals for electron
-        int elClass=1;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes
+        int elClass=4;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes etc
         int elLabelVal=1;
         MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,classes,sectors,10.547,0.8,mixMatchTracks);
         double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal,mask_nphe);
