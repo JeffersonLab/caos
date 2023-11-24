@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Convolution1D;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -215,16 +216,31 @@ public class Level3Models_MultiClass {
                 .addLayer("L2Pool", new SubsamplingLayer.Builder(new int[]{2,2}, new int[]{2,2}).build(), "L4")
                 .addLayer("dcDense", new DenseLayer.Builder().nOut(48).dropOut(0.5).build(), "L1Pool")
                 .addLayer("ecDense", new DenseLayer.Builder().nOut(48).dropOut(0.5).build(), "L2Pool")
-                .addVertex("merge", new MergeVertex(), "dcDense", "ecDense","ftof","htcc")
-                .addLayer("dense1", new DenseLayer.Builder().nOut(80).dropOut(0.5).build(), "merge")
+                .addLayer("L1ftof", new ConvolutionLayer.Builder(4,1)
+                            .nIn(1)
+                            .nOut(6)
+                            .activation(Activation.RELU)
+                            .stride(2,1).build()
+                            ,"ftof")
+                .addLayer("ftofDense", new DenseLayer.Builder().nOut(30).dropOut(0.5).build(), "L1ftof")
+                .addLayer("L1htcc", new ConvolutionLayer.Builder(2,1)
+                        .nIn(1)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        ,"htcc")
+                .addLayer("htccDense", new DenseLayer.Builder().nOut(20).dropOut(0.5).build(), "L1htcc")
+                .addVertex("merge", new MergeVertex(), "dcDense", "ecDense","ftofDense","htccDense")
+                .addLayer("dense1", new DenseLayer.Builder().nOut(100).dropOut(0.5).build(), "merge")
+                .addLayer("dense2", new DenseLayer.Builder().nOut(25).dropOut(0.5).build(), "dense1")
                 .addLayer("out", new OutputLayer.Builder()
-                        .nIn(80).nOut(nClasses)
+                        .nIn(25).nOut(nClasses)
                         .activation(Activation.SOFTMAX)
                         .build()
-                        , "dense1")
+                        , "dense2")
                 .setOutputs("out")
                 .setInputTypes(InputType.convolutional(6, 112, 1), InputType.convolutional(6, 72, 1),
-                                InputType.feedForward(62), InputType.feedForward(8))
+                                InputType.convolutional(62,1,1), InputType.convolutional(8,1,1))
                 .build();
         return config;
     }

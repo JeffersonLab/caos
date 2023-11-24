@@ -124,9 +124,12 @@ public class Level3Trainer_Simulation{
 		        int bE=(batch+1)*batchSize;
                 INDArray DC_b=data.getFeatures()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
 		        INDArray EC_b=data.getFeatures()[1].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-                INDArray FTOF_b=data.getFeatures()[2].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
-		        INDArray HTCC_b=data.getFeatures()[3].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
+                INDArray FTOF_b=data.getFeatures()[2].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+		        INDArray HTCC_b=data.getFeatures()[3].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
                 INDArray Lab_b=data.getLabels()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
+
+                //System.out.printf("1 %d, 2 %d, 3 %d, 4%d\n",FTOF_b.shape()[0],FTOF_b.shape()[1],FTOF_b.shape()[2],FTOF_b.shape()[3]);
+
                 //network.fit(new INDArray[] {DC_b,EC_b}, new INDArray[] {Lab_b});
                 network.fit(new INDArray[] {DC_b,EC_b,FTOF_b,HTCC_b}, new INDArray[] {Lab_b});
             }
@@ -436,8 +439,8 @@ public class Level3Trainer_Simulation{
 
                 INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-                INDArray FTOFArray = Nd4j.zeros(nMax, 62);
-                INDArray HTCCArray = Nd4j.zeros(nMax, 8);
+                INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
+                INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
                 INDArray OUTArray = Nd4j.zeros(nMax, files.size());
                 Event event = new Event();
                 int counter = 0,eventNb=0;
@@ -558,9 +561,9 @@ public class Level3Trainer_Simulation{
 
         t.nEpochs = 500;//500
         t.trainFile(files,names,30000,5000,10000);//30000 5000 10000
-        t.save("level3_sim_FTOFHTCC");
+        t.save("level3_sim");
 
-        t.load("level3_sim_FTOFHTCC_"+net+".network");
+        t.load("level3_sim_"+net+".network");
         t.evaluateFile(files,names,5000,false);//5000
 
     }

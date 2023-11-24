@@ -168,7 +168,7 @@ public class Level3Utils {
 
     public static void fillHTCC(INDArray htcc, CompositeNode htccBank, int sector , int order){
         int   nrows = htccBank.getRows();
-        int[] index = new int[]{0,0};
+        int[] index = new int[]{0,0,0,0};
 
         for(int row = 0; row < nrows; row++){
             
@@ -182,7 +182,8 @@ public class Level3Utils {
  
                 if(energy>=0.0&&sect==sector){
                     index[0]   = order;
-                    index[1]   = ((layer-1)*4+component)-1;
+                    //index[1] is channel number set to 1
+                    index[2]   = ((layer-1)*4+component)-1;
                     
                     if(index[1]<8){
                         htcc.putScalar(index, energy);
@@ -194,7 +195,7 @@ public class Level3Utils {
 
     public static void fillFTOF(INDArray ftof, CompositeNode ftofBank, int sector , int order){
         int   nrows = ftofBank.getRows();
-        int[] index = new int[]{0,0};
+        int[] index = new int[]{0,0,0,0};
 
         for(int row = 0; row < nrows; row++){
             
@@ -208,7 +209,8 @@ public class Level3Utils {
  
                 if(energy>=0.0&&sect==sector){//&&energy<1.0
                     index[0]   = order;
-                    index[1]   = component-1;
+                    //index 1 is channel number set to 1
+                    index[2]   = component-1;
                     
                     if(index[1]<62){
                      ftof.putScalar(index, energy);
