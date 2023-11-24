@@ -474,22 +474,29 @@ public class Level3Trainer_Simulation{
                 }
 
                 if(names.get(classs)[j]=="mixMatch"){
+                    System.out.println("mix matching");
                     //Shuffle DC and EC arrays independently
                     //Creates Calorimeter hits uncorrelated to DC tracks
-                    MultiDataSet datasetDC = new MultiDataSet(new INDArray[]{DCArray},new INDArray[]{OUTArray});
+                    MultiDataSet datasetDC = new MultiDataSet(new INDArray[]{DCArray},new INDArray[]{DCArray});
                     datasetDC.shuffle();
-                    MultiDataSet datasetEC = new MultiDataSet(new INDArray[]{ECArray},new INDArray[]{OUTArray});
+                    MultiDataSet datasetEC = new MultiDataSet(new INDArray[]{ECArray},new INDArray[]{ECArray});
                     datasetEC.shuffle();
-                    MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[]{FTOFArray},new INDArray[]{OUTArray});
+                    datasetEC.shuffle();
+                    MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[]{FTOFArray},new INDArray[]{FTOFArray});
                     datasetFTOF.shuffle();
+                    datasetFTOF.shuffle();
+                    datasetFTOF.shuffle();
+                    MultiDataSet datasetHTCC = new MultiDataSet(new INDArray[]{HTCCArray},new INDArray[]{HTCCArray});
+                    datasetHTCC.shuffle();
+                    datasetHTCC.shuffle();
+                    datasetHTCC.shuffle();
+                    datasetHTCC.shuffle();
                     DCArray=datasetDC.getFeatures()[0];
                     ECArray=datasetEC.getFeatures()[0];
                     FTOFArray=datasetFTOF.getFeatures()[0];
-                     //don't add HTCC as this is clear signal of e-, instead add 0s
-                     HTCCArray=Nd4j.zeros(nMax, 8);
+                    HTCCArray=datasetHTCC.getFeatures()[0];
                     //Note: OUTArray should be the same at all rows so it doesn't matter
-                    //if it isn't shuffled in same order as DC and EC arrays.
-                    //we only put it in the datasets to have correct dataset declaration
+                    //if it isn't ordered the same as other arrays.
                    
 
                 }
@@ -527,22 +534,24 @@ public class Level3Trainer_Simulation{
         String dir = "/scratch/clasrun/caos/sims/";
 
         List<String[]> files = new ArrayList<>();
-        /*files.add(new String[] { dir+"pim"});
+        files.add(new String[] { dir+"pim"});
         files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"pos"});
-        files.add(new String[] { dir+"el" });*/
-
-        files.add(new String[] { dir+"pim", dir+"gamma" ,dir+"pos"});//,dir+"el"});
+        files.add(new String[] {dir+"pim",dir+"pos"});
         files.add(new String[] { dir+"el" });
 
+        /*files.add(new String[] { dir+"pim", dir+"gamma",dir+"pim"});// ,dir+"pos"});//,dir+"pim"});
+        files.add(new String[] { dir+"el" });*/
+
         List<String[]> names = new ArrayList<>();
-        /*names.add(new String[] { "pim"});
+        names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
-        names.add(new String[] { "el" });*/
-
-        names.add(new String[] { "pim", "gamma" ,"pos"});//,"mixMatch"});
+        names.add(new String[]{"mixMatch","mixMatch"});
         names.add(new String[] { "el" });
+
+        /*names.add(new String[] { "pim", "gamma","mixMatch"});// ,"pos"});//,"mixMatch"});
+        names.add(new String[] { "el" });*/
 
         String net = "0d_FTOFHTCC"; //"0d_allLayers"
         Level3Trainer_Simulation t = new Level3Trainer_Simulation();
@@ -559,11 +568,11 @@ public class Level3Trainer_Simulation{
         // transfer learning
         // t.load("level3_sim_"+net+".network");
 
-        t.nEpochs = 500;//500
+        t.nEpochs = 750;//500
         t.trainFile(files,names,30000,5000,10000);//30000 5000 10000
-        t.save("level3_sim");
+        t.save("level3_sim_MC_wMixMatch");
 
-        t.load("level3_sim_"+net+".network");
+        t.load("level3_sim_MC_wMixMatch_"+net+".network");
         t.evaluateFile(files,names,5000,false);//5000
 
     }
