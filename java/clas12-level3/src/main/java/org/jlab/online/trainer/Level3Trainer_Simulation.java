@@ -411,12 +411,15 @@ public class Level3Trainer_Simulation{
         INDArray[] outputs = new INDArray[1];
         //added tag is for individual tag
         //classs is for each array of tags ie class
-        int added_classes=0, classs=0;
+        int classs=0;
 
         for (String[] file_arr : files) {
 
             System.out.printf("Class: %d",classs);
 
+            INDArray[] inputs_class = new INDArray[2];
+            INDArray[] outputs_class = new INDArray[1];
+            int added_classes=0;
             for (int j = 0; j < file_arr.length; j++) {
                 String file = file_arr[j]+"_daq.h5";
                 HipoReader r = new HipoReader();
@@ -473,49 +476,64 @@ public class Level3Trainer_Simulation{
 
                 }
 
-                if(names.get(classs)[j]=="mixMatch"){
-                    System.out.println("mix matching");
-                    //Shuffle DC and EC arrays independently
-                    //Creates Calorimeter hits uncorrelated to DC tracks
-                    MultiDataSet datasetDC = new MultiDataSet(new INDArray[]{DCArray},new INDArray[]{DCArray});
-                    datasetDC.shuffle();
-                    MultiDataSet datasetEC = new MultiDataSet(new INDArray[]{ECArray},new INDArray[]{ECArray});
-                    datasetEC.shuffle();
-                    datasetEC.shuffle();
-                    MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[]{FTOFArray},new INDArray[]{FTOFArray});
-                    datasetFTOF.shuffle();
-                    datasetFTOF.shuffle();
-                    datasetFTOF.shuffle();
-                    MultiDataSet datasetHTCC = new MultiDataSet(new INDArray[]{HTCCArray},new INDArray[]{HTCCArray});
-                    datasetHTCC.shuffle();
-                    datasetHTCC.shuffle();
-                    datasetHTCC.shuffle();
-                    datasetHTCC.shuffle();
-                    DCArray=datasetDC.getFeatures()[0];
-                    ECArray=datasetEC.getFeatures()[0];
-                    FTOFArray=datasetFTOF.getFeatures()[0];
-                    HTCCArray=datasetHTCC.getFeatures()[0];
-                    //Note: OUTArray should be the same at all rows so it doesn't matter
-                    //if it isn't ordered the same as other arrays.
-                   
-
-                }
-
                 System.out.printf("loaded samples (%d)\n\n\n", counter);
                 if (added_classes == 0) {
                     //inputs = new INDArray[] { DCArray, ECArray };
-                    inputs = new INDArray[] { DCArray, ECArray,FTOFArray,HTCCArray };
-                    outputs = new INDArray[] { OUTArray };
+                    inputs_class = new INDArray[] { DCArray, ECArray,FTOFArray,HTCCArray };
+                    outputs_class = new INDArray[] { OUTArray };
                 } else {
-                    inputs[0] = Nd4j.vstack(inputs[0], DCArray);
-                    inputs[1] = Nd4j.vstack(inputs[1], ECArray);
+                    inputs_class[0] = Nd4j.vstack(inputs_class[0], DCArray);
+                    inputs_class[1] = Nd4j.vstack(inputs_class[1], ECArray);
                     //remove if not using HTCC, FTOF
-                    inputs[2] = Nd4j.vstack(inputs[2], FTOFArray);
-                    inputs[3] = Nd4j.vstack(inputs[3], HTCCArray);
-                    outputs[0] = Nd4j.vstack(outputs[0], OUTArray);
+                    inputs_class[2] = Nd4j.vstack(inputs_class[2], FTOFArray);
+                    inputs_class[3] = Nd4j.vstack(inputs_class[3], HTCCArray);
+                    outputs_class[0] = Nd4j.vstack(outputs_class[0], OUTArray);
                 }
                 added_classes++;
 
+            }
+
+            if (names.get(classs)[0] == "mixMatch") {
+                System.out.println("mix matching");
+                // Shuffle DC and EC arrays independently
+                // Creates Calorimeter hits uncorrelated to DC tracks
+                MultiDataSet datasetDC = new MultiDataSet(new INDArray[] { inputs_class[0] },
+                        new INDArray[] { inputs_class[0] });
+                datasetDC.shuffle();
+                MultiDataSet datasetEC = new MultiDataSet(new INDArray[] { inputs_class[1] },
+                        new INDArray[] { inputs_class[1] });
+                datasetEC.shuffle();
+                datasetEC.shuffle();
+                MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[] { inputs_class[2] },
+                        new INDArray[] { inputs_class[2] });
+                datasetFTOF.shuffle();
+                datasetFTOF.shuffle();
+                datasetFTOF.shuffle();
+                MultiDataSet datasetHTCC = new MultiDataSet(new INDArray[] { inputs_class[3] },
+                        new INDArray[] { inputs_class[3] });
+                datasetHTCC.shuffle();
+                datasetHTCC.shuffle();
+                datasetHTCC.shuffle();
+                datasetHTCC.shuffle();
+                inputs_class[0] = datasetDC.getFeatures()[0];
+                inputs_class[1] = datasetEC.getFeatures()[0];
+                inputs_class[2] = datasetFTOF.getFeatures()[0];
+                inputs_class[3] = datasetHTCC.getFeatures()[0];
+                // Note: OUTArray should be the same at all rows so it doesn't matter
+                // if it isn't ordered the same as other arrays
+            }
+
+            if (classs == 0) {
+                // inputs = new INDArray[] { DCArray, ECArray };
+                inputs = inputs_class;
+                outputs = outputs_class;
+            } else {
+                inputs[0] = Nd4j.vstack(inputs[0], inputs_class[0]);
+                inputs[1] = Nd4j.vstack(inputs[1], inputs_class[1]);
+                // remove if not using HTCC, FTOF
+                inputs[2] = Nd4j.vstack(inputs[2],inputs_class[2]);
+                inputs[3] = Nd4j.vstack(inputs[3], inputs_class[3]);
+                outputs[0] = Nd4j.vstack(outputs[0], outputs_class[0]);
             }
             classs++;  
 
@@ -537,7 +555,7 @@ public class Level3Trainer_Simulation{
         files.add(new String[] { dir+"pim"});
         files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"pos"});
-        files.add(new String[] {dir+"pim",dir+"pos"});
+        files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});
         files.add(new String[] { dir+"el" });
 
         /*files.add(new String[] { dir+"pim", dir+"gamma",dir+"pim"});// ,dir+"pos"});//,dir+"pim"});
@@ -547,7 +565,7 @@ public class Level3Trainer_Simulation{
         names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
-        names.add(new String[]{"mixMatch","mixMatch"});
+        names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});
         names.add(new String[] { "el" });
 
         /*names.add(new String[] { "pim", "gamma","mixMatch"});// ,"pos"});//,"mixMatch"});

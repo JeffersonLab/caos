@@ -58,13 +58,16 @@ public class Level3Tester_Simulation {
 
     
    
-    public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,List<Integer> Classes, List<Integer> Sectors,double beamE,double trainTestP,Boolean mixMatchTracks){
+    public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,List<Integer> Classes, List<Integer> Sectors,double beamE,double trainTestP){
         INDArray[] inputs = new INDArray[4]; //size 2 if not using HTCC & FTOF
         INDArray[] outputs = new INDArray[1];
-        int nEls = 0, nOther = 0, added_files = 0, classs = 0,counter_tot=0,nBg=0;
+        int nEls = 0, nOther = 0,nmixMatch=0, classs = 0,counter_tot=0,nBg=0;
 
         for (String[] file_arr : files) {
 
+            INDArray[] inputs_class = new INDArray[4]; //size 2 if not using HTCC & FTOF
+            INDArray[] outputs_class = new INDArray[1];
+            int added_files = 0;
             System.out.printf("Class: %d", classs);
 
             for (int j = 0; j < file_arr.length; j++) {
@@ -193,6 +196,10 @@ public class Level3Tester_Simulation {
                                         nBg++;
                                     }
 
+                                    else if (Classes.get(classs) == 3) {
+                                        nmixMatch++;
+                                    }
+
                                     int nphe_mask=1;
                                     if(nphe<2.0){nphe_mask=0;}
 
@@ -221,35 +228,63 @@ public class Level3Tester_Simulation {
                 }
                 System.out.printf("loaded samples (%d)\n\n\n", counter);
                 if (added_files == 0) {
-                    //inputs = new INDArray[] { DCArray, ECArray};
-                    inputs = new INDArray[] { DCArray, ECArray,FTOFArray,HTCCArray };
-                    outputs = new INDArray[] { OUTArray };
+                    // inputs = new INDArray[] { DCArray, ECArray };
+                    inputs_class = new INDArray[] { DCArray, ECArray, FTOFArray, HTCCArray };
+                    outputs_class = new INDArray[] { OUTArray };
                 } else {
-                    
-                    inputs[0] = Nd4j.vstack(inputs[0], DCArray);
-
-                    //remove if not using ftof or htcc
-                    inputs[2] = Nd4j.vstack(inputs[2], FTOFArray);
-
-                    if(mixMatchTracks==true && Classes.get(classs)==1){
-                        inputs[0] = Nd4j.vstack(DCArray, DCArray);
-                        //shuffle FTOF so that it's uncorrelated to DC
-                        MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[]{FTOFArray},new INDArray[]{FTOFArray});
-                        datasetFTOF.shuffle();
-                        inputs[2] = Nd4j.vstack(datasetFTOF.getFeatures()[0], datasetFTOF.getFeatures()[0]);
-                        //don't add HTCC as this too clear a signal of electrons
-                    }
-                    inputs[1] = Nd4j.vstack(inputs[1], ECArray);
-
-                    MultiDataSet datasetHTCC = new MultiDataSet(new INDArray[]{HTCCArray},new INDArray[]{HTCCArray});
-                    datasetHTCC.shuffle();
-                    //remove if not using ftof or htcc
-                    inputs[3] = Nd4j.vstack(inputs[3], datasetHTCC.getFeatures()[0]);
-
-                    outputs[0] = Nd4j.vstack(outputs[0], OUTArray);
+                    inputs_class[0] = Nd4j.vstack(inputs_class[0], DCArray);
+                    inputs_class[1] = Nd4j.vstack(inputs_class[1], ECArray);
+                    // remove if not using HTCC, FTOF
+                    inputs_class[2] = Nd4j.vstack(inputs_class[2], FTOFArray);
+                    inputs_class[3] = Nd4j.vstack(inputs_class[3], HTCCArray);
+                    outputs_class[0] = Nd4j.vstack(outputs_class[0], OUTArray);
                 }
                 added_files++;
             }
+
+            if (Classes.get(classs) == 3) {
+                System.out.println("mix matching");
+                // Shuffle DC and EC arrays independently
+                // Creates Calorimeter hits uncorrelated to DC tracks
+                MultiDataSet datasetDC = new MultiDataSet(new INDArray[] { inputs_class[0] },
+                        new INDArray[] { inputs_class[0] });
+                datasetDC.shuffle();
+                MultiDataSet datasetEC = new MultiDataSet(new INDArray[] { inputs_class[1] },
+                        new INDArray[] { inputs_class[1] });
+                datasetEC.shuffle();
+                datasetEC.shuffle();
+                MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[] { inputs_class[2] },
+                        new INDArray[] { inputs_class[2] });
+                datasetFTOF.shuffle();
+                datasetFTOF.shuffle();
+                datasetFTOF.shuffle();
+                MultiDataSet datasetHTCC = new MultiDataSet(new INDArray[] { inputs_class[3] },
+                        new INDArray[] { inputs_class[3] });
+                datasetHTCC.shuffle();
+                datasetHTCC.shuffle();
+                datasetHTCC.shuffle();
+                datasetHTCC.shuffle();
+                inputs_class[0] = datasetDC.getFeatures()[0];
+                inputs_class[1] = datasetEC.getFeatures()[0];
+                inputs_class[2] = datasetFTOF.getFeatures()[0];
+                inputs_class[3] = datasetHTCC.getFeatures()[0];
+                // Note: OUTArray should be the same at all rows so it doesn't matter
+                // if it isn't ordered the same as other arrays
+            }
+
+            if (classs == 0) {
+                // inputs = new INDArray[] { DCArray, ECArray };
+                inputs = inputs_class;
+                outputs = outputs_class;
+            } else {
+                inputs[0] = Nd4j.vstack(inputs[0], inputs_class[0]);
+                inputs[1] = Nd4j.vstack(inputs[1], inputs_class[1]);
+                // remove if not using HTCC, FTOF
+                inputs[2] = Nd4j.vstack(inputs[2], inputs_class[2]);
+                inputs[3] = Nd4j.vstack(inputs[3], inputs_class[3]);
+                outputs[0] = Nd4j.vstack(outputs[0], outputs_class[0]);
+            }
+
             classs++;
         }
         //System.out.print(OUTArray);
@@ -486,7 +521,7 @@ public class Level3Tester_Simulation {
         /*files.add(new String[] {dir+"pim",dir+"gamma",dir+"pos" });//dir+"pim"
         files.add(new String[] { dir+"el" });*/
 
-        files.add(new String[] { dir+"gamma"});
+        files.add(new String[] { dir+"pim",dir+"pos",dir+"el",dir+"gamma"});
         files.add(new String[] { dir+"el" });
 
         List<Integer[]> maxes = new ArrayList<>();
@@ -497,7 +532,7 @@ public class Level3Tester_Simulation {
         maxes.add(new Integer[] {4800});
 
         List<Integer> classes=new ArrayList<>();
-        classes.add(0);
+        classes.add(0);//3 for mixmatch
         classes.add(1);
 
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
@@ -514,13 +549,11 @@ public class Level3Tester_Simulation {
         t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC.network");
 
         Boolean mask_nphe=false;
-        //NB: this only works with two samples of same size and assuming the electron sample comes last
-        Boolean mixMatchTracks=true; 
 
         //Get vals for electron
         int elClass=4;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes etc
         int elLabelVal=1;
-        MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,classes,sectors,10.547,0.8,mixMatchTracks);
+        MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,classes,sectors,10.547,0.8);
         double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal,mask_nphe);
         t.test(data, bestTh, elClass,elLabelVal,"Electron",mask_nphe);//bestTh
 
