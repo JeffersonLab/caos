@@ -9,6 +9,7 @@ import j4np.hipo5.data.CompositeNode;
 import j4np.hipo5.data.Event;
 import j4np.hipo5.io.HipoReader;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -297,9 +298,13 @@ public class Level3Utils {
     }
 
     public static void fillLabels_ClusterFinder(INDArray ec, CompositeNode ecBank, int sector , int order){
-        INDArray ec_ones=ec.add(1);
+        
         int   nrows = ecBank.getRows();
         int[] index = new int[]{0,0};
+
+        double ADC_max=0;
+
+        List<Integer> js= new ArrayList<>();
 
         for(int row = 0; row < nrows; row++){
             
@@ -308,24 +313,28 @@ public class Level3Utils {
             int  strip = ecBank.getInt(2, row);
             int    ADC = ecBank.getInt(4, row);
 
-            if(ADC>0){
-                double energy = ADC; 
+            if(ADC>0.0){
+                
                 //----------------
-                if(energy>=0.0 && sect==sector){
+                if(sect==sector){
 
                     if (layer > 3 && layer < 7) {
                         index[0] = order;
-                        index[1] = ((layer-3)*36+strip)-1;
+                        index[1] = ((layer-4)*36+strip)-1;
 
                         if (index[1] < 108) {
-                            ec.putScalar(index, energy);
+                            ec.putScalar(index, ADC);
+                            if(ADC>ADC_max){ADC_max=ADC;}
                         }
                     }
                 }
                 //----------------  
             }
         }
-        ec=ec.div(ec_ones);//scale each cluster to by itself
+
+        for (int j :js){
+            ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max);
+        }
 
     }
     

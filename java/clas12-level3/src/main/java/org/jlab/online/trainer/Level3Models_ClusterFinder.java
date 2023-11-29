@@ -22,6 +22,8 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 
 /**
  *
@@ -49,12 +51,13 @@ public class Level3Models_ClusterFinder {
                         .stride(1,1).build()
                         , "L1")              
                 .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{12,2}, new int[]{12,2}).build(), "L2")
-                .addLayer("dcDense", new DenseLayer.Builder().nOut(48).dropOut(0.5).build(), "L1Pool")
-                .addLayer("out", new OutputLayer.Builder()
-                        .nIn(48).nOut(108)
-                        .activation(Activation.SOFTMAX)
+                .addLayer("dcDense", new DenseLayer.Builder().activation(Activation.RELU).nOut(50).dropOut(0.2).build(), "L1Pool")
+                .addLayer("dcDense2", new DenseLayer.Builder().activation(Activation.RELU).nOut(100).dropOut(0.2).build(), "dcDense")
+                .addLayer("out", new OutputLayer.Builder(new LossMAE())
+                        .nIn(100).nOut(108)
+                        .activation(Activation.IDENTITY)
                         .build()
-                        , "merge")
+                        , "dcDense2")
                 .setOutputs("out")
                 .setInputTypes(InputType.convolutional(36, 112, 1))
                 .build();
@@ -64,7 +67,7 @@ public class Level3Models_ClusterFinder {
     public static ComputationGraphConfiguration getModel(String modelname){
         switch(modelname){
             case "0a": return Level3Models_ClusterFinder.getModel0a();
-            default: return null;
+            default: return Level3Models_ClusterFinder.getModel0a();
         }
     }
 }

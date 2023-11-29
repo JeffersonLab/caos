@@ -80,17 +80,6 @@ public class Level3ClusterFinder_Simulation{
         }
     }
 
-    public static int findIndexClassString(List<String[]> files,String className){
-		int index=-1;
-		for (int i=0;i<files.size();i++) {
-			for(int j=0;j<files.get(i).length;j++){
-				if (files.get(i)[j].contains(className)){index=i;}
-			}
-		}
-		return index;
-	}
-
-
     public void evaluateFile(List<String[]> files,List<String[]> names, int nEvents_pSample, Boolean doPlots) {
 
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.8);
@@ -252,7 +241,9 @@ public class Level3ClusterFinder_Simulation{
             classs++;  
 
         }
-        
+       
+        System.out.println(outputs[0]);
+
         MultiDataSet dataset = new MultiDataSet(inputs,outputs);
         dataset.shuffle();
         return dataset;
@@ -279,7 +270,7 @@ public class Level3ClusterFinder_Simulation{
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
         names.add(new String[] { "el" });
 
-        String net = "0d_FTOFHTCC"; //"0d_allLayers"
+        String net = "0a";
         Level3ClusterFinder_Simulation t = new Level3ClusterFinder_Simulation();
 
         t.cnnModel = net;
@@ -290,11 +281,11 @@ public class Level3ClusterFinder_Simulation{
         // t.load("level3CF_sim_"+net+".network");
 
         t.nEpochs = 750;//500
-        t.trainFile(files,names,30000,5000,10000);//30000 5000 10000
+        t.trainFile(files,names,30000,1000,1000);//30000 5000 10000
         t.save("level3CF_sim");
 
         t.load("level3CF_sim_"+net+".network");
-        t.evaluateFile(files,names,5000,false);//5000
+        t.evaluateFile(files,names,1000,false);//5000
 
     }
 }
