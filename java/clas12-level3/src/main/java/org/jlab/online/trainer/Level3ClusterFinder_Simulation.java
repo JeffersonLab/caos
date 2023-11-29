@@ -183,7 +183,7 @@ public class Level3ClusterFinder_Simulation{
                 CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
                 CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
 
-                INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+                INDArray DCArray = Nd4j.zeros(nMax, 1, 36, 112);
                 INDArray OUTArray = Nd4j.zeros(nMax, 108);
                 Event event = new Event();
                 int counter = 0,eventNb=0;
