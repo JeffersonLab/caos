@@ -407,7 +407,7 @@ public class Level3Trainer_Simulation{
     }
 
     public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names, int max,double trainTestP) {
-        INDArray[] inputs = new INDArray[2];
+        INDArray[] inputs = new INDArray[4];
         INDArray[] outputs = new INDArray[1];
         //added tag is for individual tag
         //classs is for each array of tags ie class
@@ -417,7 +417,7 @@ public class Level3Trainer_Simulation{
 
             System.out.printf("Class: %d",classs);
 
-            INDArray[] inputs_class = new INDArray[2];
+            INDArray[] inputs_class = new INDArray[4];
             INDArray[] outputs_class = new INDArray[1];
             int added_classes=0;
             for (int j = 0; j < file_arr.length; j++) {

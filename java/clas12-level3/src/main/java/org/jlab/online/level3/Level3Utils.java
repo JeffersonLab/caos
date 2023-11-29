@@ -295,6 +295,39 @@ public class Level3Utils {
             }
         }
     }
+
+    public static void fillLabels_ClusterFinder(INDArray ec, CompositeNode ecBank, int sector , int order){
+        INDArray ec_ones=ec.add(1);
+        int   nrows = ecBank.getRows();
+        int[] index = new int[]{0,0};
+
+        for(int row = 0; row < nrows; row++){
+            
+            int   sect = ecBank.getInt(0, row);
+            int  layer = ecBank.getInt(1, row);
+            int  strip = ecBank.getInt(2, row);
+            int    ADC = ecBank.getInt(4, row);
+
+            if(ADC>0){
+                double energy = ADC; 
+                //----------------
+                if(energy>=0.0 && sect==sector){
+
+                    if (layer > 3 && layer < 7) {
+                        index[0] = order;
+                        index[1] = ((layer-3)*36+strip)-1;
+
+                        if (index[1] < 108) {
+                            ec.putScalar(index, energy);
+                        }
+                    }
+                }
+                //----------------  
+            }
+        }
+        ec=ec.div(ec_ones);//scale each cluster to by itself
+
+    }
     
     //energies just for testing
     public static void fillEC(INDArray dc, CompositeNode ecBank, int sector , int order,List<Double> energies){
