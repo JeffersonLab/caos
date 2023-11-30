@@ -336,9 +336,30 @@ public class Level3Utils {
         }
 
         for (int j :js){
-            if(j<36){ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max_U);}
+            /*if(j<36){ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max_U);}
             else if(j>35 && j<72){ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max_V);}
-            else if(j>71){ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max_W);}
+            else if(j>71){ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max_W);}*/
+            if(j<36){
+                if(ec.getFloat(order,j)==ADC_max_U){
+                    ec.putScalar(new int[]{order,j},1);
+                } else{
+                    ec.putScalar(new int[]{order,j},0);
+                }
+            }
+            else if(j>35 && j<72){
+                if(ec.getFloat(order,j)==ADC_max_V){
+                    ec.putScalar(new int[]{order,j},1);
+                } else{
+                    ec.putScalar(new int[]{order,j},0);
+                }
+            }
+            else if(j>71){
+                if(ec.getFloat(order,j)==ADC_max_W){
+                    ec.putScalar(new int[]{order,j},1);
+                } else{
+                    ec.putScalar(new int[]{order,j},0);
+                }
+            }
         }
 
     }
