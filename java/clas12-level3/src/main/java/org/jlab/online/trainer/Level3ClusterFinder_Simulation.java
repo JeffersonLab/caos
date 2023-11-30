@@ -198,7 +198,7 @@ public class Level3ClusterFinder_Simulation{
                             Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
                             counter++;
                         } else{
-                            DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all()).assign(Nd4j.zeros(1, 108));
+                            OUTArray.get(NDArrayIndex.point(counter), NDArrayIndex.all()).assign(Nd4j.zeros(1, 108));
                         }
                         
                     }
@@ -257,15 +257,15 @@ public class Level3ClusterFinder_Simulation{
         String dir = "/scratch/clasrun/caos/sims/";
 
         List<String[]> files = new ArrayList<>();
-        /*files.add(new String[] { dir+"pim"});
-        files.add(new String[] { dir+"gamma"});
+        files.add(new String[] { dir+"pim"});
+        /*files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"pos"});
         files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
         files.add(new String[] { dir+"el" });
 
         List<String[]> names = new ArrayList<>();
-        /*names.add(new String[] { "pim"});
-        names.add(new String[] { "gamma"});
+        names.add(new String[] { "pim"});
+        /*names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
         names.add(new String[] { "el" });

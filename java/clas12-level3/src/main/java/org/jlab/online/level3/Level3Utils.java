@@ -302,7 +302,7 @@ public class Level3Utils {
         int   nrows = ecBank.getRows();
         int[] index = new int[]{0,0};
 
-        double ADC_max=0;
+        double ADC_max_U=0,ADC_max_V=0,ADC_max_W=0;
 
         List<Integer> js= new ArrayList<>();
 
@@ -324,7 +324,10 @@ public class Level3Utils {
 
                         if (index[1] < 108) {
                             ec.putScalar(index, ADC);
-                            if(ADC>ADC_max){ADC_max=ADC;}
+                            js.add(index[1]);
+                            if(layer==4){if(ADC>ADC_max_U){ADC_max_U=ADC;}}
+                            if(layer==5){if(ADC>ADC_max_V){ADC_max_V=ADC;}}
+                            if(layer==6){if(ADC>ADC_max_W){ADC_max_W=ADC;}}
                         }
                     }
                 }
@@ -333,7 +336,9 @@ public class Level3Utils {
         }
 
         for (int j :js){
-            ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max);
+            if(j<36){ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max_U);}
+            else if(j>35 && j<72){ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max_V);}
+            else if(j>71){ec.putScalar(new int[]{order,j},ec.getFloat(order,j)/ADC_max_W);}
         }
 
     }

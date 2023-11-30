@@ -53,7 +53,7 @@ public class Level3Models_ClusterFinder {
                 .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{12,2}, new int[]{12,2}).build(), "L2")
                 .addLayer("dcDense", new DenseLayer.Builder().activation(Activation.RELU).nOut(50).dropOut(0.2).build(), "L1Pool")
                 .addLayer("dcDense2", new DenseLayer.Builder().activation(Activation.RELU).nOut(100).dropOut(0.2).build(), "dcDense")
-                .addLayer("out", new OutputLayer.Builder(new LossMAE())
+                .addLayer("out", new OutputLayer.Builder(new LossMSE())
                         .nIn(100).nOut(108)
                         .activation(Activation.IDENTITY)
                         .build()
