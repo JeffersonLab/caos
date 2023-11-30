@@ -33,8 +33,10 @@ public class Level3Metrics_ClusterFinder {
 		System.out.printf("Test Average RMSE: %f, relativeSE: %f\n",eval.averagerootMeanSquaredError(),eval.averagerelativeSquaredError());
 		if(makePlots){
         	PlotMetricsVsThreshold(NEvents,predictions,Labels);
-			Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.1);
-			plotExamples(predictions, Labels, 0);
+			//Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.1);
+			for(int i=0;i<10;i++){
+				plotExamples(predictions, Labels, i);
+			}
 		}
     }
 
