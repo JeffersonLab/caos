@@ -109,7 +109,7 @@ public class Level3ClusterFinder_Simulation{
 
         if(bg!=""){
             data=addBg(bg,(int) NTotEvents, 0, data);
-            data_test=addBg(bg,(int) NTotEvents, 50, data_test);
+            data_test=addBg(bg,(int) data_test.getFeatures()[0].shape()[0], 50, data_test);
         }
 
         RegressionEvaluation eval = new RegressionEvaluation(data.getLabels()[0].shape()[1]);
