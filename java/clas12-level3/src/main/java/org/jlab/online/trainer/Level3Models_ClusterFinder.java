@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.Convolution1D;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
@@ -22,6 +23,7 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 
@@ -38,29 +40,30 @@ public class Level3Models_ClusterFinder {
                 .updater(new Adam(1e-3))//Adam(5e-3) //AdaDelta()
                 .graphBuilder()
                 .addInputs("dc")
-                .addLayer("L1", new ConvolutionLayer.Builder(2,2)
+                .addLayer("L1", new ConvolutionLayer.Builder(6,4)
                         .nIn(1)
                         .nOut(6)                    
                         .activation(Activation.RELU)
-                        .stride(1,1).build()
+                        .stride(2,1).build()
                         , "dc")
-                .addLayer("L2", new ConvolutionLayer.Builder(2,2)
+                .addLayer("L2", new ConvolutionLayer.Builder(6,4)
                         .nIn(6)
                         .nOut(6)                    
                         .activation(Activation.RELU)
-                        .stride(1,1).build()
-                        , "L1")              
-                .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{12,2}, new int[]{12,2}).build(), "L2")
-                .addLayer("dcDense", new DenseLayer.Builder().activation(Activation.RELU).nOut(50).dropOut(0.2).build(), "L1Pool")
-                .addLayer("dcDense2", new DenseLayer.Builder().activation(Activation.RELU).nOut(100).dropOut(0.2).build(), "dcDense")
-                .addLayer("out", new OutputLayer.Builder(new LossMSE())
-                        .nIn(100).nOut(108)
-                        .activation(Activation.IDENTITY)
+                        .stride(2,1).build()
+                        , "L1")            
+                .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{3,3}, new int[]{3,3}).poolingType(PoolingType.MAX).build(), "L2")
+                .addLayer("dcDense", new DenseLayer.Builder().activation(Activation.RELU).nOut(300).dropOut(0.2).build(), "L1Pool")
+                .addLayer("dcDense2", new DenseLayer.Builder().activation(Activation.RELU).nOut(200).dropOut(0.2).build(), "dcDense")
+                .addLayer("out", new OutputLayer.Builder(new LossBinaryXENT())//new LossMSE()
+                        .nIn(200).nOut(108)
+                        .activation(Activation.SIGMOID)
                         .build()
                         , "dcDense2")
                 .setOutputs("out")
                 .setInputTypes(InputType.convolutional(36, 112, 1))
                 .build();
+                //config.setValidateOutputLayerConfig(false);
         return config;
     }
     

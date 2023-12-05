@@ -361,7 +361,6 @@ public class Level3Utils {
                 }
             }
         }
-
     }
     
     //energies just for testing

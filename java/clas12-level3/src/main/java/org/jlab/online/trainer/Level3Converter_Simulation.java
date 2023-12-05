@@ -134,6 +134,63 @@ public class Level3Converter_Simulation {
         
         System.out.printf("Particle Type %d, Number of Events: %d\n\n",pid,n);
     }
+
+    public static void convertBGFile(String file, String output, List<Integer> Sectors){
+        HipoReader r = new HipoReader(file);
+        HipoWriter w = HipoWriter.create(output, r);
+        Event e = new Event();
+        Event e_out = new Event();
+        
+        Bank[] banks = r.getBanks("DC::tdc","ECAL::adc","RUN::config","FTOF::adc","HTCC::adc");
+        
+        CompositeNode nodeDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
+        CompositeNode nodeEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
+        CompositeNode nodeFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
+        CompositeNode nodeHTCC = new CompositeNode( 14, 5, "bbsbifs", 4096);
+        int n=0;
+        while(r.hasNext()){
+            
+            r.nextEvent(e);
+            e.read(banks);
+            
+
+            //loop over sectors
+            for (int sect: Sectors) {
+
+                int[] labels = new int[] { 0, 0, sect };
+                Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
+                double nEdep=Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
+                Level3Converter_MultiClass.convertHTCC(banks[4], nodeHTCC, sect);
+                Level3Converter_MultiClass.convertFTOF(banks[3], nodeFTOF, sect);
+                // nodeDC.print();
+                // nodeEC.print();
+
+                //System.out.printf("Tag: (%d)",tag);
+
+                Node tnode = new Node(5, 4, labels);
+
+                if (nodeEC.getRows() > 0 && nodeDC.getRows()>0) {//&& nodeDC.getRows() > 0 allow DC to be empty for neutrals
+                    n++;
+                    // all data
+                    e_out.reset();
+                    e_out.write(nodeEC);
+                    e_out.write(nodeDC);
+                    e_out.write(nodeHTCC);
+                    e_out.write(nodeFTOF);
+                    e_out.write(tnode);
+
+                    e_out.setEventTag(0);
+
+                    w.addEvent(e_out);
+
+                }
+            }
+        }
+        w.close();
+
+        
+        System.out.printf("Number of Events: %d\n\n",n);
+    }
     
     public static void main(String[] args){        
         
@@ -146,12 +203,23 @@ public class Level3Converter_Simulation {
         sectors.add(1);
 
         //for (int file=100;file<110;file+=5){
-        for (int file=0;file<4;file+=1){
+        for (int file=1;file<1;file+=1){
 
             String fName=dir+base[file]+"_rec.hipo";
             String out=dir+base[file]+"_daq.h5";
             Level3Converter_Simulation.convertFile(fName,out,pid[file],tags[file],sectors); //_wrongTriggerOnly
 
+        }
+
+        String base_bg=dir+"bg_50nA_10p6/";
+        for (int file=1;file<101;file++){
+            String zeros="0000";
+            if(file>9){zeros="000";}
+            if (file>99){zeros="00";}
+        
+            String fName=base_bg+zeros+String.valueOf(file)+".hipo";
+            String out=base_bg+"daq_"+String.valueOf(file)+".h5";
+            Level3Converter_Simulation.convertBGFile(fName,out,sectors);
         }
 
     }

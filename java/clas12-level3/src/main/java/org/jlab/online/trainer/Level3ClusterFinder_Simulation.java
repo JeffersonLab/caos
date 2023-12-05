@@ -35,6 +35,7 @@ import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
 
 import twig.data.GraphErrors;
 import twig.data.H1F;
+import twig.data.H2F;
 import twig.graphics.TGCanvas;
 import twig.server.HttpDataServer;
 import twig.server.HttpServerConfig;
@@ -80,27 +81,40 @@ public class Level3ClusterFinder_Simulation{
         }
     }
 
-    public void evaluateFile(List<String[]> files,List<String[]> names, int nEvents_pSample, Boolean doPlots) {
+    public void evaluateFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, Boolean doPlots) {
 
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.8);
 
-        INDArray[] outputs = network.output(data.getFeatures()[0]);
 
         long nTestEvents = data.getFeatures()[0].shape()[0];
+
+        if(bg!=""){
+            data=addBg(bg,(int) nTestEvents, 50, data);
+        }
+
+        //plotDCExamples(data.getFeatures()[0], 2);
+
+        INDArray[] outputs = network.output(data.getFeatures()[0]);
 
         // System.out.println("Number of Test Events "+nTestEvents);
         Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0], data.getLabels()[0],doPlots);
 
     }
 
-    public void trainFile(List<String[]> files,List<String[]> names, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
+    public void trainFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
 
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0);
         MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.8);
+        long NTotEvents = data.getFeatures()[0].shape()[0];
+
+        if(bg!=""){
+            data=addBg(bg,(int) NTotEvents, 0, data);
+            data_test=addBg(bg,(int) NTotEvents, 50, data_test);
+        }
 
         RegressionEvaluation eval = new RegressionEvaluation(data.getLabels()[0].shape()[1]);
 
-        long NTotEvents = data.getFeatures()[0].shape()[0];
+        
         for (int i = 0; i < nEpochs; i++) {
             long then = System.currentTimeMillis();
 
@@ -129,6 +143,30 @@ public class Level3ClusterFinder_Simulation{
         
     }
 
+    public static void plotDCExamples(INDArray DCall, int nExamples){
+        for (int k = 0; k < nExamples; k++) {
+            TGCanvas c = new TGCanvas();
+            c.setTitle("DC");
+
+            H2F hDC = new H2F("DC", 112, 0, 112, 36, 0, 36);
+            hDC.attr().setTitleX("Wires");
+            hDC.attr().setTitleY("Layers");
+            hDC.attr().setTitle("DC");
+            INDArray DCArray = DCall.get(NDArrayIndex.point(k), NDArrayIndex.point(0),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all());
+            for (int i = 0; i < 36; i++) {
+                for (int j = 0; j < 112; j++) {
+                    if (DCArray.getFloat(i, j) > 0) {
+                        hDC.fill(j, i);
+                    }
+                }
+            }
+            c.draw(hDC);
+        }
+
+	}
+
     public static void applyThreshold(INDArray predictions, double thresh){
         //DL4J doesn't have fancy boolean indexing :(
         for (int i=0;i<predictions.shape()[0];i++){
@@ -138,6 +176,59 @@ public class Level3ClusterFinder_Simulation{
                 }
             }
         }
+    }
+
+    public MultiDataSet addBg(String bgLoc, int max,int start,MultiDataSet dataset) {
+       
+        int added = 0;
+        INDArray DCArray = Nd4j.zeros(max, 1, 36, 112);
+        while (added < max && start<101) {
+            String file = bgLoc + "daq_"+String.valueOf(start)+".h5";
+            start++;
+            HipoReader r = new HipoReader();
+
+            r.open(file);
+
+            System.out.println("Reading file: " + file);
+
+            int nMax = max;
+
+            if (r.entries() < nMax)
+                nMax = r.entries();
+
+            CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
+            CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+
+            Event event = new Event();
+            int counter = 0;
+            while (r.hasNext() == true && counter < nMax) {
+                r.nextEvent(event);
+
+                event.read(nDC, 12, 1);
+                event.read(nEC, 11, 2);
+
+                Node node = event.read(5, 4);
+
+                int[] ids = node.getInt();
+
+                Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
+                INDArray EventDCArray = DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all());
+                if (EventDCArray.any()) {
+                    counter++;
+                    added++;
+                } else {
+                    DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all())
+                            .assign(Nd4j.zeros(1, 36, 112));
+                }
+            }
+
+        }
+
+        //plotDCExamples(DCArray, 10);
+
+        MultiDataSet new_dataset = new MultiDataSet(dataset.getFeatures()[0].add(DCArray),dataset.getLabels()[0]);
+        return new_dataset;
     }
 
     public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names, int max,double trainTestP) {
@@ -190,7 +281,7 @@ public class Level3ClusterFinder_Simulation{
                     // System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
 
                     //allows us to keep N last events for testing
-                    if (eventNb >= start) {
+                    if (eventNb >= start ) { //&& ids[1]==5tag 5 is 4.5 - 5.5 GeV
                         
                         Level3Utils.fillLabels_ClusterFinder(OUTArray, nEC,ids[2], counter);
                         INDArray EventOUTArray = OUTArray.get(NDArrayIndex.point(counter),NDArrayIndex.all());
@@ -223,8 +314,7 @@ public class Level3ClusterFinder_Simulation{
                 System.out.println("mix matching");
                 // Shuffle DC and EC arrays independently
                 // Creates Calorimeter hits uncorrelated to DC tracks
-                MultiDataSet datasetDC = new MultiDataSet(new INDArray[] { inputs_class[0] },
-                        new INDArray[] { inputs_class[0] });
+                MultiDataSet datasetDC = new MultiDataSet(new INDArray[]{inputs_class[0]},new INDArray[]{inputs_class[0]});
                 datasetDC.shuffle();
                 inputs_class[0] = datasetDC.getFeatures()[0];
                 // Note: OUTArray is EC, this should now be shuffled compared to DC
@@ -256,6 +346,8 @@ public class Level3ClusterFinder_Simulation{
 
         String dir = "/scratch/clasrun/caos/sims/";
 
+        String bg=dir+"bg_50nA_10p6/";
+
         List<String[]> files = new ArrayList<>();
         files.add(new String[] { dir+"pim"});
         /*files.add(new String[] { dir+"gamma"});
@@ -281,11 +373,11 @@ public class Level3ClusterFinder_Simulation{
         // t.load("level3CF_sim_"+net+".network");
 
         t.nEpochs = 750;//500
-        t.trainFile(files,names,30000,1000,1000);//30000 5000 10000
+        t.trainFile(files,names,bg,100000,1000,1000);//30000 5000 10000
         t.save("level3CF_sim");
 
         t.load("level3CF_sim_"+net+".network");
-        t.evaluateFile(files,names,1000,false);//5000
+        t.evaluateFile(files,names,bg,1000,false);//5000
 
     }
 }
