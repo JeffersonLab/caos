@@ -127,13 +127,14 @@ public class Level3ClusterFinder_Simulation{
 
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0);
         MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.8);
+        data=makeMultiParticleSample(nParts,data);
+        data_test=makeMultiParticleSample(nParts,data_test);
         long NTotEvents = data.getFeatures()[0].shape()[0];
+        long NTotEvents_test = data_test.getFeatures()[0].shape()[0];
 
         if(bg!=""){
-            data=makeMultiParticleSample(nParts,data);
             data=addBg(bg,(int) NTotEvents, 1, data);
-            data_test=makeMultiParticleSample(nParts,data_test);
-            data_test=addBg(bg,(int) data_test.getFeatures()[0].shape()[0], 50, data_test);
+            data_test=addBg(bg,(int) NTotEvents_test, 50, data_test);
         }
 
         RegressionEvaluation eval = new RegressionEvaluation(data.getLabels()[0].shape()[1]);
