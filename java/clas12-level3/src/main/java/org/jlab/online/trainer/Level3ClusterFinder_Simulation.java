@@ -81,10 +81,32 @@ public class Level3ClusterFinder_Simulation{
         }
     }
 
-    public void evaluateFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, Boolean doPlots) {
+    public void evaluateFile(List<String[]> files,List<String[]> names,String bg,List<Integer> nParts, int nEvents_pSample, Boolean doPlots) {
 
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.8);
 
+        if (nParts.size() > 0) {
+            for (int nPart : nParts) {
+
+                MultiDataSet data_nPart = makeSampleNPart(3, data);
+
+                long nTestEvents = data_nPart.getFeatures()[0].shape()[0];
+
+                if (bg != "") {
+                    data_nPart = addBg(bg, (int) nTestEvents, 50, data_nPart);
+                }
+
+                // plotDCExamples(data.getFeatures()[0], 20);
+
+                INDArray[] outputs = network.output(data_nPart.getFeatures()[0]);
+
+                System.out.println("\n\nTesting with " + nPart + " particles (" + nTestEvents + " events)");
+                Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0],
+                        data_nPart.getLabels()[0], doPlots);
+            }
+        }
+
+        data=makeMultiParticleSample(nParts,data);
 
         long nTestEvents = data.getFeatures()[0].shape()[0];
 
@@ -92,23 +114,25 @@ public class Level3ClusterFinder_Simulation{
             data=addBg(bg,(int) nTestEvents, 50, data);
         }
 
-        //plotDCExamples(data.getFeatures()[0], 2);
-
+        //plotDCExamples(data.getFeatures()[0], 20);
+            
         INDArray[] outputs = network.output(data.getFeatures()[0]);
 
-        // System.out.println("Number of Test Events "+nTestEvents);
+        System.out.println("\n\nTesting with combined dataset ("+nTestEvents+" events)");
         Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0], data.getLabels()[0],doPlots);
 
     }
 
-    public void trainFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
+    public void trainFile(List<String[]> files,List<String[]> names,String bg,List<Integer> nParts, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
 
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0);
         MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.8);
         long NTotEvents = data.getFeatures()[0].shape()[0];
 
         if(bg!=""){
-            data=addBg(bg,(int) NTotEvents, 0, data);
+            data=makeMultiParticleSample(nParts,data);
+            data=addBg(bg,(int) NTotEvents, 1, data);
+            data_test=makeMultiParticleSample(nParts,data_test);
             data_test=addBg(bg,(int) data_test.getFeatures()[0].shape()[0], 50, data_test);
         }
 
@@ -176,6 +200,47 @@ public class Level3ClusterFinder_Simulation{
                 }
             }
         }
+    }
+
+    public MultiDataSet makeSampleNPart(int nPart,MultiDataSet dataset){
+        long nEvents = dataset.getFeatures()[0].shape()[0];
+        while ((nEvents % nPart) != 0) {
+            nEvents--;
+        }
+        long nEvents_pSample = nEvents / nPart;
+        INDArray DC_out = Nd4j.zeros(1, 1, 36, 112);
+        INDArray Label_out = Nd4j.zeros(1, 108);
+        for (int i = 0; i < nPart; i++) {
+            long bS = i * nEvents_pSample;
+            long bE = (i + 1) * nEvents_pSample;
+            INDArray DC_b = dataset.getFeatures()[0].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.all());
+            INDArray Lab_b = dataset.getLabels()[0].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all());
+            if (i == 0) {
+                DC_out = DC_b;
+                Label_out = Lab_b;
+            } else {
+                DC_out = DC_out.add(DC_b);
+                Label_out = Label_out.add(Lab_b);
+            }
+        }
+
+        MultiDataSet dataset_out = new MultiDataSet(new INDArray[]{DC_out},new INDArray[]{Label_out});
+        return dataset_out;
+    }
+
+    public MultiDataSet makeMultiParticleSample(List<Integer> nParts, MultiDataSet dataset) {
+
+        INDArray[] inputs = new INDArray[1];
+        INDArray[] outputs = new INDArray[1];
+        for (int nPart : nParts) {
+
+            MultiDataSet data_nPart = makeSampleNPart(nPart, dataset);
+            inputs[0] = Nd4j.vstack(dataset.getFeatures()[0], data_nPart.getFeatures()[0]);
+            outputs[0] = Nd4j.vstack(dataset.getLabels()[0], data_nPart.getLabels()[0]);
+        }
+        MultiDataSet dataset_out = new MultiDataSet(inputs, outputs);
+        dataset_out.shuffle();
+        return dataset_out;
     }
 
     public MultiDataSet addBg(String bgLoc, int max,int start,MultiDataSet dataset) {
@@ -341,10 +406,10 @@ public class Level3ClusterFinder_Simulation{
 
     public static void main(String[] args) {
      
-        //String dir = "/Users/tyson/data_repo/trigger_data/sims/";
-        //String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
+        String dir = "/Users/tyson/data_repo/trigger_data/sims/";
+        String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
 
-        String dir = "/scratch/clasrun/caos/sims/";
+        //String dir = "/scratch/clasrun/caos/sims/";
 
         String bg=dir+"bg_50nA_10p6/";
 
@@ -362,6 +427,12 @@ public class Level3ClusterFinder_Simulation{
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
         names.add(new String[] { "el" });
 
+        //assumes at least one particle by default
+        List<Integer> nParts=new ArrayList<>();
+        nParts.add(2);
+        nParts.add(3);
+
+
         String net = "0a";
         Level3ClusterFinder_Simulation t = new Level3ClusterFinder_Simulation();
 
@@ -372,12 +443,12 @@ public class Level3ClusterFinder_Simulation{
         // transfer learning
         // t.load("level3CF_sim_"+net+".network");
 
-        t.nEpochs = 750;//500
-        t.trainFile(files,names,bg,100000,1000,1000);//30000 5000 10000
-        t.save("level3CF_sim");
+        /*t.nEpochs = 750;//500
+        t.trainFile(files,names,bg,nParts,50000,1000,1000);//30000 5000 10000
+        t.save("level3CF_sim");*/
 
         t.load("level3CF_sim_"+net+".network");
-        t.evaluateFile(files,names,bg,1000,false);//5000
+        t.evaluateFile(files,names,bg,nParts,10000,true);//5000
 
     }
 }
