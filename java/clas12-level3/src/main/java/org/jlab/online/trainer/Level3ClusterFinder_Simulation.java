@@ -262,7 +262,6 @@ public class Level3ClusterFinder_Simulation{
                 nMax = r.entries();
 
             CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
-            CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
 
             Event event = new Event();
             int counter = 0;
@@ -270,7 +269,6 @@ public class Level3ClusterFinder_Simulation{
                 r.nextEvent(event);
 
                 event.read(nDC, 12, 1);
-                event.read(nEC, 11, 2);
 
                 Node node = event.read(5, 4);
 
