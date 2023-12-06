@@ -88,11 +88,8 @@ public class Level3ClusterFinder_Simulation{
         if (nParts.size() > 0) {
             for (int nPart : nParts) {
 
-                MultiDataSet data_nPart=data;
-                if(nParts.size()>0){
-                    data_nPart = makeSampleNPart(nPart, data_nPart);
-                }
-
+                MultiDataSet data_nPart= makeSampleNPart(nPart, data);
+                
                 long nTestEvents = data_nPart.getFeatures()[0].shape()[0];
 
                 if (bg != "") {
@@ -240,11 +237,18 @@ public class Level3ClusterFinder_Simulation{
 
         INDArray[] inputs = new INDArray[1];
         INDArray[] outputs = new INDArray[1];
+        int added=0;
         for (int nPart : nParts) {
 
             MultiDataSet data_nPart = makeSampleNPart(nPart, dataset);
-            inputs[0] = Nd4j.vstack(dataset.getFeatures()[0], data_nPart.getFeatures()[0]);
-            outputs[0] = Nd4j.vstack(dataset.getLabels()[0], data_nPart.getLabels()[0]);
+            if(added==0){
+                inputs[0] = Nd4j.vstack(dataset.getFeatures()[0], data_nPart.getFeatures()[0]);
+                outputs[0] = Nd4j.vstack(dataset.getLabels()[0], data_nPart.getLabels()[0]);
+            } else{
+                inputs[0] = Nd4j.vstack(inputs[0], data_nPart.getFeatures()[0]);
+                outputs[0] = Nd4j.vstack(outputs[0], data_nPart.getLabels()[0]);
+            }
+            added++;
         }
         MultiDataSet dataset_out = new MultiDataSet(inputs, outputs);
         dataset_out.shuffle();
