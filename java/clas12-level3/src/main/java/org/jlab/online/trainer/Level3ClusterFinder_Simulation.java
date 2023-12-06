@@ -88,7 +88,10 @@ public class Level3ClusterFinder_Simulation{
         if (nParts.size() > 0) {
             for (int nPart : nParts) {
 
-                MultiDataSet data_nPart = makeSampleNPart(3, data);
+                MultiDataSet data_nPart=data;
+                if(nParts.size()>0){
+                    data_nPart = makeSampleNPart(nPart, data_nPart);
+                }
 
                 long nTestEvents = data_nPart.getFeatures()[0].shape()[0];
 
@@ -106,7 +109,9 @@ public class Level3ClusterFinder_Simulation{
             }
         }
 
-        data=makeMultiParticleSample(nParts,data);
+        if(nParts.size()>0){
+            data=makeMultiParticleSample(nParts,data);
+        }
 
         long nTestEvents = data.getFeatures()[0].shape()[0];
 
@@ -127,8 +132,10 @@ public class Level3ClusterFinder_Simulation{
 
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0);
         MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.8);
-        data=makeMultiParticleSample(nParts,data);
-        data_test=makeMultiParticleSample(nParts,data_test);
+        if(nParts.size()>0){
+            data=makeMultiParticleSample(nParts,data);
+            data_test=makeMultiParticleSample(nParts,data_test);
+        }
         long NTotEvents = data.getFeatures()[0].shape()[0];
         long NTotEvents_test = data_test.getFeatures()[0].shape()[0];
 
