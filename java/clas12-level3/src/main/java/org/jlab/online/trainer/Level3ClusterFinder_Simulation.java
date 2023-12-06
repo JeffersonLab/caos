@@ -114,7 +114,7 @@ public class Level3ClusterFinder_Simulation{
             data=addBg(bg,(int) nTestEvents, 50, data);
         }
 
-        //plotDCExamples(data.getFeatures()[0], 20);
+        //plotDCExamples(data.getFeatures()[0], 50);
             
         INDArray[] outputs = network.output(data.getFeatures()[0]);
 
@@ -277,15 +277,8 @@ public class Level3ClusterFinder_Simulation{
                 int[] ids = node.getInt();
 
                 Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
-                INDArray EventDCArray = DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.all());
-                if (EventDCArray.any()) {
-                    counter++;
-                    added++;
-                } else {
-                    DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all())
-                            .assign(Nd4j.zeros(1, 36, 112));
-                }
+                counter++;
+                added++;
             }
 
         }
