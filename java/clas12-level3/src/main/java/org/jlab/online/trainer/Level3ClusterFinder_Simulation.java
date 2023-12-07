@@ -208,25 +208,33 @@ public class Level3ClusterFinder_Simulation{
     }
 
     public MultiDataSet makeSampleNPart(int nPart,MultiDataSet dataset){
-        long nEvents = dataset.getFeatures()[0].shape()[0];
-        while ((nEvents % nPart) != 0) {
-            nEvents--;
-        }
-        long nEvents_pSample = nEvents / nPart;
         INDArray DC_out = Nd4j.zeros(1, 1, 36, 112);
         INDArray Label_out = Nd4j.zeros(1, 108);
-        for (int i = 0; i < nPart; i++) {
-            long bS = i * nEvents_pSample;
-            long bE = (i + 1) * nEvents_pSample;
-            INDArray DC_b = dataset.getFeatures()[0].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all(),NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray Lab_b = dataset.getLabels()[0].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all());
-            if (i == 0) {
-                DC_out = DC_b;
-                Label_out = Lab_b;
-            } else {
-                DC_out = DC_out.add(DC_b);
-                Label_out = Label_out.add(Lab_b);
+
+        if (nPart != 0) {
+            long nEvents = dataset.getFeatures()[0].shape()[0];
+            while ((nEvents % nPart) != 0) {
+                nEvents--;
             }
+            long nEvents_pSample = nEvents / nPart;
+
+            for (int i = 0; i < nPart; i++) {
+                long bS = i * nEvents_pSample;
+                long bE = (i + 1) * nEvents_pSample;
+                INDArray DC_b = dataset.getFeatures()[0].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray Lab_b = dataset.getLabels()[0].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all());
+                if (i == 0) {
+                    DC_out = DC_b;
+                    Label_out = Lab_b;
+                } else {
+                    DC_out = DC_out.add(DC_b);
+                    Label_out = Label_out.add(Lab_b);
+                }
+            }
+        } else {
+            DC_out = Nd4j.zeros(dataset.getFeatures()[0].shape()[0] / 2, 1, 36, 112);
+            Label_out = Nd4j.zeros(dataset.getFeatures()[0].shape()[0] / 2, 108);
         }
 
         MultiDataSet dataset_out = new MultiDataSet(new INDArray[]{DC_out},new INDArray[]{Label_out});
