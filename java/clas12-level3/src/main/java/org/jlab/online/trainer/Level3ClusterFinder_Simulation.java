@@ -96,9 +96,10 @@ public class Level3ClusterFinder_Simulation{
                     data_nPart = addBg(bg, (int) nTestEvents, 50, data_nPart);
                 }
 
-                // plotDCExamples(data.getFeatures()[0], 20);
+                // plotDCExamples(data_nPart.getFeatures()[0], 20);
 
-                INDArray[] outputs = network.output(data_nPart.getFeatures()[0]);
+                //INDArray[] outputs = network.output(data_nPart.getFeatures()[0]);
+                INDArray[] outputs = network.output(data_nPart.getFeatures()[0], data_nPart.getFeatures()[1]);
 
                 System.out.println("\n\nTesting with " + nPart + " particles (" + nTestEvents + " events)");
                 Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0],
@@ -112,13 +113,19 @@ public class Level3ClusterFinder_Simulation{
 
         long nTestEvents = data.getFeatures()[0].shape()[0];
 
+        /*INDArray DC_out=data.getFeatures()[0].get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray Label_out=data.getLabels()[0].get(NDArrayIndex.point(0), NDArrayIndex.all());
+        Nd4j.writeTxt(DC_out, "/Users/tyson/data_repo/trigger_data/sims/DC.csv");
+        Nd4j.writeTxt(Label_out, "/Users/tyson/data_repo/trigger_data/sims/EC.csv");*/
+
         if(bg!=""){
             data=addBg(bg,(int) nTestEvents, 50, data);
         }
 
         //plotDCExamples(data.getFeatures()[0], 50);
             
-        INDArray[] outputs = network.output(data.getFeatures()[0]);
+        //INDArray[] outputs = network.output(data.getFeatures()[0]);
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
 
         System.out.println("\n\nTesting with combined dataset ("+nTestEvents+" events)");
         Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0], data.getLabels()[0],doPlots);
@@ -152,16 +159,17 @@ public class Level3ClusterFinder_Simulation{
                 int bS=batch*batchSize;
 		        int bE=(batch+1)*batchSize;
                 INDArray DC_b=data.getFeatures()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray FTOF_b=data.getFeatures()[1].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
                 INDArray Lab_b=data.getLabels()[0].get(NDArrayIndex.interval(bS,bE), NDArrayIndex.all());
 
-                network.fit(new INDArray[] {DC_b}, new INDArray[] {Lab_b});
+                network.fit(new INDArray[] {DC_b,FTOF_b}, new INDArray[] {Lab_b});
             }
 
             long now = System.currentTimeMillis();
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d ms\n",
                     i, network.score(), now - then);
-            //INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1]);
-            INDArray[] outputs = network.output(data_test.getFeatures()[0]);
+            INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1]);
+            //INDArray[] outputs = network.output(data_test.getFeatures()[0]);
             
 		    eval.eval(data_test.getLabels()[0], outputs[0]);
             System.out.printf("Test Average MAE: %f, MSE: %f\n",eval.averageMeanAbsoluteError(),eval.averageMeanSquaredError());
@@ -209,6 +217,7 @@ public class Level3ClusterFinder_Simulation{
 
     public MultiDataSet makeSampleNPart(int nPart,MultiDataSet dataset){
         INDArray DC_out = Nd4j.zeros(1, 1, 36, 112);
+        INDArray FTOF_out = Nd4j.zeros(1, 1,62,1);
         INDArray Label_out = Nd4j.zeros(1, 108);
 
         if (nPart != 0) {
@@ -223,27 +232,32 @@ public class Level3ClusterFinder_Simulation{
                 long bE = (i + 1) * nEvents_pSample;
                 INDArray DC_b = dataset.getFeatures()[0].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray FTOF_b = dataset.getFeatures()[1].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
                 INDArray Lab_b = dataset.getLabels()[0].get(NDArrayIndex.interval(bS, bE), NDArrayIndex.all());
                 if (i == 0) {
                     DC_out = DC_b;
+                    FTOF_out=FTOF_b;
                     Label_out = Lab_b;
                 } else {
                     DC_out = DC_out.add(DC_b);
+                    FTOF_out = FTOF_out.add(FTOF_b);
                     Label_out = Label_out.add(Lab_b);
                 }
             }
         } else {
             DC_out = Nd4j.zeros(dataset.getFeatures()[0].shape()[0] / 2, 1, 36, 112);
+            FTOF_out = Nd4j.zeros(dataset.getFeatures()[1].shape()[0] / 2, 1, 62, 1);
             Label_out = Nd4j.zeros(dataset.getFeatures()[0].shape()[0] / 2, 108);
         }
 
-        MultiDataSet dataset_out = new MultiDataSet(new INDArray[]{DC_out},new INDArray[]{Label_out});
+        MultiDataSet dataset_out = new MultiDataSet(new INDArray[]{DC_out,FTOF_out},new INDArray[]{Label_out});
         return dataset_out;
     }
 
     public MultiDataSet makeMultiParticleSample(List<Integer> nParts, MultiDataSet dataset) {
 
-        INDArray[] inputs = new INDArray[1];
+        INDArray[] inputs = new INDArray[2];
         INDArray[] outputs = new INDArray[1];
         int added=0;
         for (int nPart : nParts) {
@@ -251,9 +265,11 @@ public class Level3ClusterFinder_Simulation{
             MultiDataSet data_nPart = makeSampleNPart(nPart, dataset);
             if(added==0){
                 inputs[0] = Nd4j.vstack(dataset.getFeatures()[0], data_nPart.getFeatures()[0]);
+                inputs[1] = Nd4j.vstack(dataset.getFeatures()[1], data_nPart.getFeatures()[1]);
                 outputs[0] = Nd4j.vstack(dataset.getLabels()[0], data_nPart.getLabels()[0]);
             } else{
                 inputs[0] = Nd4j.vstack(inputs[0], data_nPart.getFeatures()[0]);
+                inputs[1] = Nd4j.vstack(inputs[1], data_nPart.getFeatures()[1]);
                 outputs[0] = Nd4j.vstack(outputs[0], data_nPart.getLabels()[0]);
             }
             added++;
@@ -267,6 +283,7 @@ public class Level3ClusterFinder_Simulation{
        
         int added = 0;
         INDArray DCArray = Nd4j.zeros(max, 1, 36, 112);
+        INDArray FTOFArray = Nd4j.zeros(max, 1,62,1);
         while (added < max && start<101) {
             String file = bgLoc + "daq_"+String.valueOf(start)+".h5";
             start++;
@@ -282,6 +299,7 @@ public class Level3ClusterFinder_Simulation{
                 nMax = r.entries();
 
             CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
+            CompositeNode nFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
 
             Event event = new Event();
             int counter = 0;
@@ -289,12 +307,14 @@ public class Level3ClusterFinder_Simulation{
                 r.nextEvent(event);
 
                 event.read(nDC, 12, 1);
+                event.read(nFTOF, 13, 3);
 
                 Node node = event.read(5, 4);
 
                 int[] ids = node.getInt();
 
                 Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
+                Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
                 counter++;
                 added++;
             }
@@ -302,13 +322,18 @@ public class Level3ClusterFinder_Simulation{
         }
 
         //plotDCExamples(DCArray, 10);
-
-        MultiDataSet new_dataset = new MultiDataSet(dataset.getFeatures()[0].add(DCArray),dataset.getLabels()[0]);
-        return new_dataset;
+        //dataset = new MultiDataSet(dataset.getFeatures()[0].add(DCArray),dataset.getLabels()[0]);
+        INDArray[] inputs = new INDArray[2];//1 with only DC
+        INDArray[] outputs = new INDArray[1];
+        inputs[0]=dataset.getFeatures()[0].add(DCArray);
+        inputs[1]=dataset.getFeatures()[1].add(FTOFArray);
+        outputs[0]=dataset.getLabels()[0];
+        dataset = new MultiDataSet(inputs,outputs);
+        return dataset;
     }
 
     public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names, int max,double trainTestP) {
-        INDArray[] inputs = new INDArray[1];
+        INDArray[] inputs = new INDArray[2];//1 with only DC
         INDArray[] outputs = new INDArray[1];
         //added tag is for individual tag
         //classs is for each array of tags ie class
@@ -318,7 +343,7 @@ public class Level3ClusterFinder_Simulation{
 
             System.out.printf("Class: %d",classs);
 
-            INDArray[] inputs_class = new INDArray[1];
+            INDArray[] inputs_class = new INDArray[2];//1 with only DC
             INDArray[] outputs_class = new INDArray[1];
             int added_classes=0;
             for (int j = 0; j < file_arr.length; j++) {
@@ -338,8 +363,10 @@ public class Level3ClusterFinder_Simulation{
 
                 CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
                 CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+                CompositeNode nFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
 
                 INDArray DCArray = Nd4j.zeros(nMax, 1, 36, 112);
+                INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
                 INDArray OUTArray = Nd4j.zeros(nMax, 108);
                 Event event = new Event();
                 int counter = 0,eventNb=0;
@@ -348,6 +375,7 @@ public class Level3ClusterFinder_Simulation{
 
                     event.read(nDC, 12, 1);
                     event.read(nEC, 11, 2);
+                    event.read(nFTOF, 13, 3);
 
                     Node node = event.read(5, 4);
 
@@ -363,6 +391,7 @@ public class Level3ClusterFinder_Simulation{
                         INDArray EventOUTArray = OUTArray.get(NDArrayIndex.point(counter),NDArrayIndex.all());
                         if (EventOUTArray.any()) { 
                             Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
+                            Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
                             counter++;
                         } else{
                             OUTArray.get(NDArrayIndex.point(counter), NDArrayIndex.all()).assign(Nd4j.zeros(1, 108));
@@ -375,11 +404,12 @@ public class Level3ClusterFinder_Simulation{
 
                 System.out.printf("loaded samples (%d)\n\n\n", counter);
                 if (added_classes == 0) {
-                    //inputs = new INDArray[] { DCArray, ECArray };
-                    inputs_class = new INDArray[] { DCArray};
+                    //inputs = new INDArray[] { DCArray};
+                    inputs_class = new INDArray[] { DCArray,FTOFArray};
                     outputs_class = new INDArray[] { OUTArray };
                 } else {
                     inputs_class[0] = Nd4j.vstack(inputs_class[0], DCArray);
+                    inputs_class[1] = Nd4j.vstack(inputs_class[1], FTOFArray);
                     outputs_class[0] = Nd4j.vstack(outputs_class[0], OUTArray);
                 }
                 added_classes++;
@@ -388,12 +418,15 @@ public class Level3ClusterFinder_Simulation{
 
             if (names.get(classs)[0] == "mixMatch") {
                 System.out.println("mix matching");
-                // Shuffle DC and EC arrays independently
-                // Creates Calorimeter hits uncorrelated to DC tracks
+                // Shuffle DC and FTOF arrays independently
+                // Creates Calorimeter hits uncorrelated to DC tracks, FTOF hits
                 MultiDataSet datasetDC = new MultiDataSet(new INDArray[]{inputs_class[0]},new INDArray[]{inputs_class[0]});
                 datasetDC.shuffle();
                 inputs_class[0] = datasetDC.getFeatures()[0];
-                // Note: OUTArray is EC, this should now be shuffled compared to DC
+                MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[]{inputs_class[1]},new INDArray[]{inputs_class[1]});
+                datasetFTOF.shuffle();
+                inputs_class[1] = datasetFTOF.getFeatures()[0];
+                // Note: OUTArray is EC, this should now be shuffled compared to DC,FTOF
             }
 
             if (classs == 0) {
@@ -402,6 +435,7 @@ public class Level3ClusterFinder_Simulation{
                 outputs = outputs_class;
             } else {
                 inputs[0] = Nd4j.vstack(inputs[0], inputs_class[0]);
+                inputs[1] = Nd4j.vstack(inputs[1], inputs_class[1]);
                 outputs[0] = Nd4j.vstack(outputs[0], outputs_class[0]);
             }
             classs++;  
@@ -425,14 +459,14 @@ public class Level3ClusterFinder_Simulation{
         String bg=dir+"bg_50nA_10p6/";
 
         List<String[]> files = new ArrayList<>();
-        files.add(new String[] { dir+"pim"});
+        //files.add(new String[] { dir+"pim"});
         /*files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"pos"});
         files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
         files.add(new String[] { dir+"el" });
 
         List<String[]> names = new ArrayList<>();
-        names.add(new String[] { "pim"});
+        //names.add(new String[] { "pim"});
         /*names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
@@ -441,10 +475,10 @@ public class Level3ClusterFinder_Simulation{
         //assumes at least one particle by default
         List<Integer> nParts=new ArrayList<>();
         nParts.add(2);
-        nParts.add(3);
+        nParts.add(0);
 
 
-        String net = "0a";
+        String net = "0b";
         Level3ClusterFinder_Simulation t = new Level3ClusterFinder_Simulation();
 
         t.cnnModel = net;
@@ -455,10 +489,10 @@ public class Level3ClusterFinder_Simulation{
         // t.load("level3CF_sim_"+net+".network");
 
         /*t.nEpochs = 750;//500
-        t.trainFile(files,names,bg,nParts,50000,1000,1000);//30000 5000 10000
+        t.trainFile(files,names,bg,nParts,10000,100,100);//30000 5000 10000
         t.save("level3CF_sim");*/
 
-        t.load("level3CF_sim_"+net+".network");
+        t.load("level3CF_sim_"+net+"_v4.network");
         t.evaluateFile(files,names,bg,nParts,10000,true);//5000
 
     }

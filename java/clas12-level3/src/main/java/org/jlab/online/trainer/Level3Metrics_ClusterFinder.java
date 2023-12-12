@@ -31,10 +31,11 @@ public class Level3Metrics_ClusterFinder {
 		eval.eval(Labels, predictions);
 		System.out.printf("Test Average MAE: %f, MSE: %f\n",eval.averageMeanAbsoluteError(),eval.averageMeanSquaredError());
 		System.out.printf("Test Average RMSE: %f, relativeSE: %f\n",eval.averagerootMeanSquaredError(),eval.averagerelativeSquaredError());
+		//Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.1);
 		calcDist(NEvents, predictions, Labels, makePlots);
 		if(makePlots){
         	PlotMetricsVsThreshold(NEvents,predictions,Labels);
-			//Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.1);
+			
 			for(int i=0;i<5;i++){
 				plotExamples(predictions, Labels, i);
 			}
@@ -67,74 +68,133 @@ public class Level3Metrics_ClusterFinder {
 		hDist_W.attr().setTitle("W View");
 
 		double Av_Dist_U=0,Av_Dist_V=0,Av_Dist_W=0;
+		int nU=0,nV=0,nW=0;
+		double nU_um=0,nV_um=0,nW_um=0;
 		for (int i=0;i<NEvents;i++){
-			double ADC_max_U=0,ADC_max_V=0,ADC_max_W=0;
-			int CM_U=-1,CM_V=-1,CM_W=-1;
+			List<Integer> CM_U=new ArrayList<>();
+			List<Integer> CM_V=new ArrayList<>();
+			List<Integer> CM_W=new ArrayList<>();
+			List<Integer> CM_U_pred=new ArrayList<>();
+			List<Integer> CM_V_pred=new ArrayList<>();
+			List<Integer> CM_W_pred=new ArrayList<>();
+			int CM_U_ind=-1,CM_V_ind=-1,CM_W_ind=-1;
 			double ADC_max_U_pred=0,ADC_max_V_pred=0,ADC_max_W_pred=0;
-			int CM_U_pred=-1,CM_V_pred=-1,CM_W_pred=-1;
+			int CL_count=0;
 
 			for (int j=0;j<36;j++){
+				if(CL_count>5){
+					CL_count=1;
+					ADC_max_U_pred=0;
+					ADC_max_V_pred=0;
+					ADC_max_W_pred=0;
+					if(CM_U_ind!=-1){CM_U_pred.add(CM_U_ind);}
+					if(CM_V_ind!=-1){CM_V_pred.add(CM_V_ind);}
+					if(CM_W_ind!=-1){CM_W_pred.add(CM_W_ind);}
+					CM_U_ind=-1;
+					CM_V_ind=-1;
+					CM_W_ind=-1;
+				} else{
+					CL_count++;
+				}
 				int index_u=j,index_v=j+36,index_w=j+72;
-				if(Labels.getFloat(i,index_u)>ADC_max_U){
-					ADC_max_U=Labels.getFloat(i,index_u);
-					CM_U=index_u;
+				if(Labels.getFloat(i,index_u)>0){
+					CM_U.add(index_u);
 				}
-				if(Labels.getFloat(i,index_v)>ADC_max_V){
-					ADC_max_V=Labels.getFloat(i,index_v);
-					CM_V=index_v;
+				if(Labels.getFloat(i,index_v)>0){
+					CM_V.add(index_v);
 				}
-				if(Labels.getFloat(i,index_w)>ADC_max_W){
-					ADC_max_W=Labels.getFloat(i,index_w);
-					CM_W=index_w;
+				if(Labels.getFloat(i,index_w)>0){
+					CM_W.add(index_w);
 				}
 				if(predictions.getFloat(i,index_u)>ADC_max_U_pred){
 					ADC_max_U_pred=predictions.getFloat(i,index_u);
-					CM_U_pred=index_u;
+					CM_U_ind=index_u;
 				}
 				if(predictions.getFloat(i,index_v)>ADC_max_V_pred){
 					ADC_max_V_pred=predictions.getFloat(i,index_v);
-					CM_V_pred=index_v;
+					CM_V_ind=index_v;
 				}
 				if(predictions.getFloat(i,index_w)>ADC_max_W_pred){
 					ADC_max_W_pred=predictions.getFloat(i,index_w);
-					CM_W_pred=index_w;
+					CM_W_ind=index_w;
 				}
 			}
-			double Av_Dist_ev=0;
-			int nCl=0;
-			if(CM_U!=-1){
-				double dist_U=(CM_U-CM_U_pred);
-				Av_Dist_U+=dist_U;
-				Av_Dist_ev+=dist_U;
-				nCl++;
-				hDist_U.fill(dist_U);
+			if(CM_U.size()>0){
+				nU+=CM_U.size();
+				
+				for(int CM_u : CM_U){
+					int dist=99999;
+					//System.out.printf("CM U %d\n", CM_u);
+					for(int CM_u_p:CM_U_pred){
+						//System.out.printf("CM U Pred %d\n",CM_u_p);
+						//System.out.printf("Dist %d & CM_u-CM_u_p %d\n", dist,(CM_u-CM_u_p));
+						if(Math.abs(CM_u-CM_u_p)<Math.abs(dist)){dist=CM_u-CM_u_p;}
+						//System.out.printf("Dist %d\n", dist);
+					}
+					//System.out.println("\n");
+					if(dist<36){//max dist as ecin only has 36 strips in each view
+						Av_Dist_U+=dist;
+						hDist_U.fill(dist);
+						hDist.fill(dist);
+					} else if( dist==99999){
+						nU_um++;
+					}
+				}
+				
 			}
-			if(CM_V!=-1){
-				double dist_V=(CM_V-CM_V_pred);
-				Av_Dist_V+=dist_V;
-				Av_Dist_ev+=dist_V;
-				nCl++;
-				hDist_V.fill(dist_V);
+			if(CM_V.size()>0){
+				nV+=CM_V.size();
+				
+				for(int CM_v : CM_V){
+					int dist=99999;
+					for(int CM_v_p:CM_V_pred){
+						if(Math.abs(CM_v-CM_v_p)<Math.abs(dist)){dist=CM_v-CM_v_p;}
+					}
+					if(dist<36){//max dist as ecin only has 36 strips in each view
+						Av_Dist_V+=dist;
+						hDist_V.fill(dist);
+						hDist.fill(dist);
+					}else if( dist==99999){
+						nV_um++;
+					}
+				}
+				
 			}
-			if(CM_W!=-1){
-				double dist_W=(CM_W-CM_W_pred);
-				Av_Dist_W+=dist_W;
-				Av_Dist_ev+=dist_W;
-				nCl++;
-				hDist_W.fill(dist_W);
+			if(CM_W.size()>0){
+				nW+=CM_W.size();
+				
+				for(int CM_w : CM_W){
+					int dist=99999;
+					for(int CM_w_p:CM_W_pred){
+						if(Math.abs(CM_w-CM_w_p)<Math.abs(dist)){dist=CM_w-CM_w_p;}
+					}
+					if(dist<36){//max dist as ecin only has 36 strips in each view
+						Av_Dist_W+=dist;
+						hDist_W.fill(dist);
+						hDist.fill(dist);
+					}else if( dist==99999){
+						nW_um++;
+					}
+				}
+				
 			}
-			if(nCl!=0){hDist.fill(Av_Dist_ev/nCl);}
 		}
-		Av_Dist_U=Av_Dist_U/NEvents;
-		Av_Dist_W=Av_Dist_W/NEvents;
-		Av_Dist_V=Av_Dist_V/NEvents;
-		double Av_Dist=(Av_Dist_U+Av_Dist_V+Av_Dist_W)/3;
+		double Av_Dist=(Av_Dist_U+Av_Dist_V+Av_Dist_W)/(nU+nV+nW);
+		Av_Dist_U=Av_Dist_U/nU;
+		Av_Dist_W=Av_Dist_W/nV;
+		Av_Dist_V=Av_Dist_V/nW;
+		
+		double nU_um_r=nU_um/nU;
+		double nV_um_r=nV_um/nV;
+		double nW_um_r=nW_um/nW;
+		double um_r=(nU_um+nV_um+nW_um)/(nU+nV+nW);
 
 		System.out.printf("Average Distance %f in U %f in V %f in W %f\n",Av_Dist,Av_Dist_U,Av_Dist_V,Av_Dist_W);
+		System.out.printf("Fraction of unmatched clusters U %f V %f W %f total %f\n\n",nU_um_r,nV_um_r,nW_um_r,um_r);
 		if(makePlots){
 			TGCanvas c = new TGCanvas();
 			c.setTitle("Distance Between Cluster Maxima");
-			c.draw(hDist).draw(hDist_U,"same").draw(hDist_V,"same").draw(hDist_W,"same");
+			c.draw(hDist_U,"same").draw(hDist_V,"same").draw(hDist_W,"same");//draw(hDist).
 			c.region().showLegend(0.05, 0.95);
 
 		}

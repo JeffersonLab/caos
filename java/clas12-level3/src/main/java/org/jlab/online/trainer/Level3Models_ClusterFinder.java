@@ -66,10 +66,55 @@ public class Level3Models_ClusterFinder {
                 //config.setValidateOutputLayerConfig(false);
         return config;
     }
+
+    public static ComputationGraphConfiguration getModel0b(){
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                //.l2(0.0005)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(1e-3))//Adam(5e-3) //AdaDelta()
+                .graphBuilder()
+                .addInputs("dc","ftof")
+                .addLayer("L1", new ConvolutionLayer.Builder(6,4)
+                        .nIn(1)
+                        .nOut(6)                    
+                        .activation(Activation.RELU)
+                        .stride(2,1).build()
+                        , "dc")
+                .addLayer("L2", new ConvolutionLayer.Builder(6, 4)
+                        .nIn(6)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(2, 1).build(), "L1")
+                .addLayer("L1Pool",
+                        new SubsamplingLayer.Builder(new int[] { 3, 3 }, new int[] { 3, 3 })
+                                .poolingType(PoolingType.MAX).build(),
+                        "L2")
+                .addLayer("dcDense",
+                        new DenseLayer.Builder().activation(Activation.RELU).nOut(300).dropOut(0.2).build(), "L1Pool")
+                .addLayer("L1ftof", new ConvolutionLayer.Builder(6, 1)
+                        .nIn(1)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(2, 1).build(), "ftof")
+                .addLayer("ftofDense", new DenseLayer.Builder().nOut(30).dropOut(0.5).build(), "L1ftof")
+                .addVertex("merge", new MergeVertex(), "dcDense","ftofDense")
+                .addLayer("dense1", new DenseLayer.Builder().nOut(200).dropOut(0.5).build(), "merge")
+                .addLayer("out", new OutputLayer.Builder(new LossBinaryXENT())//new LossMSE()
+                        .nIn(200).nOut(108)
+                        .activation(Activation.SIGMOID)
+                        .build()
+                        , "dense1")
+                .setOutputs("out")
+                .setInputTypes(InputType.convolutional(36, 112, 1),InputType.convolutional(62,1,1))
+                .build();
+                //config.setValidateOutputLayerConfig(false);
+        return config;
+    }
     
     public static ComputationGraphConfiguration getModel(String modelname){
         switch(modelname){
             case "0a": return Level3Models_ClusterFinder.getModel0a();
+            case "0b": return Level3Models_ClusterFinder.getModel0b();
             default: return Level3Models_ClusterFinder.getModel0a();
         }
     }
