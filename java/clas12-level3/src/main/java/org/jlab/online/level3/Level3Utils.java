@@ -15,6 +15,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+
 import twig.data.DataGroup;
 import twig.data.H1F;
 import twig.data.H2F;
@@ -72,6 +74,33 @@ public class Level3Utils {
             //System.out.println(Arrays.toString(index));
             if(sect==sector){
                 dc.putScalar(index, 1);
+            }
+        }
+    }
+
+    public static void fillDC_wLayersTDC(INDArray dc, CompositeNode dcBank, int sector, int order){
+        int   nrows = dcBank.getRows();
+        int[] index = new int[]{0,0,0,0};
+        double tdc_min=1;
+        double tdc_max=1500;
+        
+        for(int row = 0; row < nrows; row++){
+            int  sect = dcBank.getInt(0, row);
+            int  layer = dcBank.getInt(1, row);
+            int   wire = dcBank.getInt(2, row);
+            double   tdc = (dcBank.getInt(4, row)-tdc_min)/tdc_max;
+            
+            index[0]   = order;
+            //index[1]   = (layer-1)/6;
+            index[1]   = 0;
+            index[2]   = (layer-1);
+            index[3]   = wire - 1;
+
+
+            //System.out.println(Arrays.toString(index));
+            //System.out.println(Arrays.toString(index));
+            if(sect==sector && tdc>0.00 &&tdc<1.00){
+                dc.putScalar(index, tdc);
             }
         }
     }

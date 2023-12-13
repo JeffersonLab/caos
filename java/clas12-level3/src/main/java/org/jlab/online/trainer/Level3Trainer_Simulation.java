@@ -35,6 +35,7 @@ import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
 
 import twig.data.GraphErrors;
 import twig.data.H1F;
+import twig.data.H2F;
 import twig.graphics.TGCanvas;
 import twig.server.HttpDataServer;
 import twig.server.HttpServerConfig;
@@ -104,6 +105,103 @@ public class Level3Trainer_Simulation{
 
         // System.out.println("Number of Test Events "+nTestEvents);
         Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], data.getLabels()[0],el_index,files.size(),doPlots);
+
+    }
+
+    public void plotHTCC(List<String[]> files,List<String[]> names, int max) {
+
+        H1F hHTCC_all = new H1F("HTCC_all", 8, 1, 9);
+        hHTCC_all.attr().setTitleX("Mirror");
+        hHTCC_all.attr().setTitleY("ADC [AU]");
+        hHTCC_all.attr().setTitle("HTCC");
+        hHTCC_all.attr().setLineColor(2);
+		hHTCC_all.attr().setLineWidth(3);
+
+        H2F hHTCC2D_all = new H2F("HTCC2D_all", 4, 1, 5, 2, 1, 3);
+        hHTCC2D_all.attr().setTitleX("Mirror");
+        hHTCC2D_all.attr().setTitleY("Layers");
+        hHTCC2D_all.attr().setTitle("HTCC");
+
+        MultiDataSet data = this.getClassesFromFile(files,names,max,0);
+        INDArray HTCC=data.getFeatures()[3];
+        for (int k=0;k<max;k++){
+
+            H1F hHTCC_adc = new H1F("HTCC_adc", 100, 0, 1);
+            hHTCC_adc.attr().setTitleX("ADC Single Event [AU]");
+            hHTCC_adc.attr().setTitle("HTCC ADC Single Event");
+            hHTCC_adc.attr().setLineColor(2);
+		    hHTCC_adc.attr().setLineWidth(3);
+
+            H1F hHTCC = new H1F("HTCC", 8, 1, 9);
+            hHTCC.attr().setTitleX("Mirror");
+            hHTCC.attr().setTitleY("ADC [AU]");
+            hHTCC.attr().setTitle("HTCC");
+            hHTCC.attr().setLineColor(2);
+		    hHTCC.attr().setLineWidth(3);
+            
+
+            H2F hHTCC2D = new H2F("HTCC2D", 4, 1, 5, 2, 1, 3);
+            hHTCC2D.attr().setTitleX("Mirror");
+            hHTCC2D.attr().setTitleY("Layers");
+            hHTCC2D.attr().setTitle("HTCC");
+            INDArray HTCCArray = HTCC.get(NDArrayIndex.point(k), NDArrayIndex.point(0),
+                    NDArrayIndex.all(),
+                     NDArrayIndex.point(0));
+            for (int i = 0; i < 8; i++) {
+                int j=1;
+                if(i>3){j=2;}
+                if (HTCCArray.getFloat(i) > 0) {
+                    double mirror=(i)%4;
+                    hHTCC2D.fill(mirror+1,j,HTCCArray.getFloat(i));
+                    hHTCC2D_all.fill(mirror+1,j,HTCCArray.getFloat(i));
+                    hHTCC.fill(i+1,HTCCArray.getFloat(i));
+                    hHTCC_all.fill(i+1,HTCCArray.getFloat(i));
+                    hHTCC_adc.fill(HTCCArray.getFloat(i));
+                }
+            }
+            if(k<10){
+                TGCanvas c2D = new TGCanvas();
+                c2D.setTitle("HTCC");
+                c2D.draw(hHTCC2D);
+
+                TGCanvas c = new TGCanvas();
+                c.setTitle("HTCC");
+                c.draw(hHTCC);
+
+                /*TGCanvas c_adc = new TGCanvas();
+                c_adc.setTitle("HTCC ADC");
+                c_adc.draw(hHTCC_adc);*/
+            }
+
+        }
+
+        TGCanvas c2D_all = new TGCanvas();
+        c2D_all.setTitle("HTCC");
+        c2D_all.draw(hHTCC2D_all);
+
+        TGCanvas c_all = new TGCanvas();
+        c_all.setTitle("HTCC");
+        c_all.draw(hHTCC_all);
+
+        for(int l=0;l<8;l++){
+
+            H1F hHTCC_adc = new H1F("HTCC_adc", 100, 0, 1);
+            hHTCC_adc.attr().setTitleX("ADC Mirror "+String.valueOf(l+1)+" [AU]");
+            hHTCC_adc.attr().setTitle("HTCC ADC Mirror "+String.valueOf(l+1));
+            hHTCC_adc.attr().setLineColor(2);
+		    hHTCC_adc.attr().setLineWidth(3);
+            for (int k = 0; k < max; k++) {
+
+                INDArray HTCCArray = HTCC.get(NDArrayIndex.point(k), NDArrayIndex.point(0),
+                        NDArrayIndex.all(),
+                        NDArrayIndex.point(0));
+                hHTCC_adc.fill(HTCCArray.getFloat(l));
+                    
+            }
+            TGCanvas c_adc = new TGCanvas();
+            c_adc.setTitle("HTCC");
+            c_adc.draw(hHTCC_adc);
+        }
 
     }
 
@@ -546,26 +644,26 @@ public class Level3Trainer_Simulation{
 
     public static void main(String[] args) {
      
-        //String dir = "/Users/tyson/data_repo/trigger_data/sims/";
+        String dir = "/Users/tyson/data_repo/trigger_data/sims/";
         //String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
 
-        String dir = "/scratch/clasrun/caos/sims/";
+        //String dir = "/scratch/clasrun/caos/sims/";
 
         List<String[]> files = new ArrayList<>();
-        files.add(new String[] { dir+"pim"});
+        /*files.add(new String[] { dir+"pim"});
         files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"pos"});
-        files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});
+        files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
         files.add(new String[] { dir+"el" });
 
         /*files.add(new String[] { dir+"pim", dir+"gamma",dir+"pim"});// ,dir+"pos"});//,dir+"pim"});
         files.add(new String[] { dir+"el" });*/
 
         List<String[]> names = new ArrayList<>();
-        names.add(new String[] { "pim"});
+        /*names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
-        names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});
+        names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
         names.add(new String[] { "el" });
 
         /*names.add(new String[] { "pim", "gamma","mixMatch"});// ,"pos"});//,"mixMatch"});
@@ -577,21 +675,22 @@ public class Level3Trainer_Simulation{
         //t.getEnergiesForClassesFromFiles(files,names, 10000);
         //t.histClasses(files,names, 10000);
         //t.saveClasses(files,names, out, 50000);
+        t.plotHTCC(files,names, 10000);
 
         t.cnnModel = net;
 
         // if not transfer learning
-        t.initNetwork(files.size());
+        //t.initNetwork(files.size());
 
         // transfer learning
         // t.load("level3_sim_"+net+".network");
 
-        t.nEpochs = 750;//500
+        /*t.nEpochs = 750;//500
         t.trainFile(files,names,30000,5000,10000);//30000 5000 10000
         t.save("level3_sim_MC_wMixMatch");
 
         t.load("level3_sim_MC_wMixMatch_"+net+".network");
-        t.evaluateFile(files,names,5000,false);//5000
+        t.evaluateFile(files,names,5000,false);//5000*/
 
     }
 }
