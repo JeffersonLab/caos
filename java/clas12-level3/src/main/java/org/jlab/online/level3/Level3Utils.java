@@ -221,6 +221,33 @@ public class Level3Utils {
         }
     }
 
+    public static void fillFTOF_wNorm(INDArray ftof, CompositeNode ftofBank, int sector , int order){
+        int   nrows = ftofBank.getRows();
+        int[] index = new int[]{0,0,0,0};
+
+        for(int row = 0; row < nrows; row++){
+            
+            int   sect = ftofBank.getInt(0, row);
+            int  layer = ftofBank.getInt(1, row); //1 or 2
+            int  component = ftofBank.getInt(2, row); //1-4
+            int    ADC = ftofBank.getInt(4, row);
+
+            if(ADC>0 && layer==2){//only keep layer 1-b for now
+                double energy = (ADC/50000.0); 
+ 
+                if(energy>=0.0&&sect==sector){//&&energy<1.0
+                    index[0]   = order;
+                    //index 1 is channel number set to 0
+                    index[2]   = component-1;
+                    
+                    if(index[1]<62 && energy>0.015){
+                     ftof.putScalar(index, 1);
+                    }
+                }
+            }
+        }
+    }
+
     public static int fillEC(INDArray dc, CompositeNode ecBank, int sector , int order){
         int   nrows = ecBank.getRows();
         int[] index = new int[]{0,0,0,0};

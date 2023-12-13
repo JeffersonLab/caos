@@ -122,13 +122,14 @@ public class Level3ClusterFinder_Simulation{
             data=addBg(bg,(int) nTestEvents, 50, data);
         }
 
-        //plotDCExamples(data.getFeatures()[0], 50);
+        plotDCExamples(data.getFeatures()[0], 10);
+        plotFTOFExamples(data.getFeatures()[1], 10);
             
         //INDArray[] outputs = network.output(data.getFeatures()[0]);
         INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
 
         System.out.println("\n\nTesting with combined dataset ("+nTestEvents+" events)");
-        Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0], data.getLabels()[0],doPlots);
+        //Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0], data.getLabels()[0],doPlots);
 
     }
 
@@ -200,6 +201,29 @@ public class Level3ClusterFinder_Simulation{
                 }
             }
             c.draw(hDC);
+        }
+
+	}
+
+    public static void plotFTOFExamples(INDArray FTOFall, int nExamples){
+        for (int k = 0; k < nExamples; k++) {
+            TGCanvas c = new TGCanvas();
+            c.setTitle("FTOF");
+
+            H1F hFTOF = new H1F("FTOF", 62, 0, 62);
+		    hFTOF.attr().setLineColor(2);
+		    hFTOF.attr().setLineWidth(3);
+		    hFTOF.attr().setTitleX("FTOF");
+		    hFTOF.attr().setTitle("FTOF");
+            INDArray FTOFArray = FTOFall.get(NDArrayIndex.point(k), NDArrayIndex.point(0),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.point(0));
+            for (int i = 0; i < 62; i++) {
+                if (FTOFArray.getFloat(i) > 0) {
+                    hFTOF.fill(i,FTOFArray.getFloat(i));
+                }
+            }
+            c.draw(hFTOF);
         }
 
 	}
@@ -314,7 +338,7 @@ public class Level3ClusterFinder_Simulation{
                 int[] ids = node.getInt();
 
                 Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
-                Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
+                Level3Utils.fillFTOF_wNorm(FTOFArray,nFTOF,ids[2],counter);
                 counter++;
                 added++;
             }
@@ -391,7 +415,7 @@ public class Level3ClusterFinder_Simulation{
                         INDArray EventOUTArray = OUTArray.get(NDArrayIndex.point(counter),NDArrayIndex.all());
                         if (EventOUTArray.any()) { 
                             Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
-                            Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
+                            Level3Utils.fillFTOF_wNorm(FTOFArray,nFTOF,ids[2],counter);
                             counter++;
                         } else{
                             OUTArray.get(NDArrayIndex.point(counter), NDArrayIndex.all()).assign(Nd4j.zeros(1, 108));
@@ -474,8 +498,8 @@ public class Level3ClusterFinder_Simulation{
 
         //assumes at least one particle by default
         List<Integer> nParts=new ArrayList<>();
-        nParts.add(2);
-        nParts.add(0);
+        //nParts.add(2);
+        //nParts.add(0);
 
 
         String net = "0b";
@@ -492,7 +516,7 @@ public class Level3ClusterFinder_Simulation{
         t.trainFile(files,names,bg,nParts,10000,100,100);//30000 5000 10000
         t.save("level3CF_sim");*/
 
-        t.load("level3CF_sim_"+net+"_v4.network");
+        t.load("level3CF_sim_"+net+".network");
         t.evaluateFile(files,names,bg,nParts,10000,true);//5000
 
     }
