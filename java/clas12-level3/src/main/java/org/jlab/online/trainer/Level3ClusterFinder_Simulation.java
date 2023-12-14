@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 
 import org.deeplearning4j.datasets.iterator.loader.MultiDataSetLoaderIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.jlab.online.level3.Level3Utils;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
@@ -60,6 +61,32 @@ public class Level3ClusterFinder_Simulation{
         network.init();
         System.out.println(network.summary());
         //ParallelInference pi = new ParallelInference.Builder(network).workers(5).build();
+    }
+
+
+    public void testLayers(MultiDataSet data,int nEx){
+        Layer lay=network.getLayer("L1");
+        Layer lay2=network.getLayer("L2");
+
+        ComputationGraphConfiguration configTest = Level3Models_ClusterFinder.getModel("testL1");
+        ComputationGraph networkTest = new ComputationGraph(configTest);
+        networkTest.init();
+        networkTest.getLayer("L1").setParams(lay.params());
+        INDArray[] out=networkTest.output(data.getFeatures()[0].get(NDArrayIndex.interval(0,nEx), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        
+        ComputationGraphConfiguration configTest2 = Level3Models_ClusterFinder.getModel("testL2");
+        ComputationGraph networkTest2 = new ComputationGraph(configTest2);
+        networkTest2.init();
+        networkTest2.getLayer("L1").setParams(lay.params());
+         networkTest2.getLayer("L2").setParams(lay2.params());
+        INDArray[] out2=networkTest2.output(data.getFeatures()[0].get(NDArrayIndex.interval(0,nEx), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        
+        for(int i=0;i<nEx;i++){
+            plotDCExamples(data.getFeatures()[0], i+1,i);
+            plotDCExamples(out[0], i+1,i);
+            plotDCExamples(out2[0], i+1,i);
+        }
+        
     }
 
     public void save(String file) {
@@ -105,7 +132,7 @@ public class Level3ClusterFinder_Simulation{
                     data_nPart = addBg(bg, (int) nTestEvents, 50, data_nPart);
                 }
 
-                //plotDCExamples(data_nPart.getFeatures()[0], 5);
+                //plotDCExamples(data_nPart.getFeatures()[0], 5,0);
                 //plotFTOFExamples(data_nPart.getFeatures()[1], 10);
 
                 //INDArray[] outputs = network.output(data_nPart.getFeatures()[0]);
@@ -132,7 +159,9 @@ public class Level3ClusterFinder_Simulation{
             data=addBg(bg,(int) nTestEvents, 50, data);
         }
 
-        //plotDCExamples(data.getFeatures()[0], 10);
+        //testLayers(data,10);
+
+        //plotDCExamples(data.getFeatures()[0], 10,0);
         //plotFTOFExamples(data.getFeatures()[1], 10);
         //plotDCTDC(data.getFeatures()[0], (int)nTestEvents);
             
@@ -192,20 +221,20 @@ public class Level3ClusterFinder_Simulation{
         
     }
 
-    public static void plotDCExamples(INDArray DCall, int nExamples){
-        for (int k = 0; k < nExamples; k++) {
+    public static void plotDCExamples(INDArray DCall, int nExamples,int start){
+        for (int k = start; k < nExamples; k++) {
             TGCanvas c = new TGCanvas();
             c.setTitle("DC");
 
-            H2F hDC = new H2F("DC", 112, 0, 112, 36, 0, 36);
+            H2F hDC = new H2F("DC", (int) DCall.shape()[3], 0,(int)  DCall.shape()[3], (int) DCall.shape()[2], 0,(int)  DCall.shape()[2]);
             hDC.attr().setTitleX("Wires");
             hDC.attr().setTitleY("Layers");
             hDC.attr().setTitle("DC");
             INDArray DCArray = DCall.get(NDArrayIndex.point(k), NDArrayIndex.point(0),
                     NDArrayIndex.all(),
                     NDArrayIndex.all());
-            for (int i = 0; i < 36; i++) {
-                for (int j = 0; j < 112; j++) {
+            for (int i = 0; i < DCArray.shape()[0]; i++) {
+                for (int j = 0; j < DCArray.shape()[1]; j++) {
                     if (DCArray.getFloat(i, j) != 0) {
                         hDC.fill(j, i,DCArray.getFloat(i, j));
                     }
