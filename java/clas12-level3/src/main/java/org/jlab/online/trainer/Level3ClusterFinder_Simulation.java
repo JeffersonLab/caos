@@ -88,7 +88,16 @@ public class Level3ClusterFinder_Simulation{
         if (nParts.size() > 0) {
             for (int nPart : nParts) {
 
-                MultiDataSet data_nPart= makeSampleNPart(nPart, data);
+                long nEvents_pSample_sp=nEvents_pSample;
+                if (nPart != 0) {
+                    long nEvents = data.getFeatures()[0].shape()[0];
+                    while ((nEvents % nPart) != 0) {
+                        nEvents--;
+                    }
+                    nEvents_pSample_sp = nEvents / nPart;
+                }
+
+                MultiDataSet data_nPart= makeSampleNPart(nPart, data,nEvents_pSample_sp);
                 
                 long nTestEvents = data_nPart.getFeatures()[0].shape()[0];
 
@@ -270,17 +279,12 @@ public class Level3ClusterFinder_Simulation{
         }
     }
 
-    public MultiDataSet makeSampleNPart(int nPart,MultiDataSet dataset){
+    public MultiDataSet makeSampleNPart(int nPart,MultiDataSet dataset,long nEvents_pSample){
         INDArray DC_out = Nd4j.zeros(1, 1, 36, 112);
         INDArray FTOF_out = Nd4j.zeros(1, 1,62,1);
         INDArray Label_out = Nd4j.zeros(1, 108);
 
         if (nPart != 0) {
-            long nEvents = dataset.getFeatures()[0].shape()[0];
-            while ((nEvents % nPart) != 0) {
-                nEvents--;
-            }
-            long nEvents_pSample = nEvents / nPart;
 
             for (int i = 0; i < nPart; i++) {
                 long bS = i * nEvents_pSample;
@@ -301,9 +305,9 @@ public class Level3ClusterFinder_Simulation{
                 }
             }
         } else {
-            DC_out = Nd4j.zeros(dataset.getFeatures()[0].shape()[0] / 2, 1, 36, 112);
-            FTOF_out = Nd4j.zeros(dataset.getFeatures()[1].shape()[0] / 2, 1, 62, 1);
-            Label_out = Nd4j.zeros(dataset.getFeatures()[0].shape()[0] / 2, 108);
+            DC_out = Nd4j.zeros(nEvents_pSample, 1, 36, 112);
+            FTOF_out = Nd4j.zeros(nEvents_pSample, 1, 62, 1);
+            Label_out = Nd4j.zeros(nEvents_pSample, 108);
         }
 
         MultiDataSet dataset_out = new MultiDataSet(new INDArray[]{DC_out,FTOF_out},new INDArray[]{Label_out});
@@ -315,14 +319,37 @@ public class Level3ClusterFinder_Simulation{
         INDArray[] inputs = new INDArray[2];
         INDArray[] outputs = new INDArray[1];
         int added=0;
+
+        long minEvents_pSample=99999;
+        for (int nPart : nParts) {
+            if (nPart != 0) {
+                long nEvents = dataset.getFeatures()[0].shape()[0];
+                while ((nEvents % nPart) != 0) {
+                    nEvents--;
+                }
+                long nEvents_pSample = nEvents / nPart;
+                if (nEvents_pSample < minEvents_pSample) {
+                    minEvents_pSample = nEvents_pSample;
+                }
+            }
+        }
+
         for (int nPart : nParts) {
 
-            MultiDataSet data_nPart = makeSampleNPart(nPart, dataset);
+            MultiDataSet data_nPart = makeSampleNPart(nPart, dataset,minEvents_pSample);
             if(added==0){
-                inputs[0] = Nd4j.vstack(dataset.getFeatures()[0], data_nPart.getFeatures()[0]);
-                inputs[1] = Nd4j.vstack(dataset.getFeatures()[1], data_nPart.getFeatures()[1]);
-                outputs[0] = Nd4j.vstack(dataset.getLabels()[0], data_nPart.getLabels()[0]);
-            } else{
+                inputs[0] = Nd4j.vstack(
+                        dataset.getFeatures()[0].get(NDArrayIndex.interval(0, minEvents_pSample), NDArrayIndex.all(),
+                                NDArrayIndex.all(), NDArrayIndex.all()),
+                        data_nPart.getFeatures()[0]);
+                inputs[1] = Nd4j.vstack(
+                        dataset.getFeatures()[1].get(NDArrayIndex.interval(0, minEvents_pSample), NDArrayIndex.all(),
+                                NDArrayIndex.all(), NDArrayIndex.all()),
+                        data_nPart.getFeatures()[1]);
+                outputs[0] = Nd4j.vstack(
+                        dataset.getLabels()[0].get(NDArrayIndex.interval(0, minEvents_pSample), NDArrayIndex.all()),
+                        data_nPart.getLabels()[0]);
+            } else {
                 inputs[0] = Nd4j.vstack(inputs[0], data_nPart.getFeatures()[0]);
                 inputs[1] = Nd4j.vstack(inputs[1], data_nPart.getFeatures()[1]);
                 outputs[0] = Nd4j.vstack(outputs[0], data_nPart.getLabels()[0]);
