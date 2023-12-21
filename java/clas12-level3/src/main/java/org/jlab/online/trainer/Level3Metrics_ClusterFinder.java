@@ -33,7 +33,7 @@ public class Level3Metrics_ClusterFinder {
 		System.out.printf("Test Average MAE: %f, MSE: %f\n",eval.averageMeanAbsoluteError(),eval.averageMeanSquaredError());
 		System.out.printf("Test Average RMSE: %f, relativeSE: %f\n",eval.averagerootMeanSquaredError(),eval.averagerelativeSquaredError());
 
-		Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.05);
+		//Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.05);
 		
 		calcDist(NEvents, predictions, Labels, makePlots);
 		if(makePlots){
@@ -46,25 +46,25 @@ public class Level3Metrics_ClusterFinder {
     }
 
 	public static void calcDist(long NEvents,INDArray predictions, INDArray Labels,Boolean makePlots){
-		H1F hDist = new H1F("Dist", 30,-15,15);
+		H1F hDist = new H1F("Dist", 20,-10,10);
 		hDist.attr().setLineColor(1);
 		hDist.attr().setLineWidth(3);
 		hDist.attr().setTitleX("Distance Between Cluster Maxima [strips]");
 		hDist.attr().setTitle("U/V/W Average");
 
-		H1F hDist_U = new H1F("Dist", 30,-15,15);
+		H1F hDist_U = new H1F("Dist", 20,-10,10);
 		hDist_U.attr().setLineColor(4);
 		hDist_U.attr().setLineWidth(3);
 		hDist_U.attr().setTitleX("Distance Between Cluster Maxima [strips]");
 		hDist_U.attr().setTitle("U View");
 
-		H1F hDist_V = new H1F("Dist", 30,-15,15);
+		H1F hDist_V = new H1F("Dist", 20,-10,10);
 		hDist_V.attr().setLineColor(3);
 		hDist_V.attr().setLineWidth(3);
 		hDist_V.attr().setTitleX("Distance Between Cluster Maxima [strips]");
 		hDist_V.attr().setTitle("V View");
 
-		H1F hDist_W = new H1F("Dist", 30,-15,15);
+		H1F hDist_W = new H1F("Dist", 20,-10,10);
 		hDist_W.attr().setLineColor(5);
 		hDist_W.attr().setLineWidth(3);
 		hDist_W.attr().setTitleX("Distance Between Cluster Maxima [strips]");
