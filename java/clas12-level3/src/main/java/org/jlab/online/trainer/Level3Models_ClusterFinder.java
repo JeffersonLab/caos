@@ -183,6 +183,40 @@ public class Level3Models_ClusterFinder {
         return config;
     }
 
+    public static ComputationGraphConfiguration getModel0d(){
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                //.l2(0.0005)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(1e-3))//Adam(5e-3) //AdaDelta()
+                .graphBuilder()
+                .addInputs("dc")
+                .addLayer("L1", new ConvolutionLayer.Builder(3,4)
+                        .nIn(1)
+                        .nOut(6)                    
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        , "dc")
+                .addLayer("L2", new ConvolutionLayer.Builder(3,4)
+                        .nIn(6)
+                        .nOut(6)                    
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        , "L1")            
+                .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{1,3}, new int[]{1,3}).poolingType(PoolingType.MAX).build(), "L2")
+                .addLayer("dcDense", new DenseLayer.Builder().activation(Activation.RELU).nOut(300).dropOut(0.2).build(), "L1Pool")
+                .addLayer("dcDense2", new DenseLayer.Builder().activation(Activation.RELU).nOut(200).dropOut(0.2).build(), "dcDense")
+                .addLayer("out", new OutputLayer.Builder(new LossBinaryXENT())//new LossMSE()
+                        .nIn(200).nOut(108)
+                        .activation(Activation.SIGMOID)
+                        .build()
+                        , "dcDense2")
+                .setOutputs("out")
+                .setInputTypes(InputType.convolutional(6, 112, 6))
+                .build();
+                //config.setValidateOutputLayerConfig(false);
+        return config;
+    }
+
     public static ComputationGraphConfiguration getTestLayerL2(){
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
@@ -312,6 +346,7 @@ public class Level3Models_ClusterFinder {
             case "0a": return Level3Models_ClusterFinder.getModel0a();
             case "0b": return Level3Models_ClusterFinder.getModel0b();
             case "0c": return Level3Models_ClusterFinder.getModel0c();
+            case "0d": return Level3Models_ClusterFinder.getModel0d();
             case "testL1": return Level3Models_ClusterFinder.getTestLayerL1();
             case "testL2": return Level3Models_ClusterFinder.getTestLayerL2();
             case "testL4": return Level3Models_ClusterFinder.getTestLayerL4();

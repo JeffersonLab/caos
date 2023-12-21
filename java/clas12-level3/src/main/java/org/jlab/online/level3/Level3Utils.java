@@ -39,7 +39,6 @@ public class Level3Utils {
             int   wire = dcBank.getInt(2, row);
             
             index[0]   = order;
-            //index[1]   = (layer-1)/6;
             index[1]   = 0;
             index[2]   = (layer-1)/6;
             index[3]   = wire - 1;
@@ -54,6 +53,28 @@ public class Level3Utils {
         }
     }
 
+    public static void fillDC_SepSL(INDArray dc, CompositeNode dcBank, int sector, int order){
+        int   nrows = dcBank.getRows();
+        int[] index = new int[]{0,0,0,0};
+        for(int row = 0; row < nrows; row++){
+            int  sect = dcBank.getInt(0, row);
+            int  layer = dcBank.getInt(1, row);
+            int   wire = dcBank.getInt(2, row);
+            
+            index[0]   = order;
+            index[1]   = (layer-1)/6; //superlayer
+            index[2]   = (layer-1)%6; //layer
+            index[3]   = wire - 1;
+
+
+            //System.out.println(Arrays.toString(index));
+            //System.out.println(Arrays.toString(index));
+            if(sect==sector){
+                dc.putScalar(index, 1);
+            }
+        }
+    }
+
     public static void fillDC_wLayers(INDArray dc, CompositeNode dcBank, int sector, int order){
         int   nrows = dcBank.getRows();
         int[] index = new int[]{0,0,0,0};
@@ -64,7 +85,6 @@ public class Level3Utils {
             int   wire = dcBank.getInt(2, row);
             
             index[0]   = order;
-            //index[1]   = (layer-1)/6;
             index[1]   = 0;
             index[2]   = (layer-1);
             index[3]   = wire - 1;
@@ -91,7 +111,6 @@ public class Level3Utils {
             double   tdc = (dcBank.getInt(4, row)-tdc_min)/tdc_max;
             
             index[0]   = order;
-            //index[1]   = (layer-1)/6;
             index[1]   = 0;
             index[2]   = (layer-1);
             index[3]   = wire - 1;
@@ -118,7 +137,6 @@ public class Level3Utils {
             int   wire = dcBank.getInt(2, row);
             
             index[0]   = order*6 + (sector-1);
-            //index[1]   = (layer-1)/6;
             index[1]   = 0;
             index[2]   = (layer-1)/6;
             index[3]   = wire - 1;
