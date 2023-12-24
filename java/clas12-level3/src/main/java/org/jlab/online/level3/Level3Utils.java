@@ -287,7 +287,7 @@ public class Level3Utils {
                     //index 1 is channel number set to 0
                     index[2]   = component-1;
                     
-                    if(index[1]<62 && energy>0.015){
+                    if(index[2]<62 && energy>0.015){
                      ftof.putScalar(index, 1);
                     }
                 }
@@ -367,6 +367,39 @@ public class Level3Utils {
                 }
                 //----------------
                 
+            }
+        }
+    }
+
+    public static void fillECin(INDArray ec, CompositeNode ecBank, int sector , int order){
+        
+        int   nrows = ecBank.getRows();
+        int[] index = new int[]{0,0,0,0};
+
+        for(int row = 0; row < nrows; row++){
+            
+            int   sect = ecBank.getInt(0, row);
+            int  layer = ecBank.getInt(1, row);
+            int  strip = ecBank.getInt(2, row);
+            int    ADC = ecBank.getInt(4, row);
+
+            if(ADC>0.0){
+                double energy = (ADC/10000.0)/1.5/3.0;
+                //----------------
+                if(sect==sector){
+
+                    if (layer > 3 && layer < 7) {
+                        index[0] = order;
+                        index[3] = ((layer-4)*36+strip)-1;
+                        //index 1 is channels, 0 channels
+                        //index 2 would be layers but only 1 (ecin)
+
+                        if (index[3] < 108) {
+                            ec.putScalar(index, energy);
+                        }
+                    }
+                }
+                //----------------  
             }
         }
     }

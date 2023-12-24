@@ -191,15 +191,17 @@ public class Level3Models_ClusterFinder {
                 .graphBuilder()
                 .addInputs("dc")
                 .addLayer("L1", new ConvolutionLayer.Builder(3,4)
-                        .nIn(1)
-                        .nOut(6)                    
+                        .nIn(6)
+                        .nOut(18)                    
                         .activation(Activation.RELU)
+                        .padding(1,1)
                         .stride(1,1).build()
                         , "dc")
                 .addLayer("L2", new ConvolutionLayer.Builder(3,4)
-                        .nIn(6)
-                        .nOut(6)                    
+                        .nIn(18)
+                        .nOut(18)                    
                         .activation(Activation.RELU)
+                        .padding(1,1)
                         .stride(1,1).build()
                         , "L1")            
                 .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{1,3}, new int[]{1,3}).poolingType(PoolingType.MAX).build(), "L2")
@@ -217,24 +219,87 @@ public class Level3Models_ClusterFinder {
         return config;
     }
 
+    public static ComputationGraphConfiguration getModel0e(){
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                //.l2(0.0005)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(1e-3))//Adam(5e-3) //AdaDelta()
+                .graphBuilder()
+                .addInputs("dc","ecin")
+                .addLayer("L1", new ConvolutionLayer.Builder(3,4)
+                        .nIn(6)
+                        .nOut(18)                    
+                        .activation(Activation.RELU)
+                        .padding(1,1)
+                        .stride(1,1).build()
+                        , "dc")
+                .addLayer("L2", new ConvolutionLayer.Builder(3,4)
+                        .nIn(18)
+                        .nOut(18)                    
+                        .activation(Activation.RELU)
+                        .padding(1,1)
+                        .stride(1,1).build()
+                        , "L1")            
+                .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{1,3}, new int[]{1,3}).poolingType(PoolingType.MAX).build(), "L2")
+                .addLayer("dcDense", new DenseLayer.Builder().activation(Activation.RELU).nOut(300).dropOut(0.2).build(), "L1Pool")
+                .addLayer("L1ecin", new ConvolutionLayer.Builder(1, 9)
+                        .nIn(1)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(1, 2).build(), "ecin")
+                .addLayer("ecinDense", new DenseLayer.Builder().nOut(100).dropOut(0.5).build(), "L1ecin")
+                .addVertex("merge", new MergeVertex(), "dcDense","ecinDense")
+                .addLayer("Dense", new DenseLayer.Builder().activation(Activation.RELU).nOut(200).dropOut(0.2).build(), "merge")
+                .addLayer("out", new OutputLayer.Builder(new LossBinaryXENT())//new LossMSE()
+                        .nIn(200).nOut(108)
+                        .activation(Activation.SIGMOID)
+                        .build()
+                        , "Dense")
+                .setOutputs("out")
+                .setInputTypes(InputType.convolutional(6, 112, 6),InputType.convolutional(1,108,1))
+                .build();
+                //config.setValidateOutputLayerConfig(false);
+        return config;
+    }
+
+    public static ComputationGraphConfiguration getTestLayerL1(){
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("dc")
+                .addLayer("L1", new ConvolutionLayer.Builder(3,4)
+                        .nIn(6)
+                        .nOut(6)                 
+                        .activation(Activation.RELU)
+                        .padding(1,1)
+                        .stride(1,1).build()
+                        , "dc")
+                .setOutputs("L1")
+                .setInputTypes(InputType.convolutional(6, 112, 6))
+                .build();
+                //config.setValidateOutputLayerConfig(false);
+        return config;
+    }
+
     public static ComputationGraphConfiguration getTestLayerL2(){
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("dc")
-                .addLayer("L1", new ConvolutionLayer.Builder(6,4)
-                        .nIn(1)
-                        .nOut(6)                    
-                        .activation(Activation.RELU)
-                        .stride(2,1).build()
-                        , "dc")
-                .addLayer("L2", new ConvolutionLayer.Builder(6,4)
+                .addLayer("L1", new ConvolutionLayer.Builder(3,4)
                         .nIn(6)
                         .nOut(6)                    
                         .activation(Activation.RELU)
-                        .stride(2,1).build()
+                        .padding(1,1)
+                        .stride(1,1).build()
+                        , "dc")
+                .addLayer("L2", new ConvolutionLayer.Builder(3,4)
+                        .nIn(6)
+                        .nOut(6)                    
+                        .activation(Activation.RELU)
+                        .padding(1,1)
+                        .stride(1,1).build()
                         , "L1")       
                 .setOutputs("L2")
-                .setInputTypes(InputType.convolutional(36, 112, 1))
+                .setInputTypes(InputType.convolutional(6, 112, 6))
                 .build();
                 //config.setValidateOutputLayerConfig(false);
         return config;
@@ -323,23 +388,6 @@ public class Level3Models_ClusterFinder {
                 //config.setValidateOutputLayerConfig(false);
         return config;
     }
-
-    public static ComputationGraphConfiguration getTestLayerL1(){
-        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("dc")
-                .addLayer("L1", new ConvolutionLayer.Builder(6,4)
-                        .nIn(1)
-                        .nOut(6)                    
-                        .activation(Activation.RELU)
-                        .stride(2,1).build()
-                        , "dc")
-                .setOutputs("L1")
-                .setInputTypes(InputType.convolutional(36, 112, 1))
-                .build();
-                //config.setValidateOutputLayerConfig(false);
-        return config;
-    }
     
     public static ComputationGraphConfiguration getModel(String modelname){
         switch(modelname){
@@ -347,6 +395,7 @@ public class Level3Models_ClusterFinder {
             case "0b": return Level3Models_ClusterFinder.getModel0b();
             case "0c": return Level3Models_ClusterFinder.getModel0c();
             case "0d": return Level3Models_ClusterFinder.getModel0d();
+            case "0e": return Level3Models_ClusterFinder.getModel0e();
             case "testL1": return Level3Models_ClusterFinder.getTestLayerL1();
             case "testL2": return Level3Models_ClusterFinder.getTestLayerL2();
             case "testL4": return Level3Models_ClusterFinder.getTestLayerL4();
