@@ -150,7 +150,8 @@ public class Level3ClusterFinder_Simulation{
 
                 //INDArray[] outputs = network.output(data_nPart.getFeatures()[0]);//0a,0b
                 //INDArray[] outputs = network.output(data_nPart.getFeatures()[0], data_nPart.getFeatures()[1]);//0b,0c
-                INDArray[] outputs = network.output(data_nPart.getFeatures()[0], data_nPart.getFeatures()[2]);//0e
+                //INDArray[] outputs = network.output(data_nPart.getFeatures()[0], data_nPart.getFeatures()[2]);//0e
+                INDArray[] outputs = network.output(data_nPart.getFeatures()[2]);//0f
 
                 System.out.println("\n\nTesting with " + nPart + " particles (" + nTestEvents + " events)");
                 Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0],
@@ -193,7 +194,8 @@ public class Level3ClusterFinder_Simulation{
             
         //INDArray[] outputs = network.output(data.getFeatures()[0]); //0a,0d
         //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);//0b,0c
-        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[2]);//0e
+        //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[2]);//0e
+        INDArray[] outputs = network.output(data.getFeatures()[2]);//0f
 
         System.out.println("\n\nTesting with combined dataset ("+nTestEvents+" events)");
         Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0], data.getLabels()[0],doPlots);
@@ -233,14 +235,17 @@ public class Level3ClusterFinder_Simulation{
 
                 //network.fit(new INDArray[] {DC_b}, new INDArray[] {Lab_b});//0a,0d
                 //network.fit(new INDArray[] {DC_b,FTOF_b}, new INDArray[] {Lab_b});//0b,0c
-                network.fit(new INDArray[] {DC_b,ECIN_b}, new INDArray[] {Lab_b});//0e
+                //network.fit(new INDArray[] {DC_b,ECIN_b}, new INDArray[] {Lab_b});//0e
+                network.fit(new INDArray[] {ECIN_b}, new INDArray[] {Lab_b});//0f
             }
 
             long now = System.currentTimeMillis();
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d ms\n",
                     i, network.score(), now - then);
-            //INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1]);
-            INDArray[] outputs = network.output(data_test.getFeatures()[0]);
+            //INDArray[] outputs = network.output(data_test.getFeatures()[0]);//0a,0d
+            //INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1]);//0b,0c
+            //INDArray[] outputs = network.output(data_test.getFeatures()[0],data_test.getFeatures()[2]);//0e
+            INDArray[] outputs = network.output(data_test.getFeatures()[2]);//0f
             
 		    eval.eval(data_test.getLabels()[0], outputs[0]);
             System.out.printf("Test Average MAE: %f, MSE: %f\n",eval.averageMeanAbsoluteError(),eval.averageMeanSquaredError());
@@ -738,7 +743,7 @@ public class Level3ClusterFinder_Simulation{
         files.add(new String[] { dir+"pos"});
         files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
         files.add(new String[] { dir+"el" });
-        //files.add(new String[] { dir+"pos"});
+        files.add(new String[] { dir+"pos"});
 
         List<String[]> names = new ArrayList<>();
         //names.add(new String[] { "pim"});
@@ -747,17 +752,17 @@ public class Level3ClusterFinder_Simulation{
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
         //names.add(new String[] { "mixMatch" });
         names.add(new String[] { "el" });
-        //names.add(new String[] { "pos" });
+        names.add(new String[] { "pos" });
 
         //assumes at least one particle by default
         List<Integer> nParts=new ArrayList<>();
         //nParts.add(3);
         //nParts.add(4);
-        //nParts.add(2);
+        nParts.add(2);
         //nParts.add(0);
 
 
-        String net = "0e";
+        String net = "0f";
         Level3ClusterFinder_Simulation t = new Level3ClusterFinder_Simulation();
 
         t.cnnModel = net;
@@ -771,7 +776,7 @@ public class Level3ClusterFinder_Simulation{
         t.trainFile(files,names,bg,nParts,70000,1000,1000);//30000 5000 10000
         t.save("level3CF_sim");*/
 
-        t.load("level3CF_sim_"+net+"_noise.network"); //_noise2Tracks //_noise2Tracks2Ch
+        t.load("level3CF_sim_"+net+"_noise2Tracks2Ch.network"); //_noise2Tracks //_noise2Tracks2Ch
         t.evaluateFile(files,names,bg,nParts,5000,true);//5000
 
     }

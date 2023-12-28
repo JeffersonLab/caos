@@ -262,6 +262,31 @@ public class Level3Models_ClusterFinder {
         return config;
     }
 
+    public static ComputationGraphConfiguration getModel0f(){
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                //.l2(0.0005)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(1e-3))//Adam(5e-3) //AdaDelta()
+                .graphBuilder()
+                .addInputs("ecin")
+                .addLayer("L1ecin", new ConvolutionLayer.Builder(1, 9)
+                        .nIn(1)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(1, 2).build(), "ecin")
+                .addLayer("ecinDense", new DenseLayer.Builder().nOut(100).dropOut(0.5).build(), "L1ecin")
+                .addLayer("out", new OutputLayer.Builder(new LossBinaryXENT())//new LossMSE()
+                        .nIn(200).nOut(108)
+                        .activation(Activation.SIGMOID)
+                        .build()
+                        , "ecinDense")
+                .setOutputs("out")
+                .setInputTypes(InputType.convolutional(1,108,1))
+                .build();
+                //config.setValidateOutputLayerConfig(false);
+        return config;
+    }
+
     public static ComputationGraphConfiguration getTestLayerL1(){
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
@@ -396,6 +421,7 @@ public class Level3Models_ClusterFinder {
             case "0c": return Level3Models_ClusterFinder.getModel0c();
             case "0d": return Level3Models_ClusterFinder.getModel0d();
             case "0e": return Level3Models_ClusterFinder.getModel0e();
+            case "0f": return Level3Models_ClusterFinder.getModel0f();
             case "testL1": return Level3Models_ClusterFinder.getTestLayerL1();
             case "testL2": return Level3Models_ClusterFinder.getTestLayerL2();
             case "testL4": return Level3Models_ClusterFinder.getTestLayerL4();
