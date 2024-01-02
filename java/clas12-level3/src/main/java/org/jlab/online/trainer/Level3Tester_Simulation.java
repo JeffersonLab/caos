@@ -82,7 +82,8 @@ public class Level3Tester_Simulation {
                 if (r.entries()< (nMax+start))
                     nMax = (r.entries()-start);
 
-                INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+                //INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+                INDArray DCArray = Nd4j.zeros(nMax, 6, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
                 INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
                 INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
@@ -172,7 +173,8 @@ public class Level3Tester_Simulation {
                             if (nodeEC.getRows() > 0 && keepEvent == true) {
 
                                 //Level3Utils.fillDC_wLayers(DCArray, nodeDC, sect, counter);
-                                Level3Utils.fillDC(DCArray, nodeDC, sect, counter);
+                                //Level3Utils.fillDC(DCArray, nodeDC, sect, counter);
+                                Level3Utils.fillDC_SepSL(DCArray, nodeDC, sect, counter);
                                 Level3Utils.fillEC(ECArray, nodeEC, sect, counter);
                                 Level3Utils.fillFTOF(FTOFArray,nodeFTOF,sect,counter);
                                 Level3Utils.fillHTCC(HTCCArray,nodeHTCC,sect,counter);
@@ -212,8 +214,10 @@ public class Level3Tester_Simulation {
                                     counter_tot++;
                                 } else {
                                     // erase last entry
+                                    //DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
+                                    //        NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
                                     DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                                            NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
+                                            NDArrayIndex.all()).assign(Nd4j.zeros(6, 6, 112));
                                     ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
                                             NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 72));
                                     FTOFArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
@@ -326,8 +330,6 @@ public class Level3Tester_Simulation {
         }//End of PlotResponse
 
     //Labels col 0 is 1 if there's an e-, 0 otherwise
-    //Labels col 1 is 1 if l1 trigger fired, 0 otherwise
-    //Labels col 2 is q2 when col 1 is 1, 0 otherwise
     public static INDArray getMetsForBin(INDArray outputs, INDArray Labels,int LabelVal,double thresh,int elClass,int cutVar,double low,double high){
         INDArray metrics = Nd4j.zeros(2,1);
         long nEvents = outputs.shape()[0];
@@ -357,7 +359,6 @@ public class Level3Tester_Simulation {
     }
 
     //Labels col 0 is 1 if there's an e-, 0 otherwise
-    //Labels col 1 is 1 if l1 trigger fired, 0 otherwise
     public static INDArray getMetrics(INDArray outputs, INDArray Labels,int LabelVal,double thresh,int elClass){
         INDArray metrics = Nd4j.zeros(5,1);
         long nEvents = outputs.shape()[0];
@@ -394,7 +395,10 @@ public class Level3Tester_Simulation {
     public double findBestThreshold(MultiDataSet data,int elClass,double effLow,int LabelVal,Boolean mask_nphe){
 
         //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
-        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[2], data.getFeatures()[3]);
+        //0d_FTOFHTCC
+        //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[2], data.getFeatures()[3]);
+        //0f
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[3]);
 
         if (mask_nphe) {
             INDArray mask=data.getLabels()[0].get(NDArrayIndex.all(), NDArrayIndex.point(4));
@@ -487,7 +491,10 @@ public class Level3Tester_Simulation {
     public void test(MultiDataSet data,double thresh,int elClass,int LabelVal, String Part,Boolean mask_nphe) {
         
         //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
-        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1],data.getFeatures()[2],data.getFeatures()[3]);
+        //0d_FTOFHTCC
+        //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1],data.getFeatures()[2],data.getFeatures()[3]);
+        //0f
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[3]);
 
         if (mask_nphe) {
             INDArray mask=data.getLabels()[0].get(NDArrayIndex.all(), NDArrayIndex.point(4));
@@ -535,7 +542,7 @@ public class Level3Tester_Simulation {
         classes.add(0);//3 for mixmatch
         classes.add(1);
 
-        List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
+        List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1
         sectors.add(1);
 
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
@@ -546,7 +553,8 @@ public class Level3Tester_Simulation {
         //t.load("level3_0d_in.network");
         //t.load("level3_sim_0d_FTOFHTCC.network");
         //t.load("level3_sim_wMixMatch_0d_FTOFHTCC.network");
-        t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC.network");
+        //t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC.network");
+        t.load("level3_sim_MC_wMixMatch_0f.network");
 
         Boolean mask_nphe=false;
 

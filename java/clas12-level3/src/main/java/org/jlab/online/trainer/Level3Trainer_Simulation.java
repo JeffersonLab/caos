@@ -97,7 +97,10 @@ public class Level3Trainer_Simulation{
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.8);
 
         //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
-        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[2], data.getFeatures()[3]);
+        //0d_FTOFHTCC
+        //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[2], data.getFeatures()[3]);
+        //0f
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[3]);
 
         long nTestEvents = data.getFeatures()[0].shape()[0];
 
@@ -229,14 +232,20 @@ public class Level3Trainer_Simulation{
                 //System.out.printf("1 %d, 2 %d, 3 %d, 4%d\n",FTOF_b.shape()[0],FTOF_b.shape()[1],FTOF_b.shape()[2],FTOF_b.shape()[3]);
 
                 //network.fit(new INDArray[] {DC_b,EC_b}, new INDArray[] {Lab_b});
-                network.fit(new INDArray[] {DC_b,EC_b,FTOF_b,HTCC_b}, new INDArray[] {Lab_b});
+                //0d_FTOFHTCC
+                //network.fit(new INDArray[] {DC_b,EC_b,FTOF_b,HTCC_b}, new INDArray[] {Lab_b});
+                //0f
+                network.fit(new INDArray[] {DC_b,EC_b,HTCC_b}, new INDArray[] {Lab_b});
             }
 
             long now = System.currentTimeMillis();
             System.out.printf(">>> network iteration %8d, score = %e, time = %12d ms\n",
                     i, network.score(), now - then);
             //INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1]);
-            INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1], data_test.getFeatures()[2], data_test.getFeatures()[3]);
+            //0d_FTOFHTCC
+            //INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1], data_test.getFeatures()[2], data_test.getFeatures()[3]);
+            //0f
+            INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1], data_test.getFeatures()[3]);
             
 		    eval.eval(data_test.getLabels()[0], outputs[0]);
             System.out.printf("Test Purity: %f, Efficiency: %f\n",eval.precision(),eval.recall());
@@ -538,7 +547,8 @@ public class Level3Trainer_Simulation{
                 CompositeNode nFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
                 CompositeNode nHTCC = new CompositeNode( 14, 5, "bbsbifs", 4096);
 
-                INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+                //INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
+                INDArray DCArray = Nd4j.zeros(nMax, 6, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
                 INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
                 INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
@@ -563,7 +573,8 @@ public class Level3Trainer_Simulation{
                     //allows us to keep N last events for testing
                     if (eventNb >= start) {
                         //Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
-                        Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                        //Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                        Level3Utils.fillDC_SepSL(DCArray, nDC, ids[2], counter);
                         int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
                         Level3Utils.fillLabels_MultiClass(OUTArray, files.size(), classs, counter);// tag
                         Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
@@ -650,47 +661,47 @@ public class Level3Trainer_Simulation{
         //String dir = "/scratch/clasrun/caos/sims/";
 
         List<String[]> files = new ArrayList<>();
-        /*files.add(new String[] { dir+"pim"});
+        files.add(new String[] { dir+"pim"});
         files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"pos"});
-        files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
+        files.add(new String[] {dir+"pim",dir+"gamma"});//,dir+"pos",dir+"el"
         files.add(new String[] { dir+"el" });
 
         /*files.add(new String[] { dir+"pim", dir+"gamma",dir+"pim"});// ,dir+"pos"});//,dir+"pim"});
         files.add(new String[] { dir+"el" });*/
 
         List<String[]> names = new ArrayList<>();
-        /*names.add(new String[] { "pim"});
+        names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
-        names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
+        names.add(new String[]{"mixMatch","mixMatch"});//,"mixMatch","mixMatch"
         names.add(new String[] { "el" });
 
         /*names.add(new String[] { "pim", "gamma","mixMatch"});// ,"pos"});//,"mixMatch"});
         names.add(new String[] { "el" });*/
 
-        String net = "0d_FTOFHTCC"; //"0d_allLayers"
+        String net = "0f"; //"0d_allLayers"
         Level3Trainer_Simulation t = new Level3Trainer_Simulation();
 
         //t.getEnergiesForClassesFromFiles(files,names, 10000);
         //t.histClasses(files,names, 10000);
         //t.saveClasses(files,names, out, 50000);
-        t.plotHTCC(files,names, 10000);
+        //t.plotHTCC(files,names, 10000);
 
         t.cnnModel = net;
 
         // if not transfer learning
-        //t.initNetwork(files.size());
+        t.initNetwork(files.size());
 
         // transfer learning
         // t.load("level3_sim_"+net+".network");
 
         /*t.nEpochs = 750;//500
         t.trainFile(files,names,30000,5000,10000);//30000 5000 10000
-        t.save("level3_sim_MC_wMixMatch");
+        t.save("level3_sim_MC_wMixMatch");*/
 
-        t.load("level3_sim_MC_wMixMatch_"+net+".network");
-        t.evaluateFile(files,names,5000,false);//5000*/
+        //t.load("level3_sim_"+net+".network");
+        t.evaluateFile(files,names,5000,false);//5000
 
     }
 }

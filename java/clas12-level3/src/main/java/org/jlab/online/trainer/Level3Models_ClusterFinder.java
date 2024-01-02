@@ -274,7 +274,7 @@ public class Level3Models_ClusterFinder {
                         .nOut(6)
                         .activation(Activation.RELU)
                         .stride(1, 2).build(), "ecin")
-                .addLayer("ecinDense", new DenseLayer.Builder().nOut(100).dropOut(0.5).build(), "L1ecin")
+                .addLayer("ecinDense", new DenseLayer.Builder().nOut(200).dropOut(0.5).build(), "L1ecin")
                 .addLayer("out", new OutputLayer.Builder(new LossBinaryXENT())//new LossMSE()
                         .nIn(200).nOut(108)
                         .activation(Activation.SIGMOID)

@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.Convolution1D;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
@@ -362,6 +363,65 @@ public class Level3Models_MultiClass {
                 .build();
         return config;
     }
+
+    public static ComputationGraphConfiguration getModel0f(int nClasses){
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                //.l2(0.0005)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(1e-3))//Adam(5e-3) //AdaDelta()
+                .graphBuilder()
+                .addInputs("dc", "ec","htcc")
+                .addLayer("L1", new ConvolutionLayer.Builder(3,4)
+                        .nIn(6)
+                        .nOut(18)                    
+                        .activation(Activation.RELU)
+                        .padding(1,1)
+                        .stride(1,1).build()
+                        , "dc")
+                .addLayer("L3", new ConvolutionLayer.Builder(3,4)
+                        .nIn(18)
+                        .nOut(18)                    
+                        .activation(Activation.RELU)
+                        .padding(1,1)
+                        .stride(1,1).build()
+                        , "L1")
+                .addLayer("L2", new ConvolutionLayer.Builder(3,6)
+                        .nIn(1)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        , "ec")    
+                .addLayer("L4", new ConvolutionLayer.Builder(3,6)
+                        .nIn(6)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        , "L2")                
+                .addLayer("L1Pool", new SubsamplingLayer.Builder(new int[]{1,3}, new int[]{1,3}).poolingType(PoolingType.MAX).build(), "L3")
+                .addLayer("L2Pool", new SubsamplingLayer.Builder(new int[]{1,2}, new int[]{1,2}).build(), "L4")
+                .addLayer("dcDense", new DenseLayer.Builder().nOut(300).dropOut(0.5).build(), "L1Pool")
+                .addLayer("dcDense2", new DenseLayer.Builder().nOut(200).dropOut(0.5).build(), "dcDense")
+                .addLayer("ecDense", new DenseLayer.Builder().nOut(200).dropOut(0.5).build(), "L2Pool")
+                .addLayer("L1htcc", new ConvolutionLayer.Builder(2,1)
+                        .nIn(1)
+                        .nOut(6)
+                        .activation(Activation.RELU)
+                        .stride(1,1).build()
+                        ,"htcc")
+                .addLayer("htccDense", new DenseLayer.Builder().nOut(40).dropOut(0.5).build(), "L1htcc")
+                .addVertex("merge", new MergeVertex(), "dcDense2", "ecDense","htccDense")
+                .addLayer("dense1", new DenseLayer.Builder().nOut(200).dropOut(0.5).build(), "merge")
+                .addLayer("dense2", new DenseLayer.Builder().nOut(100).dropOut(0.5).build(), "dense1")
+                .addLayer("out", new OutputLayer.Builder()
+                        .nIn(100).nOut(nClasses)
+                        .activation(Activation.SOFTMAX)
+                        .build()
+                        , "dense2")
+                .setOutputs("out")
+                .setInputTypes(InputType.convolutional(6, 112, 6), InputType.convolutional(6, 72, 1), InputType.convolutional(8,1,1))
+                .build();
+        return config;
+    }
     
     public static ComputationGraphConfiguration getModel(String modelname, int nClasses){
         switch(modelname){
@@ -372,6 +432,7 @@ public class Level3Models_MultiClass {
             case "0d_FTOFHTCC": return Level3Models_MultiClass.getModel0d_FTOFHTCC(nClasses);
             case "0d_allLayers": return Level3Models_MultiClass.getModel0d_allLayers(nClasses);
             case "0e": return Level3Models_MultiClass.getModel0e(nClasses);
+            case "0f": return Level3Models_MultiClass.getModel0f(nClasses);
             default: return null;
         }
     }
