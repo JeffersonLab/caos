@@ -702,10 +702,13 @@ public class Level3ClusterFinder_Simulation{
                 MultiDataSet datasetFTOF = new MultiDataSet(new INDArray[]{inputs_class[1]},new INDArray[]{inputs_class[1]});
                 datasetFTOF.shuffle();
                 inputs_class[1] = datasetFTOF.getFeatures()[0];
-                MultiDataSet datasetECIN = new MultiDataSet(new INDArray[]{inputs_class[2]},new INDArray[]{inputs_class[2]});
+                /*MultiDataSet datasetECIN = new MultiDataSet(new INDArray[]{inputs_class[2]},new INDArray[]{outputs_class[0]});
                 datasetECIN.shuffle();
                 inputs_class[2] = datasetECIN.getFeatures()[0];
+                outputs_class[0]=datasetECIN.getLabels()[0]; */
                 // Note: OUTArray is EC, this should now be shuffled compared to DC,FTOF
+                // If we use ECIN as input we need to shuffle ECIN input and output in same way.
+                // This has same effect as not shuffling either.
             }
 
             if (classs == 0) {
@@ -743,22 +746,22 @@ public class Level3ClusterFinder_Simulation{
         files.add(new String[] { dir+"pos"});
         files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
         files.add(new String[] { dir+"el" });
-        files.add(new String[] { dir+"pos"});
+        //files.add(new String[] { dir+"pos"});
 
         List<String[]> names = new ArrayList<>();
         //names.add(new String[] { "pim"});
         /*names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
-        //names.add(new String[] { "mixMatch" });
-        names.add(new String[] { "el" });
-        names.add(new String[] { "pos" });
+        names.add(new String[] { "mixMatch" });
+        //names.add(new String[] { "el" });
+        //names.add(new String[] { "pos" });
 
         //assumes at least one particle by default
         List<Integer> nParts=new ArrayList<>();
         //nParts.add(3);
         //nParts.add(4);
-        nParts.add(2);
+        //nParts.add(2);
         //nParts.add(0);
 
 

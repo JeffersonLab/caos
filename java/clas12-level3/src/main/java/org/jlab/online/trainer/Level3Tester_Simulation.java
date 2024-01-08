@@ -58,7 +58,7 @@ public class Level3Tester_Simulation {
 
     
    
-    public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,List<Integer> Classes, List<Integer> Sectors,double beamE,double trainTestP){
+    public static MultiDataSet getData(List<String[]> files,List<Integer[]> maxes,String bg,List<Integer> Classes, List<Integer> Sectors,double beamE,double trainTestP){
         INDArray[] inputs = new INDArray[4]; //size 2 if not using HTCC & FTOF
         INDArray[] outputs = new INDArray[1];
         int nEls = 0, nOther = 0,nmixMatch=0, classs = 0,counter_tot=0,nBg=0;
@@ -298,6 +298,11 @@ public class Level3Tester_Simulation {
 
         MultiDataSet dataset = new MultiDataSet(inputs,outputs);
         dataset.shuffle();
+
+        if(bg!=""){
+            dataset=Level3Trainer_Simulation.addBg(bg,(int) dataset.getFeatures()[0].shape()[0], 50, dataset);
+        }
+
         return dataset;
     }
 
@@ -524,22 +529,27 @@ public class Level3Tester_Simulation {
         String dir = "/Users/tyson/data_repo/trigger_data/sims/";
         String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
 
+        String bg=dir+"bg_50nA_10p6/";//"";
+
         List<String[]> files = new ArrayList<>();
         /*files.add(new String[] {dir+"pim",dir+"gamma",dir+"pos" });//dir+"pim"
         files.add(new String[] { dir+"el" });*/
 
-        files.add(new String[] { dir+"pim",dir+"pos",dir+"el",dir+"gamma"});
+        //files.add(new String[] { dir+"pim",dir+"pos",dir+"el",dir+"gamma"});
+        //files.add(new String[] { dir+"gamma"});
+        files.add(new String[] { dir+"pim",dir+"pos"});
         files.add(new String[] { dir+"el" });
 
         List<Integer[]> maxes = new ArrayList<>();
         /*maxes.add(new Integer[] {1600,1600,1600});
         maxes.add(new Integer[] {4800});*/
 
-        maxes.add(new Integer[] {4800});
+        //maxes.add(new Integer[] {4800});
+        maxes.add(new Integer[] {2400,2400});
         maxes.add(new Integer[] {4800});
 
         List<Integer> classes=new ArrayList<>();
-        classes.add(0);//3 for mixmatch
+        classes.add(3);//3 for mixmatch
         classes.add(1);
 
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1
@@ -553,7 +563,7 @@ public class Level3Tester_Simulation {
         //t.load("level3_0d_in.network");
         //t.load("level3_sim_0d_FTOFHTCC.network");
         //t.load("level3_sim_wMixMatch_0d_FTOFHTCC.network");
-        //t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC.network");
+        //t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC_v1.network");
         t.load("level3_sim_MC_wMixMatch_0f.network");
 
         Boolean mask_nphe=false;
@@ -561,7 +571,7 @@ public class Level3Tester_Simulation {
         //Get vals for electron
         int elClass=4;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes etc
         int elLabelVal=1;
-        MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,classes,sectors,10.547,0.8);
+        MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,bg,classes,sectors,10.547,0.8);
         double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal,mask_nphe);
         t.test(data, bestTh, elClass,elLabelVal,"Electron",mask_nphe);//bestTh
 

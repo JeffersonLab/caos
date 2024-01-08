@@ -92,9 +92,17 @@ public class Level3Trainer_Simulation{
 	}
 
 
-    public void evaluateFile(List<String[]> files,List<String[]> names, int nEvents_pSample, Boolean doPlots) {
+    public void evaluateFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, Boolean doPlots) {
 
-        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.8);
+        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.9);
+
+        long nTestEvents = data.getFeatures()[0].shape()[0];
+
+        if(bg!=""){
+            data=addBg(bg,(int) nTestEvents, 50, data);
+        }
+
+        //plotDCExamples(data.getFeatures()[0], 5,0);
 
         //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);
         //0d_FTOFHTCC
@@ -102,7 +110,6 @@ public class Level3Trainer_Simulation{
         //0f
         INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1], data.getFeatures()[3]);
 
-        long nTestEvents = data.getFeatures()[0].shape()[0];
 
         int el_index=findIndexClassString(files,"el");
 
@@ -208,14 +215,48 @@ public class Level3Trainer_Simulation{
 
     }
 
-    public void trainFile(List<String[]> files,List<String[]> names, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
+    public static void plotDCExamples(INDArray DCall, int nExamples,int start){
+        for (int k = start; k < nExamples; k++) {
+            for (int l = 0; l < DCall.shape()[1]; l++) {
+                TGCanvas c = new TGCanvas();
+                c.setTitle("DC (Superlayer "+String.valueOf(l)+")");
+
+                H2F hDC = new H2F("DC", (int) DCall.shape()[3], 0, (int) DCall.shape()[3], (int) DCall.shape()[2], 0,
+                        (int) DCall.shape()[2]);
+                hDC.attr().setTitleX("Wires");
+                hDC.attr().setTitleY("Layers");
+                hDC.attr().setTitle("DC");
+                INDArray DCArray = DCall.get(NDArrayIndex.point(k), NDArrayIndex.point(l),
+                        NDArrayIndex.all(),
+                        NDArrayIndex.all());
+                for (int i = 0; i < DCArray.shape()[0]; i++) {
+                    for (int j = 0; j < DCArray.shape()[1]; j++) {
+                        if (DCArray.getFloat(i, j) != 0) {
+                            hDC.fill(j, i, DCArray.getFloat(i, j));
+                        }
+                    }
+                }
+                c.draw(hDC);
+            }
+        }
+
+	}
+
+    public void trainFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
 
         MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0);
-        MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.8);
+        MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.9);
+
+        long NTotEvents = data.getFeatures()[0].shape()[0];
+        long NTotEvents_test = data_test.getFeatures()[0].shape()[0];
+
+        if(bg!=""){
+            data=addBg(bg,(int) NTotEvents, 1, data);
+            data_test=addBg(bg,(int) NTotEvents_test, 50, data_test);
+        }
 
         Evaluation eval = new Evaluation(files.size());
 
-        long NTotEvents = data.getFeatures()[0].shape()[0];
         for (int i = 0; i < nEpochs; i++) {
             long then = System.currentTimeMillis();
 
@@ -326,8 +367,8 @@ public class Level3Trainer_Simulation{
                 CompositeNode nHTCC = new CompositeNode( 14, 5, "bbsbifs", 4096);
 
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-                INDArray FTOFArray = Nd4j.zeros(nMax, 62);
-                INDArray HTCCArray = Nd4j.zeros(nMax, 8);
+                INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
+                INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
                 Event event = new Event();
                 int counter = 0,eventNb=0;
                 while (r.hasNext() == true && counter < nMax) {
@@ -348,18 +389,18 @@ public class Level3Trainer_Simulation{
                     Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
                     int nFTOF_Hits=0;
                     for(int l=0;l<62;l++){
-                        if(FTOFArray.getFloat(counter, l)>0){
+                        if(FTOFArray.getFloat(counter,0, l,0)>0){
                             nFTOF_Hits++;
-                            h_FTOF.fill(FTOFArray.getFloat(counter, l));
+                            h_FTOF.fill(FTOFArray.getFloat(counter,0, l,0));
                         }
                     }
                     h2_FTOF.fill(nFTOF_Hits);
                     Level3Utils.fillHTCC(HTCCArray,nHTCC,ids[2],counter);
                     int nHTCC_Hits=0;
                     for(int l=0;l<8;l++){
-                        if(HTCCArray.getFloat(counter, l)>0){
+                        if(HTCCArray.getFloat(counter,0, l,0)>0){
                             nHTCC_Hits++;
-                            h_HTCC.fill(HTCCArray.getFloat(counter, l));
+                            h_HTCC.fill(HTCCArray.getFloat(counter,0, l,0));
                         }
                     }
                     h2_HTCC.fill(nHTCC_Hits);
@@ -465,8 +506,8 @@ public class Level3Trainer_Simulation{
 
                 INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-                INDArray FTOFArray = Nd4j.zeros(nMax, 62);
-                INDArray HTCCArray = Nd4j.zeros(nMax, 8);
+                INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
+                INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
                 INDArray OUTArray = Nd4j.zeros(nMax, files.size());
                 Event event = new Event();
                 int counter = 0,eventNb=0;
@@ -511,6 +552,95 @@ public class Level3Trainer_Simulation{
             classs++;
         }
 
+    }
+
+    public static INDArray addInputArrays(INDArray arr1, INDArray arr2){
+        if (arr1.equalShapes(arr2)) {
+            for (int i = 0; i < arr1.shape()[0]; i++) {
+                for (int k = 0; k < arr1.shape()[1]; k++) {
+                    for (int l = 0; l < arr1.shape()[2]; l++) {
+                        for (int m = 0; m < arr1.shape()[3]; m++) {
+                            //if no entry in array 1 and there's an entry in array 2, then add it to array 1
+                            if(arr1.getFloat(i,k,l, m) == 0 && arr2.getFloat(i,k,l, m) != 0){
+                                arr1.putScalar(new int[]{i,k,l, m}, arr2.getFloat(i,k,l, m));
+                            }
+                            //if there is an entry in array 1, we keep it
+                            //never add array 2 to array 1 if array 1 already has an entry
+                        }
+                    }
+                }
+            }
+        }else{
+            System.out.println("****** Array shapes don't match, returning first array ******");
+        }
+        return arr1;
+
+    }
+
+    public static MultiDataSet addBg(String bgLoc, int max,int start,MultiDataSet dataset) {
+       
+        int added = 0;
+
+        // INDArray DCArray = Nd4j.zeros(max, 1, 6, 112);
+        INDArray DCArray = Nd4j.zeros(max, 6, 6, 112);
+        INDArray ECArray = Nd4j.zeros(max, 1, 6, 72);
+        INDArray FTOFArray = Nd4j.zeros(max, 1, 62, 1);
+        INDArray HTCCArray = Nd4j.zeros(max, 1, 8, 1);
+        while (added < max && start<101) {
+            String file = bgLoc + "daq_"+String.valueOf(start)+".h5";
+            start++;
+            HipoReader r = new HipoReader();
+
+            r.open(file);
+
+            System.out.println("Reading file: " + file);
+
+            int nMax = max;
+
+            if (r.entries() < nMax)
+                nMax = r.entries();
+
+            CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
+            CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+            CompositeNode nFTOF = new CompositeNode(13, 3, "bbsbifs", 4096);
+            CompositeNode nHTCC = new CompositeNode(14, 5, "bbsbifs", 4096);
+
+            Event event = new Event();
+            int counter = 0;
+            while (r.hasNext() == true && counter < nMax) {
+                r.nextEvent(event);
+
+                event.read(nDC, 12, 1);
+                event.read(nEC, 11, 2);
+                event.read(nFTOF, 13, 3);
+                event.read(nHTCC, 14, 5);
+
+                Node node = event.read(5, 4);
+
+                int[] ids = node.getInt();
+
+                // Level3Utils.fillDC_wLayers(DCArray, nDC, ids[2], counter);
+                // Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
+                Level3Utils.fillDC_SepSL(DCArray, nDC, ids[2], counter);
+                int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
+                Level3Utils.fillFTOF(FTOFArray, nFTOF, ids[2], counter);
+                Level3Utils.fillHTCC(HTCCArray, nHTCC, ids[2], counter);
+
+                counter++;
+                added++;
+            }
+        }
+
+        //inputs_class = new INDArray[] { DCArray, ECArray,FTOFArray,HTCCArray };
+        INDArray[] inputs = new INDArray[4];//1 with only DC
+        INDArray[] outputs = new INDArray[1];
+        inputs[0]=addInputArrays(dataset.getFeatures()[0],DCArray);
+        inputs[1]=addInputArrays(dataset.getFeatures()[1],ECArray);
+        inputs[2]=addInputArrays(dataset.getFeatures()[2],FTOFArray);
+        inputs[3]=addInputArrays(dataset.getFeatures()[3],HTCCArray);
+        outputs[0]=dataset.getLabels()[0];
+        dataset = new MultiDataSet(inputs,outputs);
+        return dataset;
     }
 
     public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names, int max,double trainTestP) {
@@ -660,11 +790,13 @@ public class Level3Trainer_Simulation{
 
         //String dir = "/scratch/clasrun/caos/sims/";
 
+        String bg=dir+"bg_50nA_10p6/";//"";
+
         List<String[]> files = new ArrayList<>();
         files.add(new String[] { dir+"pim"});
         files.add(new String[] { dir+"gamma"});
         files.add(new String[] { dir+"pos"});
-        files.add(new String[] {dir+"pim",dir+"gamma"});//,dir+"pos",dir+"el"
+        files.add(new String[] {dir+"pim",dir+"pos"});//,dir+"pos",dir+"el"
         files.add(new String[] { dir+"el" });
 
         /*files.add(new String[] { dir+"pim", dir+"gamma",dir+"pim"});// ,dir+"pos"});//,dir+"pim"});
@@ -696,12 +828,12 @@ public class Level3Trainer_Simulation{
         // transfer learning
         // t.load("level3_sim_"+net+".network");
 
-        /*t.nEpochs = 750;//500
-        t.trainFile(files,names,30000,5000,10000);//30000 5000 10000
-        t.save("level3_sim_MC_wMixMatch");*/
+        /*t.nEpochs = 300;//500
+        t.trainFile(files,names,bg,30000,1000,1000);//30000 5000 10000
+        t.save("level3_sim_MC_wMixMatch_wbg");*/
 
-        //t.load("level3_sim_"+net+".network");
-        t.evaluateFile(files,names,5000,false);//5000
+        t.load("level3_sim_MC_wMixMatch_"+net+".network");
+        t.evaluateFile(files,names,bg,1000,true);//5000
 
     }
 }
