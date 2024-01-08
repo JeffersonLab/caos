@@ -294,7 +294,7 @@ public class Level3Tester_Simulation {
         //System.out.print(OUTArray);
         //System.out.print(DCArray);
         //System.out.print(ECArray);
-        System.out.printf("counter %d, nEl %d, nBg %d, nOther %d\n\n",counter_tot,nEls,nBg,nOther);
+        System.out.printf("counter %d, nEl %d, nBg %d, nMixMatch %d, nOther %d\n\n",counter_tot,nEls,nBg,nmixMatch,nOther);
 
         MultiDataSet dataset = new MultiDataSet(inputs,outputs);
         dataset.shuffle();
@@ -536,20 +536,20 @@ public class Level3Tester_Simulation {
         files.add(new String[] { dir+"el" });*/
 
         //files.add(new String[] { dir+"pim",dir+"pos",dir+"el",dir+"gamma"});
-        //files.add(new String[] { dir+"gamma"});
-        files.add(new String[] { dir+"pim",dir+"pos"});
+        files.add(new String[] { dir+"gamma"});
+        //files.add(new String[] { dir+"pim",dir+"pos"});
         files.add(new String[] { dir+"el" });
 
         List<Integer[]> maxes = new ArrayList<>();
         /*maxes.add(new Integer[] {1600,1600,1600});
         maxes.add(new Integer[] {4800});*/
 
-        //maxes.add(new Integer[] {4800});
-        maxes.add(new Integer[] {2400,2400});
+        maxes.add(new Integer[] {4800});
+        //maxes.add(new Integer[] {2400,2400});
         maxes.add(new Integer[] {4800});
 
         List<Integer> classes=new ArrayList<>();
-        classes.add(3);//3 for mixmatch
+        classes.add(0);//3 for mixmatch,0 bg, 2 other
         classes.add(1);
 
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1
@@ -564,7 +564,7 @@ public class Level3Tester_Simulation {
         //t.load("level3_sim_0d_FTOFHTCC.network");
         //t.load("level3_sim_wMixMatch_0d_FTOFHTCC.network");
         //t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC_v1.network");
-        t.load("level3_sim_MC_wMixMatch_0f.network");
+        t.load("level3_sim_MC_wMixMatch_wbg_0f.network");
 
         Boolean mask_nphe=false;
 
@@ -572,7 +572,7 @@ public class Level3Tester_Simulation {
         int elClass=4;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes etc
         int elLabelVal=1;
         MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,bg,classes,sectors,10.547,0.8);
-        double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal,mask_nphe);
+        double bestTh=t.findBestThreshold(data,elClass,0.98,elLabelVal,mask_nphe);//0.995
         t.test(data, bestTh, elClass,elLabelVal,"Electron",mask_nphe);//bestTh
 
         //Get vals for other tracks

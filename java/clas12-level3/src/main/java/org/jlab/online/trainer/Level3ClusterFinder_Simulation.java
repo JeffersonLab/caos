@@ -150,8 +150,8 @@ public class Level3ClusterFinder_Simulation{
 
                 //INDArray[] outputs = network.output(data_nPart.getFeatures()[0]);//0a,0b
                 //INDArray[] outputs = network.output(data_nPart.getFeatures()[0], data_nPart.getFeatures()[1]);//0b,0c
-                //INDArray[] outputs = network.output(data_nPart.getFeatures()[0], data_nPart.getFeatures()[2]);//0e
-                INDArray[] outputs = network.output(data_nPart.getFeatures()[2]);//0f
+                INDArray[] outputs = network.output(data_nPart.getFeatures()[0], data_nPart.getFeatures()[2]);//0e
+                //INDArray[] outputs = network.output(data_nPart.getFeatures()[2]);//0f
 
                 System.out.println("\n\nTesting with " + nPart + " particles (" + nTestEvents + " events)");
                 Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0],
@@ -194,8 +194,8 @@ public class Level3ClusterFinder_Simulation{
             
         //INDArray[] outputs = network.output(data.getFeatures()[0]); //0a,0d
         //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);//0b,0c
-        //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[2]);//0e
-        INDArray[] outputs = network.output(data.getFeatures()[2]);//0f
+        INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[2]);//0e
+        //INDArray[] outputs = network.output(data.getFeatures()[2]);//0f
 
         System.out.println("\n\nTesting with combined dataset ("+nTestEvents+" events)");
         Level3Metrics_ClusterFinder metrics = new Level3Metrics_ClusterFinder(nTestEvents, outputs[0], data.getLabels()[0],doPlots);
@@ -235,8 +235,8 @@ public class Level3ClusterFinder_Simulation{
 
                 //network.fit(new INDArray[] {DC_b}, new INDArray[] {Lab_b});//0a,0d
                 //network.fit(new INDArray[] {DC_b,FTOF_b}, new INDArray[] {Lab_b});//0b,0c
-                //network.fit(new INDArray[] {DC_b,ECIN_b}, new INDArray[] {Lab_b});//0e
-                network.fit(new INDArray[] {ECIN_b}, new INDArray[] {Lab_b});//0f
+                network.fit(new INDArray[] {DC_b,ECIN_b}, new INDArray[] {Lab_b});//0e
+                //network.fit(new INDArray[] {ECIN_b}, new INDArray[] {Lab_b});//0f
             }
 
             long now = System.currentTimeMillis();
@@ -244,8 +244,8 @@ public class Level3ClusterFinder_Simulation{
                     i, network.score(), now - then);
             //INDArray[] outputs = network.output(data_test.getFeatures()[0]);//0a,0d
             //INDArray[] outputs = network.output(data_test.getFeatures()[0], data_test.getFeatures()[1]);//0b,0c
-            //INDArray[] outputs = network.output(data_test.getFeatures()[0],data_test.getFeatures()[2]);//0e
-            INDArray[] outputs = network.output(data_test.getFeatures()[2]);//0f
+            INDArray[] outputs = network.output(data_test.getFeatures()[0],data_test.getFeatures()[2]);//0e
+            //INDArray[] outputs = network.output(data_test.getFeatures()[2]);//0f
             
 		    eval.eval(data_test.getLabels()[0], outputs[0]);
             System.out.printf("Test Average MAE: %f, MSE: %f\n",eval.averageMeanAbsoluteError(),eval.averageMeanSquaredError());
@@ -711,6 +711,80 @@ public class Level3ClusterFinder_Simulation{
                 // This has same effect as not shuffling either.
             }
 
+            //create sample where we have one DC track but 2 ECIN clusters
+            //best used with electrons
+            //divides nb events by 2, assumes even nb of events
+            else if(names.get(classs)[0]=="1t2c"){
+                long nEv=inputs_class[0].shape()[0];
+                long bE = nEv/2;
+                INDArray DC_a = inputs_class[0].get(NDArrayIndex.interval(0, bE), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray FTOF_a = inputs_class[1].get(NDArrayIndex.interval(0, bE), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray ECIN_a = inputs_class[2].get(NDArrayIndex.interval(0, bE), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray Lab_a = outputs_class[0].get(NDArrayIndex.interval(0, bE), NDArrayIndex.all());
+                INDArray ECIN_b = inputs_class[2].get(NDArrayIndex.interval(bE,nEv), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray Lab_b = outputs_class[0].get(NDArrayIndex.interval(bE,nEv), NDArrayIndex.all());
+                inputs_class[0]=DC_a;
+                inputs_class[1]=FTOF_a;
+                inputs_class[2]=addInputArrays(ECIN_a,ECIN_b);
+                outputs_class[0]=addLabelArrays(Lab_a, Lab_b);
+            }
+
+            //create sample where 2 DC superlayers are removed
+            //ECIN input unchanged
+            //ECIN output set to 0
+            //aim to force network to use all six superlayers
+            else if(names.get(classs)[0]=="corrupt1"){
+                long nEv=inputs_class[0].shape()[0];
+                Random rand = new Random();
+                for(int i=0;i<nEv;i++){
+                    //SLs to skip
+                    int SLs1 = rand.nextInt(6);
+                    int SLs2 = SLs1;
+                    while(SLs1==SLs2){SLs2=rand.nextInt(6);}
+                    inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                            NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
+                    inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
+                                            NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
+                }
+                outputs_class[0]=Nd4j.zeros(nEv, 108);
+            }
+
+            //create sample where 2 DC superlayers are shifted
+            //ECIN input unchanged
+            //ECIN output set to 0
+            //aim to force network to use all six superlayers
+            else if(names.get(classs)[0]=="corrupt2"){
+                long nEv=inputs_class[0].shape()[0];
+                Random rand = new Random();
+                for(int i=0;i<nEv;i++){
+                    //SLs to corrupt
+                    int SLs1 = rand.nextInt(6);
+                    int SLs2 = SLs1;
+                    while(SLs1==SLs2){SLs2=rand.nextInt(6);}
+                    int change1=rand.nextInt(112);  
+                    int change2=rand.nextInt(112);
+                    for (int l = 0; l < inputs_class[0].shape()[2]; l++) {
+                        for (int m = 0; m < inputs_class[0].shape()[3]; m++) {
+                            if(inputs_class[0].getFloat(i,SLs1,l, m) != 0){
+                                //System.out.printf("SL %d, ev %d, m %d, l %d, WS %d, (111-m)-4+1 %d, val %f \n",SLs1,i,m,l,Ws1,(111-m)-4+1,inputs_class[0].getFloat(i,SLs1,l, m));
+                                inputs_class[0].putScalar(new int[]{i,SLs1,l, change1}, inputs_class[0].getFloat(i,SLs1,l, m));
+                                inputs_class[0].putScalar(new int[]{i,SLs1,l, m}, 0);
+                            }
+                            if(inputs_class[0].getFloat(i,SLs2,l, m) != 0){
+                                //System.out.printf("SL %d, ev %d, m %d, l %d, WS %d, (111-m)-4+1 %d, val %f \n",SLs2,i,m,l,Ws2,(111-m)-4+1,inputs_class[0].getFloat(i,SLs2,l, m));
+                                inputs_class[0].putScalar(new int[]{i,SLs2,l, change2}, inputs_class[0].getFloat(i,SLs2,l, m));
+                                inputs_class[0].putScalar(new int[]{i,SLs2,l, m}, 0);
+                            }
+                        }
+                    }
+                }
+                outputs_class[0]=Nd4j.zeros(nEv, 108);
+            }
+
             if (classs == 0) {
                 // inputs = new INDArray[] { DCArray, ECArray };
                 inputs = inputs_class;
@@ -738,7 +812,7 @@ public class Level3ClusterFinder_Simulation{
 
         //String dir = "/scratch/clasrun/caos/sims/";
 
-        String bg=dir+"bg_50nA_10p6/";//"";
+        String bg="";//dir+"bg_50nA_10p6/";//"";
 
         List<String[]> files = new ArrayList<>();
         //files.add(new String[] { dir+"pim"});
@@ -753,7 +827,9 @@ public class Level3ClusterFinder_Simulation{
         /*names.add(new String[] { "gamma"});
         names.add(new String[] { "pos" });
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
-        names.add(new String[] { "mixMatch" });
+        //names.add(new String[] { "mixMatch" });
+        //names.add(new String[] { "1t2c" });
+        names.add(new String[] { "corrupt1" });
         //names.add(new String[] { "el" });
         //names.add(new String[] { "pos" });
 
@@ -765,7 +841,7 @@ public class Level3ClusterFinder_Simulation{
         //nParts.add(0);
 
 
-        String net = "0f";
+        String net = "0e";
         Level3ClusterFinder_Simulation t = new Level3ClusterFinder_Simulation();
 
         t.cnnModel = net;
