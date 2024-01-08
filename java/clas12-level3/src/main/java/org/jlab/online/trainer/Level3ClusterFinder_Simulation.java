@@ -121,9 +121,9 @@ public class Level3ClusterFinder_Simulation{
         }
     }
 
-    public void evaluateFile(List<String[]> files,List<String[]> names,String bg,List<Integer> nParts, int nEvents_pSample, Boolean doPlots) {
+    public void evaluateFile(List<String[]> files,List<String[]> names,String bg,List<Integer> nParts,List<Double> nStart, int nEvents_pSample, Boolean doPlots) {
 
-        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.9);
+        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,nStart);
 
         if (nParts.size() > 0) {
             for (int nPart : nParts) {
@@ -202,10 +202,11 @@ public class Level3ClusterFinder_Simulation{
 
     }
 
-    public void trainFile(List<String[]> files,List<String[]> names,String bg,List<Integer> nParts, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
+    public void trainFile(List<String[]> files,List<String[]> names,String bg,List<Integer> nParts,List<Double> nStart,List<Double> nStart_t, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
 
-        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0);
-        MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.9);
+        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,nStart);
+        
+        MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,nStart_t);
         if(nParts.size()>0){
             data=makeMultiParticleSample(nParts,data);
             data_test=makeMultiParticleSample(nParts,data_test);
@@ -603,7 +604,7 @@ public class Level3ClusterFinder_Simulation{
         return dataset;
     }
 
-    public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names, int max,double trainTestP) {
+    public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names, int max,List<Double> nStart) {
         INDArray[] inputs = new INDArray[3];//1 with only DC
         INDArray[] outputs = new INDArray[1];
         //added tag is for individual tag
@@ -618,6 +619,7 @@ public class Level3ClusterFinder_Simulation{
             INDArray[] outputs_class = new INDArray[1];
             int added_classes=0;
             for (int j = 0; j < file_arr.length; j++) {
+                
                 String file = file_arr[j]+"_daq.h5";
                 HipoReader r = new HipoReader();
             
@@ -625,6 +627,7 @@ public class Level3ClusterFinder_Simulation{
 
                 System.out.println("Reading file: "+file);
 
+                double trainTestP=nStart.get(classs);
                 int start=(int)Math.ceil(trainTestP*r.entries());
 
                 int nMax = max/file_arr.length;
@@ -820,6 +823,7 @@ public class Level3ClusterFinder_Simulation{
         files.add(new String[] { dir+"pos"});
         files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
         files.add(new String[] { dir+"el" });
+        files.add(new String[] { dir+"el" });
         //files.add(new String[] { dir+"pos"});
 
         List<String[]> names = new ArrayList<>();
@@ -830,8 +834,16 @@ public class Level3ClusterFinder_Simulation{
         //names.add(new String[] { "mixMatch" });
         //names.add(new String[] { "1t2c" });
         names.add(new String[] { "corrupt1" });
-        //names.add(new String[] { "el" });
+        names.add(new String[] { "el" });
         //names.add(new String[] { "pos" });
+
+        List<Double> nStart=new ArrayList<>();
+        nStart.add(0.0);
+        nStart.add(0.5);
+
+        List<Double> nStart_t=new ArrayList<>();
+        nStart_t.add(0.9);
+        nStart_t.add(0.95);
 
         //assumes at least one particle by default
         List<Integer> nParts=new ArrayList<>();
@@ -852,11 +864,11 @@ public class Level3ClusterFinder_Simulation{
         // t.load("level3CF_sim_"+net+".network");
 
         /*t.nEpochs = 750;//500
-        t.trainFile(files,names,bg,nParts,70000,1000,1000);//30000 5000 10000
+        t.trainFile(files,names,bg,nParts,nStart,nStart_t,70000,1000,1000);//30000 5000 10000
         t.save("level3CF_sim");*/
 
         t.load("level3CF_sim_"+net+"_noise2Tracks2Ch.network"); //_noise2Tracks //_noise2Tracks2Ch
-        t.evaluateFile(files,names,bg,nParts,5000,true);//5000
+        t.evaluateFile(files,names,bg,nParts,nStart_t,5000,true);//5000
 
     }
 }
