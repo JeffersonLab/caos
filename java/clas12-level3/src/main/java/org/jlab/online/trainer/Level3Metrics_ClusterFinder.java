@@ -33,7 +33,7 @@ public class Level3Metrics_ClusterFinder {
 		System.out.printf("Test Average MAE: %f, MSE: %f\n",eval.averageMeanAbsoluteError(),eval.averageMeanSquaredError());
 		System.out.printf("Test Average RMSE: %f, relativeSE: %f\n",eval.averagerootMeanSquaredError(),eval.averagerelativeSquaredError());
 
-		//Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.05);
+		
 		
 		calcDist(NEvents, predictions, Labels, makePlots);
 		if(makePlots){
@@ -43,7 +43,30 @@ public class Level3Metrics_ClusterFinder {
 				plotExamples(predictions, Labels, i);
 			}
 		}
+
+		Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.1);
+		isEmpty(NEvents, predictions);
     }
+
+	public static void isEmpty(long NEvents,INDArray predictions){
+		H1F hNonNull = new H1F("Dist", 10,0,10);
+		hNonNull.attr().setLineColor(2);
+		hNonNull.attr().setLineWidth(3);
+		hNonNull.attr().setTitleX("Number of Non-Zero Strips in Prediction");
+		hNonNull.attr().setTitle("Number of Non-Zero Strips in Prediction");
+		for (int i=0;i<NEvents;i++){
+			int nonnull=0;
+            for (int j = 0; j < 108; j++) {
+                if (predictions.getFloat(i,j) > 0) {
+                    nonnull++;
+                }
+            }
+			hNonNull.fill(nonnull);
+		}
+		TGCanvas c = new TGCanvas();
+		c.setTitle("Number of Non-Zero Strips in Prediction");
+		c.draw(hNonNull,"");
+	}
 
 	public static void calcDist(long NEvents,INDArray predictions, INDArray Labels,Boolean makePlots){
 		H1F hDist = new H1F("Dist", 20,-10,10);

@@ -768,22 +768,47 @@ public class Level3ClusterFinder_Simulation{
                     int SLs1 = rand.nextInt(6);
                     int SLs2 = SLs1;
                     while(SLs1==SLs2){SLs2=rand.nextInt(6);}
-                    int change1=rand.nextInt(112);  
-                    int change2=rand.nextInt(112);
-                    for (int l = 0; l < inputs_class[0].shape()[2]; l++) {
-                        for (int m = 0; m < inputs_class[0].shape()[3]; m++) {
-                            if(inputs_class[0].getFloat(i,SLs1,l, m) != 0){
-                                //System.out.printf("SL %d, ev %d, m %d, l %d, WS %d, (111-m)-4+1 %d, val %f \n",SLs1,i,m,l,Ws1,(111-m)-4+1,inputs_class[0].getFloat(i,SLs1,l, m));
-                                inputs_class[0].putScalar(new int[]{i,SLs1,l, change1}, inputs_class[0].getFloat(i,SLs1,l, m));
-                                inputs_class[0].putScalar(new int[]{i,SLs1,l, m}, 0);
+                    int sign1=rand.nextInt(2);
+                    int change1=rand.nextInt(20)+4; 
+                    if(sign1==0){change1=-1*change1;}
+                    int sign2=rand.nextInt(2);
+                    int change2=change1;
+                    while(change2==change1){
+                        change2=rand.nextInt(20)+4; 
+                        if(sign2==0){change2=-1*change2;}
+                    }
+
+                    INDArray DC1 = inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1),
+                        NDArrayIndex.all(),
+                        NDArrayIndex.all()).dup();
+                    INDArray DC2 = inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2),
+                        NDArrayIndex.all(),
+                        NDArrayIndex.all()).dup();
+                     
+                    for (int l = 0; l < DC1.shape()[0]; l++) {
+                        for (int m = 0; m < DC1.shape()[1]; m++) {
+                            if(inputs_class[0].getFloat(i,SLs1,l, m) != 0.0){
+                                int newW=m+change1;
+                                if(newW>111){newW=111;}
+                                else if(newW<0){newW=0;}
+                                //System.out.printf("SL %d, ev %d, m %d, l %d, newWS %d, val %f \n",SLs1,i,m,l,newW,inputs_class[0].getFloat(i,SLs1,l, m));
+                                DC1.putScalar(new int[]{l, newW}, inputs_class[0].getFloat(i,SLs1,l, m));
+                                DC1.putScalar(new int[]{l, m}, 0);
                             }
-                            if(inputs_class[0].getFloat(i,SLs2,l, m) != 0){
-                                //System.out.printf("SL %d, ev %d, m %d, l %d, WS %d, (111-m)-4+1 %d, val %f \n",SLs2,i,m,l,Ws2,(111-m)-4+1,inputs_class[0].getFloat(i,SLs2,l, m));
-                                inputs_class[0].putScalar(new int[]{i,SLs2,l, change2}, inputs_class[0].getFloat(i,SLs2,l, m));
-                                inputs_class[0].putScalar(new int[]{i,SLs2,l, m}, 0);
+                            if(inputs_class[0].getFloat(i,SLs2,l, m) != 0.0){
+                                int newW=m+change2;
+                                if(newW>111){newW=111;}
+                                else if(newW<0){newW=0;}
+                                //System.out.printf("SL %d, ev %d, m %d, l %d, newWS %d, val %f \n",SLs2,i,m,l,newW,inputs_class[0].getFloat(i,SLs2,l, m));
+                                DC2.putScalar(new int[]{l, newW}, inputs_class[0].getFloat(i,SLs2,l, m));
+                                DC2.putScalar(new int[]{l, m}, 0);
                             }
                         }
                     }
+                    inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                            NDArrayIndex.all()).assign(DC1);
+                    inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
+                                            NDArrayIndex.all()).assign(DC2);
                 }
                 outputs_class[0]=Nd4j.zeros(nEv, 108);
             }
@@ -823,7 +848,7 @@ public class Level3ClusterFinder_Simulation{
         files.add(new String[] { dir+"pos"});
         files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
         files.add(new String[] { dir+"el" });
-        files.add(new String[] { dir+"el" });
+        //files.add(new String[] { dir+"el" });
         //files.add(new String[] { dir+"pos"});
 
         List<String[]> names = new ArrayList<>();
@@ -833,8 +858,9 @@ public class Level3ClusterFinder_Simulation{
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
         //names.add(new String[] { "mixMatch" });
         //names.add(new String[] { "1t2c" });
-        names.add(new String[] { "corrupt1" });
-        names.add(new String[] { "el" });
+        //names.add(new String[] { "corrupt1" });
+        names.add(new String[] { "corrupt2" });
+        //names.add(new String[] { "el" });
         //names.add(new String[] { "pos" });
 
         List<Double> nStart=new ArrayList<>();
@@ -867,7 +893,7 @@ public class Level3ClusterFinder_Simulation{
         t.trainFile(files,names,bg,nParts,nStart,nStart_t,70000,1000,1000);//30000 5000 10000
         t.save("level3CF_sim");*/
 
-        t.load("level3CF_sim_"+net+"_noise2Tracks2Ch.network"); //_noise2Tracks //_noise2Tracks2Ch
+        t.load("level3CF_sim_"+net+"_corrupt1.network"); //_noise2Tracks //_noise2Tracks2Ch
         t.evaluateFile(files,names,bg,nParts,nStart_t,5000,true);//5000
 
     }
