@@ -729,18 +729,18 @@ public class Level3ClusterFinder_Simulation{
                 INDArray Lab_a = outputs_class[0].get(NDArrayIndex.interval(0, bE), NDArrayIndex.all());
                 INDArray ECIN_b = inputs_class[2].get(NDArrayIndex.interval(bE,nEv), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all());
-                INDArray Lab_b = outputs_class[0].get(NDArrayIndex.interval(bE,nEv), NDArrayIndex.all());
+                //INDArray Lab_b = outputs_class[0].get(NDArrayIndex.interval(bE,nEv), NDArrayIndex.all());
                 inputs_class[0]=DC_a;
                 inputs_class[1]=FTOF_a;
                 inputs_class[2]=addInputArrays(ECIN_a,ECIN_b);
-                outputs_class[0]=addLabelArrays(Lab_a, Lab_b);
+                outputs_class[0]=Lab_a;//addLabelArrays(Lab_a, Lab_b);
             }
 
             //create sample where 2 DC superlayers are removed
             //ECIN input unchanged
             //ECIN output set to 0
             //aim to force network to use all six superlayers
-            else if(names.get(classs)[0]=="corrupt1"){
+            if(names.get(classs)[1]=="corrupt1"){
                 long nEv=inputs_class[0].shape()[0];
                 Random rand = new Random();
                 for(int i=0;i<nEv;i++){
@@ -760,7 +760,7 @@ public class Level3ClusterFinder_Simulation{
             //ECIN input unchanged
             //ECIN output set to 0
             //aim to force network to use all six superlayers
-            else if(names.get(classs)[0]=="corrupt2"){
+            else if(names.get(classs)[1]=="corrupt2"){
                 long nEv=inputs_class[0].shape()[0];
                 Random rand = new Random();
                 for(int i=0;i<nEv;i++){
@@ -848,6 +848,9 @@ public class Level3ClusterFinder_Simulation{
         files.add(new String[] { dir+"pos"});
         files.add(new String[] {dir+"pim",dir+"pos",dir+"el",dir+"gamma"});*/
         files.add(new String[] { dir+"el" });
+        files.add(new String[] { dir+"el" });
+        files.add(new String[] { dir+"el" });
+        files.add(new String[] { dir+"el" });
         //files.add(new String[] { dir+"el" });
         //files.add(new String[] { dir+"pos"});
 
@@ -857,19 +860,24 @@ public class Level3ClusterFinder_Simulation{
         names.add(new String[] { "pos" });
         names.add(new String[]{"mixMatch","mixMatch","mixMatch","mixMatch"});*/
         //names.add(new String[] { "mixMatch" });
-        //names.add(new String[] { "1t2c" });
-        //names.add(new String[] { "corrupt1" });
-        names.add(new String[] { "corrupt2" });
-        //names.add(new String[] { "el" });
+        names.add(new String[] {"1t2c","" });
+        names.add(new String[] {"","corrupt1" });
+        names.add(new String[] {"1t2c","corrupt1" });
+        names.add(new String[] { "el" });
+        //names.add(new String[] {"", "corrupt2" });
         //names.add(new String[] { "pos" });
 
         List<Double> nStart=new ArrayList<>();
         nStart.add(0.0);
-        nStart.add(0.5);
+        nStart.add(0.225);
+        nStart.add(0.45);
+        nStart.add(0.675);
 
         List<Double> nStart_t=new ArrayList<>();
         nStart_t.add(0.9);
+        nStart_t.add(0.925);
         nStart_t.add(0.95);
+        nStart_t.add(0.975);
 
         //assumes at least one particle by default
         List<Integer> nParts=new ArrayList<>();
@@ -890,10 +898,10 @@ public class Level3ClusterFinder_Simulation{
         // t.load("level3CF_sim_"+net+".network");
 
         /*t.nEpochs = 750;//500
-        t.trainFile(files,names,bg,nParts,nStart,nStart_t,70000,1000,1000);//30000 5000 10000
+        t.trainFile(files,names,bg,nParts,nStart,nStart_t,22500,1000,1000);//30000 5000 10000
         t.save("level3CF_sim");*/
 
-        t.load("level3CF_sim_"+net+"_corrupt1.network"); //_noise2Tracks //_noise2Tracks2Ch
+        t.load("level3CF_sim_"+net+"_corrupt1e1t2c_noise.network"); //_noise2Tracks //_noise2Tracks2Ch
         t.evaluateFile(files,names,bg,nParts,nStart_t,5000,true);//5000
 
     }
