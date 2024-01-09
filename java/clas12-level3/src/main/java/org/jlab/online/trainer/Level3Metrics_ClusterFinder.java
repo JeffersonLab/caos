@@ -49,6 +49,7 @@ public class Level3Metrics_ClusterFinder {
     }
 
 	public static void isEmpty(long NEvents,INDArray predictions){
+		//System.out.printf("N events %d", NEvents);
 		H1F hNonNull = new H1F("Dist", 10,0,10);
 		hNonNull.attr().setLineColor(2);
 		hNonNull.attr().setLineWidth(3);

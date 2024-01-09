@@ -840,7 +840,7 @@ public class Level3ClusterFinder_Simulation{
 
         //String dir = "/scratch/clasrun/caos/sims/";
 
-        String bg="";//dir+"bg_50nA_10p6/";//"";
+        String bg=dir+"bg_50nA_10p6/";//"";
 
         List<String[]> files = new ArrayList<>();
         //files.add(new String[] { dir+"pim"});
