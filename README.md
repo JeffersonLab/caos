@@ -17,18 +17,18 @@ Once these terminals are running, open another terminal log in into clonfarm11
 as clasrun. then from prompt run:
 
 ```
-clonfarm11> clas12mltrack
-```
-
-sit back and enjoy tracks reconstructed by artificial intelligence.
-
-If you want to start the online conventional reconstruction, then run:
-
-```
 clonfarm11> clas12online
 ```
-Enjoy the histograms.
+This will start the online conventional reconstruction.Enjoy the histograms.
 
+# AI/ML reconstruction
+
+Once these terminals are running, open another terminal log in into clonfarm11
+as clasrun. then from prompt run:
+
+```
+clonfarm11> clas12mltrack
+```
 # Expert Only (for debugging)
 
 This section is for debugging the online ET to ET connection on clon machines.
