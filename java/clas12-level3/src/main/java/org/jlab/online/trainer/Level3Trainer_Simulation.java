@@ -94,13 +94,9 @@ public class Level3Trainer_Simulation{
 
     public void evaluateFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, Boolean doPlots) {
 
-        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0.9);
+        MultiDataSet data = this.getClassesFromFile(files,names,bg,nEvents_pSample,0.9);
 
         long nTestEvents = data.getFeatures()[0].shape()[0];
-
-        if(bg!=""){
-            data=addBg(bg,(int) nTestEvents, 50, data);
-        }
 
         //plotDCExamples(data.getFeatures()[0], 5,0);
 
@@ -132,7 +128,7 @@ public class Level3Trainer_Simulation{
         hHTCC2D_all.attr().setTitleY("Layers");
         hHTCC2D_all.attr().setTitle("HTCC");
 
-        MultiDataSet data = this.getClassesFromFile(files,names,max,0);
+        MultiDataSet data = this.getClassesFromFile(files,names,"",max,0);
         INDArray HTCC=data.getFeatures()[3];
         for (int k=0;k<max;k++){
 
@@ -244,16 +240,11 @@ public class Level3Trainer_Simulation{
 
     public void trainFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
 
-        MultiDataSet data = this.getClassesFromFile(files,names,nEvents_pSample,0);
-        MultiDataSet data_test = this.getClassesFromFile(files,names,nEvents_pSample_test,0.9);
+        MultiDataSet data = this.getClassesFromFile(files,names,bg,nEvents_pSample,0);
+        MultiDataSet data_test = this.getClassesFromFile(files,names,bg,nEvents_pSample_test,0.9);
 
         long NTotEvents = data.getFeatures()[0].shape()[0];
         long NTotEvents_test = data_test.getFeatures()[0].shape()[0];
-
-        if(bg!=""){
-            data=addBg(bg,(int) NTotEvents, 1, data);
-            data_test=addBg(bg,(int) NTotEvents_test, 50, data_test);
-        }
 
         Evaluation eval = new Evaluation(files.size());
 
@@ -554,6 +545,27 @@ public class Level3Trainer_Simulation{
 
     }
 
+    public INDArray add3DArrays(INDArray arr1, INDArray arr2) {
+        if (arr1.equalShapes(arr2)) {
+            for (int i = 0; i < arr1.shape()[0]; i++) {
+                for (int k = 0; k < arr1.shape()[1]; k++) {
+                    for (int l = 0; l < arr1.shape()[2]; l++) {
+                        // if no entry in array 1 and there's an entry in array 2, then add it to array 1
+                        if (arr1.getFloat(i, k, l) == 0 && arr2.getFloat(i, k, l) != 0) {
+                            arr1.putScalar(new int[] { i, k, l }, arr2.getFloat(i, k, l));
+                        }
+                        // if there is an entry in array 1, we keep it
+                        // never add array 2 to array 1 if array 1 already has an entry
+                    }
+                }
+            }
+        } else {
+            System.out.println("****** Array shapes don't match, returning first array ******");
+        }
+        return arr1;
+
+    }
+
     public static INDArray addInputArrays(INDArray arr1, INDArray arr2){
         if (arr1.equalShapes(arr2)) {
             for (int i = 0; i < arr1.shape()[0]; i++) {
@@ -577,7 +589,7 @@ public class Level3Trainer_Simulation{
 
     }
 
-    public static MultiDataSet addBg(String bgLoc, int max,int start,MultiDataSet dataset) {
+    public static MultiDataSet getBg(String bgLoc, int max,int start) {
        
         int added = 0;
 
@@ -630,20 +642,26 @@ public class Level3Trainer_Simulation{
                 added++;
             }
         }
+        return new MultiDataSet(new INDArray[]{DCArray,ECArray,FTOFArray,HTCCArray},new INDArray[]{});
+    }
+
+    public static MultiDataSet addBg(String bgLoc, int max,int start,MultiDataSet dataset) {
+
+        MultiDataSet bgDataSet=getBg(bgLoc, max, start);
 
         //inputs_class = new INDArray[] { DCArray, ECArray,FTOFArray,HTCCArray };
         INDArray[] inputs = new INDArray[4];//1 with only DC
         INDArray[] outputs = new INDArray[1];
-        inputs[0]=addInputArrays(dataset.getFeatures()[0],DCArray);
-        inputs[1]=addInputArrays(dataset.getFeatures()[1],ECArray);
-        inputs[2]=addInputArrays(dataset.getFeatures()[2],FTOFArray);
-        inputs[3]=addInputArrays(dataset.getFeatures()[3],HTCCArray);
+        inputs[0]=addInputArrays(dataset.getFeatures()[0],bgDataSet.getFeatures()[0]);
+        inputs[1]=addInputArrays(dataset.getFeatures()[1],bgDataSet.getFeatures()[1]);
+        inputs[2]=addInputArrays(dataset.getFeatures()[2],bgDataSet.getFeatures()[2]);
+        inputs[3]=addInputArrays(dataset.getFeatures()[3],bgDataSet.getFeatures()[3]);
         outputs[0]=dataset.getLabels()[0];
         dataset = new MultiDataSet(inputs,outputs);
         return dataset;
     }
 
-    public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names, int max,double trainTestP) {
+    public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names,String bg, int max,double trainTestP) {
         INDArray[] inputs = new INDArray[4];
         INDArray[] outputs = new INDArray[1];
         //added tag is for individual tag
@@ -762,6 +780,87 @@ public class Level3Trainer_Simulation{
                 // if it isn't ordered the same as other arrays
             }
 
+            if((names.get(classs)[0] != "gamma")){
+                long nEv=Math.round(inputs_class[0].shape()[0]);
+                MultiDataSet bgDataSet=new MultiDataSet(new INDArray[]{},new INDArray[]{});
+                if(bg!=""){
+                    int fileMtp=1;
+                    if(max>10000){fileMtp=(int) Math.ceil(max/10000);}
+                    bgDataSet=getBg(bg,(int) nEv,(int) Math.round(trainTestP*100)+classs*fileMtp);
+                }
+
+                Random rand = new Random();
+                for(int i=0;i<nEv;i++){
+                    //SLs to skip
+                    int SLs1 = rand.nextInt(6);
+                    int SLs2 = SLs1;
+                    while(SLs1==SLs2){SLs2=rand.nextInt(6);}
+                    
+                    //corrupt only a portion of data
+                    if (i < (nEv / 2)) {
+                        //System.out.printf("Nev/2 %d, i %d \n",(nEv/2),i);
+                        if (bg != "") {
+                            INDArray to_rm1 = inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1),
+                                    NDArrayIndex.all(),
+                                    NDArrayIndex.all()).dup();
+                            INDArray to_rm2 = inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2),
+                                    NDArrayIndex.all(),
+                                    NDArrayIndex.all()).dup();
+                            INDArray wbg = add3DArrays(
+                                    inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
+                                            NDArrayIndex.all()).dup(),
+                                    bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.all(),
+                                            NDArrayIndex.all(),
+                                            NDArrayIndex.all()).dup());
+                            INDArray wbg_1 = wbg.get(NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                    NDArrayIndex.all()).dup();
+                            INDArray wbg_2 = wbg.get(NDArrayIndex.point(SLs2), NDArrayIndex.all(),
+                                    NDArrayIndex.all()).dup();
+                            INDArray Cleaned1 = wbg_1.sub(to_rm1);
+                            INDArray Cleaned2 = wbg_2.sub(to_rm2);
+                            wbg.get(NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                    NDArrayIndex.all()).assign(Cleaned1);
+                            wbg.get(NDArrayIndex.point(SLs2), NDArrayIndex.all(),
+                                    NDArrayIndex.all()).assign(Cleaned2);
+                            inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
+                                    NDArrayIndex.all()).assign(wbg);
+                        } else {
+                            inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                    NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
+                            inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
+                                    NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
+                        }
+                    } else {// have to add noise to rest of DC data
+                        INDArray wbg = add3DArrays(
+                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
+                                        NDArrayIndex.all()).dup(),
+                                bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.all(),
+                                        NDArrayIndex.all(),
+                                        NDArrayIndex.all()).dup());
+                        inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.all()).assign(wbg);
+                    }
+                    
+                }
+
+                if (bg != "") {
+                    inputs_class[1] = addInputArrays(inputs_class[1], bgDataSet.getFeatures()[1]);
+                    inputs_class[2] = addInputArrays(inputs_class[2], bgDataSet.getFeatures()[2]);
+                    inputs_class[3] = addInputArrays(inputs_class[3], bgDataSet.getFeatures()[3]);
+                }
+
+            } else{
+                if (bg != "") {
+                    int fileMtp=1;
+                    if(max>10000){fileMtp=(int) Math.ceil(max/10000);}
+                    MultiDataSet bgDataSet=getBg(bg, max, (int) Math.round(trainTestP*100)+classs*fileMtp);
+                    inputs_class[0] = addInputArrays(inputs_class[0], bgDataSet.getFeatures()[0]);
+                    inputs_class[1] = addInputArrays(inputs_class[1], bgDataSet.getFeatures()[1]);
+                    inputs_class[2] = addInputArrays(inputs_class[2], bgDataSet.getFeatures()[2]);
+                    inputs_class[3] = addInputArrays(inputs_class[3], bgDataSet.getFeatures()[3]);
+                }
+            }
+
             if (classs == 0) {
                 // inputs = new INDArray[] { DCArray, ECArray };
                 inputs = inputs_class;
@@ -832,7 +931,7 @@ public class Level3Trainer_Simulation{
         t.trainFile(files,names,bg,30000,1000,1000);//30000 5000 10000
         t.save("level3_sim_MC_wMixMatch_wbg");*/
 
-        t.load("level3_sim_MC_wMixMatch_"+net+".network");
+        t.load("level3_sim_MC_wMixMatch_wbg_"+net+".network");
         t.evaluateFile(files,names,bg,1000,true);//5000
 
     }

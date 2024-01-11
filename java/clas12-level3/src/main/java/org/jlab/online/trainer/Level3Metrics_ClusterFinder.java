@@ -46,11 +46,14 @@ public class Level3Metrics_ClusterFinder {
 
 		Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.1);
 		isEmpty(NEvents, predictions);
+
+		Level3ClusterFinder_Simulation.applyThreshold(predictions, 0.5);
+		isEmpty(NEvents, predictions);
     }
 
 	public static void isEmpty(long NEvents,INDArray predictions){
 		//System.out.printf("N events %d", NEvents);
-		H1F hNonNull = new H1F("Dist", 10,0,10);
+		H1F hNonNull = new H1F("Dist", 16,-0.5,15.5);
 		hNonNull.attr().setLineColor(2);
 		hNonNull.attr().setLineWidth(3);
 		hNonNull.attr().setTitleX("Number of Non-Zero Strips in Prediction");
@@ -270,6 +273,7 @@ public class Level3Metrics_ClusterFinder {
 		}
 		c.draw(hTruth).draw(hPred,"same");
 		c.region().showLegend(0.05, 0.95);
+		c.region().axisLimitsY(0, 1.2);
 
 	}
 
