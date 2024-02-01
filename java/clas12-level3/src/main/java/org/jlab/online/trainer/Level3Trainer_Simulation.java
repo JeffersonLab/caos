@@ -832,14 +832,16 @@ public class Level3Trainer_Simulation{
                                     NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
                         }
                     } else {// have to add noise to rest of DC data
-                        INDArray wbg = add3DArrays(
-                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
-                                        NDArrayIndex.all()).dup(),
-                                bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.all(),
-                                        NDArrayIndex.all(),
-                                        NDArrayIndex.all()).dup());
-                        inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.all()).assign(wbg);
+                        if (bg != "") {
+                            INDArray wbg = add3DArrays(
+                                    inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
+                                            NDArrayIndex.all()).dup(),
+                                    bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.all(),
+                                            NDArrayIndex.all(),
+                                            NDArrayIndex.all()).dup());
+                            inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
+                                    NDArrayIndex.all()).assign(wbg);
+                        }
                     }
                     
                 }
