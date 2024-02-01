@@ -724,7 +724,7 @@ public class Level3Trainer_Simulation{
                         //Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
                         Level3Utils.fillDC_SepSL(DCArray, nDC, ids[2], counter);
                         int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                        Level3Utils.fillLabels_MultiClass(OUTArray, files.size(), classs, counter);// tag
+                        Level3Utils.fillLabels_MultiClass(OUTArray, files.size(), classs, counter);
                         Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
                         Level3Utils.fillHTCC(HTCCArray,nHTCC,ids[2],counter);
                         counter++;
@@ -780,13 +780,14 @@ public class Level3Trainer_Simulation{
                 // if it isn't ordered the same as other arrays
             }
 
-            if((names.get(classs)[0] != "gamma")){
+            //corrupt portion of data by removing certain superlayers
+            if((names.get(classs)[0] != "gamma") && (names.get(classs)[0] != "empty")){
                 long nEv=Math.round(inputs_class[0].shape()[0]);
                 MultiDataSet bgDataSet=new MultiDataSet(new INDArray[]{},new INDArray[]{});
                 if(bg!=""){
                     int fileMtp=1;
                     if(max>10000){fileMtp=(int) Math.ceil(max/10000);}
-                    bgDataSet=getBg(bg,(int) nEv,(int) Math.round(trainTestP*100)+classs*fileMtp);
+                    bgDataSet=getBg(bg,(int) nEv,(int) Math.round(trainTestP*100)+classs*fileMtp+1);
                 }
 
                 Random rand = new Random();
@@ -853,7 +854,7 @@ public class Level3Trainer_Simulation{
                 if (bg != "") {
                     int fileMtp=1;
                     if(max>10000){fileMtp=(int) Math.ceil(max/10000);}
-                    MultiDataSet bgDataSet=getBg(bg, max, (int) Math.round(trainTestP*100)+classs*fileMtp);
+                    MultiDataSet bgDataSet=getBg(bg, max, (int) Math.round(trainTestP*100)+classs*fileMtp+1);
                     inputs_class[0] = addInputArrays(inputs_class[0], bgDataSet.getFeatures()[0]);
                     inputs_class[1] = addInputArrays(inputs_class[1], bgDataSet.getFeatures()[1]);
                     inputs_class[2] = addInputArrays(inputs_class[2], bgDataSet.getFeatures()[2]);
@@ -889,14 +890,16 @@ public class Level3Trainer_Simulation{
 
         //String dir = "/scratch/clasrun/caos/sims/";
 
-        String bg=dir+"bg_50nA_10p6/";//"";
+        String bg="";//dir+"bg_50nA_10p6/";//"";
 
         List<String[]> files = new ArrayList<>();
-        files.add(new String[] { dir+"pim"});
-        files.add(new String[] { dir+"gamma"});
-        files.add(new String[] { dir+"pos"});
-        files.add(new String[] {dir+"pim",dir+"pos"});//,dir+"pos",dir+"el"
-        files.add(new String[] { dir+"el" });
+        files.add(new String[] { dir+"claspyth_pim"});
+        files.add(new String[] { dir+"claspyth_gamma"});
+        //files.add(new String[] { dir+"pos"}); //not even e+ in claspyth data
+        files.add(new String[] { dir+"claspyth_pip"});
+        files.add(new String[] {dir+"claspyth_pim",dir+"claspyth_pip"});//,dir+"pos",dir+"el"
+        files.add(new String[] { dir+"claspyth_empty" });
+        files.add(new String[] { dir+"claspyth_el" });
 
         /*files.add(new String[] { dir+"pim", dir+"gamma",dir+"pim"});// ,dir+"pos"});//,dir+"pim"});
         files.add(new String[] { dir+"el" });*/
@@ -904,8 +907,10 @@ public class Level3Trainer_Simulation{
         List<String[]> names = new ArrayList<>();
         names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
-        names.add(new String[] { "pos" });
+        //names.add(new String[] { "pos" });
+        names.add(new String[] { "pip" });
         names.add(new String[]{"mixMatch","mixMatch"});//,"mixMatch","mixMatch"
+        names.add(new String[]{"empty",""});//,"mixMatch","mixMatch"
         names.add(new String[] { "el" });
 
         /*names.add(new String[] { "pim", "gamma","mixMatch"});// ,"pos"});//,"mixMatch"});
@@ -927,11 +932,11 @@ public class Level3Trainer_Simulation{
         // transfer learning
         // t.load("level3_sim_"+net+".network");
 
-        /*t.nEpochs = 300;//500
+        /*t.nEpochs = 750;//500
         t.trainFile(files,names,bg,30000,1000,1000);//30000 5000 10000
-        t.save("level3_sim_MC_wMixMatch_wbg");*/
+        t.save("level3_sim_MC_wMixMatch_wbg_wCorrupt_wEmpty_SIDIS");*/
 
-        t.load("level3_sim_MC_wMixMatch_wbg_"+net+".network");
+        t.load("level3_sim_MC_wMixMatch_wbg_wCorrupt_wEmpty_SIDIS"+net+".network");
         t.evaluateFile(files,names,bg,1000,true);//5000
 
     }

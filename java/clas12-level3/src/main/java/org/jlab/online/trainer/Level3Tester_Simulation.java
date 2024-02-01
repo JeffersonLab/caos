@@ -71,17 +71,8 @@ public class Level3Tester_Simulation {
             System.out.printf("Class: %d", classs);
 
             for (int j = 0; j < file_arr.length; j++) {
-                String file = file_arr[j] + "_rec.hipo";
-
-                HipoReader r = new HipoReader(file);
-                Event e = new Event();
 
                 int nMax = maxes.get(classs)[j];
-                int start=(int)Math.ceil(trainTestP*r.entries());
-
-                if (r.entries()< (nMax+start))
-                    nMax = (r.entries()-start);
-
                 //INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
                 INDArray DCArray = Nd4j.zeros(nMax, 6, 6, 112);
                 INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
@@ -89,148 +80,169 @@ public class Level3Tester_Simulation {
                 INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
                 INDArray OUTArray = Nd4j.zeros(nMax, 5);
 
-                //r.getSchemaFactory().show();
+                if (file_arr[j] != "empty") {
 
-                Bank[] banks = r.getBanks("DC::tdc","ECAL::adc","RUN::config","FTOF::adc","HTCC::adc");
-                Bank[]  dsts = r.getBanks("REC::Particle","REC::Track","REC::Calorimeter","REC::Cherenkov","ECAL::clusters","MC::Particle");
+                    String file = file_arr[j] + "_rec.hipo";
 
-                CompositeNode nodeDC = new CompositeNode(12, 1, "bbsbil", 4096);
-                CompositeNode nodeEC = new CompositeNode(11, 2, "bbsbifs", 4096);
-                CompositeNode nodeFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
-                CompositeNode nodeHTCC = new CompositeNode( 14, 5, "bbsbifs", 4096);
+                    HipoReader r = new HipoReader(file);
+                    Event e = new Event();
 
-                int counter = 0,eventNb=0;
+                    int start = (int) Math.ceil(trainTestP * r.entries());
 
-                while (r.hasNext() && counter<nMax) {
+                    if (r.entries() < (nMax + start))
+                        nMax = (r.entries() - start);
 
-                    r.nextEvent(e);
-                    e.read(banks);
+                    // r.getSchemaFactory().show();
 
-                    /*System.out.println("FTOF");
-                    banks[3].show();
-                    System.out.println("HTCC");
-                    banks[4].show();*/
+                    Bank[] banks = r.getBanks("DC::tdc", "ECAL::adc", "RUN::config", "FTOF::adc", "HTCC::adc");
+                    Bank[] dsts = r.getBanks("REC::Particle", "REC::Track", "REC::Calorimeter", "REC::Cherenkov",
+                            "ECAL::clusters", "MC::Particle");
 
-                    e.read(dsts);
+                    CompositeNode nodeDC = new CompositeNode(12, 1, "bbsbil", 4096);
+                    CompositeNode nodeEC = new CompositeNode(11, 2, "bbsbifs", 4096);
+                    CompositeNode nodeFTOF = new CompositeNode(13, 3, "bbsbifs", 4096);
+                    CompositeNode nodeHTCC = new CompositeNode(14, 5, "bbsbifs", 4096);
 
-                    if (eventNb >= start) {
+                    int counter = 0, eventNb = 0;
 
-                        List<Level3Particle> particles = new ArrayList<Level3Particle>();
+                    while (r.hasNext() && counter < nMax) {
 
-                        // find and initialise particles
-                        for (int i = 0; i < dsts[0].getRows(); i++) {
-                            Level3Particle part = new Level3Particle();
-                            part.read_Particle_Bank(i, dsts[0]);
-                            part.read_MCParticle_Bank(0, dsts[5]);
-                            part.read_Cal_Bank(dsts[2]);
-                            part.read_HTCC_bank(dsts[3]);
-                            part.find_sector_cal(dsts[2]);
-                            particles.add(part);
-                        }
+                        r.nextEvent(e);
+                        e.read(banks);
 
-                        // loop over sectors
-                        for (int sect : Sectors) {
+                        /*
+                         * System.out.println("FTOF");
+                         * banks[3].show();
+                         * System.out.println("HTCC");
+                         * banks[4].show();
+                         */
 
-                            double p = 0;
-                            double theta = 0;
-                            double nphe=0;
-                            Boolean keepEvent = false;
-                            
-                            // keep sectors with at least one particle
-                            for (Level3Particle part : particles) {
-                                if (part.Sector == sect) {
-                                    
-                                    if (part.TruthMatch(0.1, 0.1, 0.1)) {
-                                        if (Classes.get(classs) == 1) {
-                                            if (part.P > 0.5) {
-                                                if (part.check_Energy_Dep_Cut() == true
-                                                        && part.check_FID_Cal_Clusters(dsts[4]) == true
-                                                        && part.check_SF_cut() == true) {
-                                                    keepEvent = true;
-                                                    p = part.P;
-                                                    theta = part.Theta * (180.0 / Math.PI);
-                                                    nphe=part.Nphe;
-                                                    //System.out.printf("Nphe %d \f",nphe);
+                        e.read(dsts);
+
+                        if (eventNb >= start) {
+
+                            List<Level3Particle> particles = new ArrayList<Level3Particle>();
+
+                            // find and initialise particles
+                            for (int i = 0; i < dsts[0].getRows(); i++) {
+                                Level3Particle part = new Level3Particle();
+                                part.read_Particle_Bank(i, dsts[0]);
+                                part.read_MCParticle_Bank(0, dsts[5]);
+                                part.read_Cal_Bank(dsts[2]);
+                                part.read_HTCC_bank(dsts[3]);
+                                part.find_sector_cal(dsts[2]);
+                                particles.add(part);
+                            }
+
+                            // loop over sectors
+                            for (int sect : Sectors) {
+
+                                double p = 0;
+                                double theta = 0;
+                                double nphe = 0;
+                                Boolean keepEvent = false;
+
+                                // keep sectors with at least one particle
+                                for (Level3Particle part : particles) {
+                                    if (part.Cal_Sector == sect) {
+                                        if (part.TruthMatch(0.1, 0.1, 0.1)) {
+                                            if (Classes.get(classs) == 1) {
+                                                if (part.P > 0.5) {
+                                                    if (part.check_Energy_Dep_Cut() == true
+                                                            && part.check_FID_Cal_Clusters(dsts[4]) == true
+                                                            && part.check_SF_cut() == true) {
+                                                        keepEvent = true;
+                                                        p = part.P;
+                                                        theta = part.Theta * (180.0 / Math.PI);
+                                                        nphe = part.Nphe;
+                                                        // System.out.printf("Nphe %d \f",nphe);
+                                                    }
                                                 }
+                                            } else {
+                                                keepEvent = true;
+                                                p = part.P;
+                                                theta = part.Theta * (180.0 / Math.PI);
+                                                nphe = part.Nphe;
                                             }
-                                        } else {
-                                            keepEvent = true;
-                                            p = part.P;
-                                            theta = part.Theta * (180.0 / Math.PI);
-                                            nphe=part.Nphe;
                                         }
                                     }
                                 }
-                            }
 
-                            Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
-                            Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
-                            Level3Converter_MultiClass.convertFTOF(banks[3], nodeFTOF, sect);
-                            Level3Converter_MultiClass.convertHTCC(banks[4], nodeHTCC, sect);
-                            // nodeDC.print();
-                            // nodeEC.print();
+                                Level3Converter_MultiClass.convertDC(banks[0], nodeDC, sect);
+                                Level3Converter_MultiClass.convertEC(banks[1], nodeEC, sect);
+                                Level3Converter_MultiClass.convertFTOF(banks[3], nodeFTOF, sect);
+                                Level3Converter_MultiClass.convertHTCC(banks[4], nodeHTCC, sect);
+                                // nodeDC.print();
+                                // nodeEC.print();
 
-                            if (nodeEC.getRows() > 0 && keepEvent == true) {
+                                if (nodeEC.getRows() > 0 && keepEvent == true) {
 
-                                //Level3Utils.fillDC_wLayers(DCArray, nodeDC, sect, counter);
-                                //Level3Utils.fillDC(DCArray, nodeDC, sect, counter);
-                                Level3Utils.fillDC_SepSL(DCArray, nodeDC, sect, counter);
-                                Level3Utils.fillEC(ECArray, nodeEC, sect, counter);
-                                Level3Utils.fillFTOF(FTOFArray,nodeFTOF,sect,counter);
-                                Level3Utils.fillHTCC(HTCCArray,nodeHTCC,sect,counter);
+                                    // Level3Utils.fillDC_wLayers(DCArray, nodeDC, sect, counter);
+                                    // Level3Utils.fillDC(DCArray, nodeDC, sect, counter);
+                                    Level3Utils.fillDC_SepSL(DCArray, nodeDC, sect, counter);
+                                    Level3Utils.fillEC(ECArray, nodeEC, sect, counter);
+                                    Level3Utils.fillFTOF(FTOFArray, nodeFTOF, sect, counter);
+                                    Level3Utils.fillHTCC(HTCCArray, nodeHTCC, sect, counter);
 
-                                INDArray EventDCArray = DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
-                                        NDArrayIndex.all(), NDArrayIndex.all());
-                                INDArray EventECArray = ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
-                                        NDArrayIndex.all(), NDArrayIndex.all());
+                                    INDArray EventDCArray = DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
+                                            NDArrayIndex.all(), NDArrayIndex.all());
+                                    INDArray EventECArray = ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
+                                            NDArrayIndex.all(), NDArrayIndex.all());
 
-                                // && hasL1==1
-                                // check that the images aren't all empty, allow empty DC for neutrals
-                                if (EventECArray.any()) { // EventDCArray.any()
+                                    // && hasL1==1
+                                    // check that the images aren't all empty, allow empty DC for neutrals
+                                    if (EventECArray.any()) { // EventDCArray.any()
 
-                                    if (Classes.get(classs) == 1) {
-                                        nEls++;
+                                        if (Classes.get(classs) == 1) {
+                                            nEls++;
+                                        } else if (Classes.get(classs) == 2) {
+                                            nOther++;
+                                        } else if (Classes.get(classs) == 0) {
+                                            nBg++;
+                                        }
+
+                                        else if (Classes.get(classs) == 3) {
+                                            nmixMatch++;
+                                        }
+
+                                        int nphe_mask = 1;
+                                        if (nphe < 2.0) {
+                                            nphe_mask = 0;
+                                        }
+
+                                        OUTArray.putScalar(new int[] { counter, 0 }, Classes.get(classs));
+                                        OUTArray.putScalar(new int[] { counter, 1 }, p);
+                                        OUTArray.putScalar(new int[] { counter, 2 }, theta);
+                                        OUTArray.putScalar(new int[] { counter, 3 }, sect);
+                                        OUTArray.putScalar(new int[] { counter, 4 }, nphe_mask);
+                                        counter++;
+                                        counter_tot++;
+                                    } else {
+                                        // erase last entry
+                                        // DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
+                                        // NDArrayIndex.all(),
+                                        // NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
+                                        DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
+                                                NDArrayIndex.all()).assign(Nd4j.zeros(6, 6, 112));
+                                        ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
+                                                NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 72));
+                                        FTOFArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
+                                                NDArrayIndex.all(),
+                                                NDArrayIndex.all()).assign(Nd4j.zeros(62));
+                                        HTCCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(),
+                                                NDArrayIndex.all(),
+                                                NDArrayIndex.all()).assign(Nd4j.zeros(8));
                                     }
-                                    else if (Classes.get(classs) == 2) {
-                                        nOther++;
-                                    }
-                                    else if (Classes.get(classs) == 0) {
-                                        nBg++;
-                                    }
-
-                                    else if (Classes.get(classs) == 3) {
-                                        nmixMatch++;
-                                    }
-
-                                    int nphe_mask=1;
-                                    if(nphe<2.0){nphe_mask=0;}
-
-                                    OUTArray.putScalar(new int[] { counter, 0 }, Classes.get(classs));
-                                    OUTArray.putScalar(new int[] { counter, 1 }, p);
-                                    OUTArray.putScalar(new int[] { counter, 2 }, theta);
-                                    OUTArray.putScalar(new int[] { counter, 3 }, sect);
-                                    OUTArray.putScalar(new int[] { counter, 4 }, nphe_mask);
-                                    counter++;
-                                    counter_tot++;
-                                } else {
-                                    // erase last entry
-                                    //DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                                    //        NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 112));
-                                    DCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                                            NDArrayIndex.all()).assign(Nd4j.zeros(6, 6, 112));
-                                    ECArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                                            NDArrayIndex.all()).assign(Nd4j.zeros(1, 6, 72));
-                                    FTOFArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                                            NDArrayIndex.all()).assign(Nd4j.zeros(62));
-                                    HTCCArray.get(NDArrayIndex.point(counter), NDArrayIndex.all(), NDArrayIndex.all(),
-                                            NDArrayIndex.all()).assign(Nd4j.zeros(8));
                                 }
                             }
                         }
+                        eventNb++;
                     }
-                    eventNb++;
-                }
-                System.out.printf("loaded samples (%d)\n\n\n", counter);
+                    System.out.printf("loaded samples (%d)\n\n\n", counter);
+                    
+                }//check if not empty
+
+                
                 if (added_files == 0) {
                     // inputs = new INDArray[] { DCArray, ECArray };
                     inputs_class = new INDArray[] { DCArray, ECArray, FTOFArray, HTCCArray };
@@ -244,6 +256,7 @@ public class Level3Tester_Simulation {
                     outputs_class[0] = Nd4j.vstack(outputs_class[0], OUTArray);
                 }
                 added_files++;
+                
             }
 
             if (Classes.get(classs) == 3) {
@@ -449,6 +462,7 @@ public class Level3Tester_Simulation {
         c.setTitle("Metrics vs Response");
         c.draw(gEff).draw(gPur, "same");
         c.region().showLegend(0.25, 0.25);
+        c.region().axisLimitsY(0.8, 1.01);
 
         return bestRespTh;
     }
@@ -537,6 +551,9 @@ public class Level3Tester_Simulation {
 
         //files.add(new String[] { dir+"pim",dir+"pos",dir+"el",dir+"gamma"});
         files.add(new String[] { dir+"gamma"});
+        files.add(new String[] { dir+"pim"});
+        files.add(new String[] { dir+"pos"});
+        files.add(new String[] { "empty"});
         //files.add(new String[] { dir+"pim",dir+"pos"});
         files.add(new String[] { dir+"el" });
 
@@ -544,12 +561,31 @@ public class Level3Tester_Simulation {
         /*maxes.add(new Integer[] {1600,1600,1600});
         maxes.add(new Integer[] {4800});*/
 
-        maxes.add(new Integer[] {4800});
-        //maxes.add(new Integer[] {2400,2400});
-        maxes.add(new Integer[] {4800});
+        //maxes.add(new Integer[] {4000});
+        //maxes.add(new Integer[] {4000});
+        //maxes.add(new Integer[] {4000});
+        //maxes.add(new Integer[] {2000,2000});
+        //maxes.add(new Integer[] {4000});
+
+        //clasdis rates, no empty
+        /*maxes.add(new Integer[] {2522});
+        maxes.add(new Integer[] {2522});
+        maxes.add(new Integer[] {2522});
+        maxes.add(new Integer[] {434});*/
+
+        //clasdis rates, w empty
+        maxes.add(new Integer[] {630});
+        maxes.add(new Integer[] {630});
+        maxes.add(new Integer[] {630});
+        maxes.add(new Integer[] {7050});
+        maxes.add(new Integer[] {109});
 
         List<Integer> classes=new ArrayList<>();
-        classes.add(0);//3 for mixmatch,0 bg, 2 other
+        classes.add(0);
+        classes.add(0);
+        classes.add(0);
+        classes.add(0);
+        //classes.add(3);//3 for mixmatch,0 bg, 2 other
         classes.add(1);
 
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1
@@ -564,7 +600,7 @@ public class Level3Tester_Simulation {
         //t.load("level3_sim_0d_FTOFHTCC.network");
         //t.load("level3_sim_wMixMatch_0d_FTOFHTCC.network");
         //t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC_v1.network");
-        t.load("level3_sim_MC_wMixMatch_wbg_0f.network");
+        t.load("level3_sim_MC_wMixMatch_wCorrupt_wbg_0f.network");
 
         Boolean mask_nphe=false;
 
@@ -572,14 +608,14 @@ public class Level3Tester_Simulation {
         int elClass=4;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes etc
         int elLabelVal=1;
         MultiDataSet data=Level3Tester_Simulation.getData(files,maxes,bg,classes,sectors,10.547,0.8);
-        double bestTh=t.findBestThreshold(data,elClass,0.98,elLabelVal,mask_nphe);//0.995
+        double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal,mask_nphe);//0.995
         t.test(data, bestTh, elClass,elLabelVal,"Electron",mask_nphe);//bestTh
 
         //Get vals for other tracks
-        /*int otherClass=2;//2 for 4 classes
+        /*int otherClass=0;//2 for 4 classes
         int otherLableVal=2;
         double bestThOther=t.findBestThreshold(data,otherClass,0.9,otherLableVal);
-        t.test(data, bestThOther, otherClass,otherLableVal,"Charged Track");//0.09*/
+        t.test(data, bestThOther, otherClass,otherLableVal,"pi-");//0.09*/
         
     }
 }

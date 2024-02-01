@@ -190,10 +190,10 @@ public class Level3ClusterFinder_Simulation{
         System.out.printf("Have %d EC elements with entries greater than 1... \n",nElementGt1);*/
 
         //testLayers(data,1);
-        plotDCExamples(data.getFeatures()[0], 1,0);
+        //plotDCExamples(data.getFeatures()[0], 1,0);
         //plotFTOFExamples(data.getFeatures()[1], 10);
         //plotDCTDC(data.getFeatures()[0], (int)nTestEvents);
-        plotECINExamples(data.getFeatures()[2], 10);
+        //plotECINExamples(data.getFeatures()[2], 10);
             
         //INDArray[] outputs = network.output(data.getFeatures()[0]); //0a,0d
         //INDArray[] outputs = network.output(data.getFeatures()[0], data.getFeatures()[1]);//0b,0c

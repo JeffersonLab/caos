@@ -77,7 +77,7 @@ public class Level3Tester_pEvent {
         CompositeNode nodeDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nodeEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
         
-        int counter=0,nEls=0,nL1=0,nNeg=0;
+        int counter=0,nEls=0,nL1=0,nNeg=0,nOther=0,nEmpty=0;
         while(r.hasNext() && counter<nMax){
             
             r.nextEvent(e);
@@ -153,7 +153,10 @@ public class Level3Tester_pEvent {
                     p = fstOtherSector.get(otherSectors.get(0)).P;
                     nphe = fstOtherSector.get(otherSectors.get(0)).Nphe;
                     gotEl = 2;
-                } 
+                    nOther++;
+                } else{
+                    nEmpty++;
+                }
 
                 int gotNeg = 0;
                 double negp = 0;
@@ -195,7 +198,7 @@ public class Level3Tester_pEvent {
         //System.out.print(OUTArray);
         //System.out.print(DCArray);
         //System.out.print(ECArray);
-        System.out.printf("counter %d, nEl %d, nL1 %d, nEl_v2 %d\n\n",counter,nEls,nL1,nNeg);
+        System.out.printf("counter %d, nEl %d, nOther %d, nEmpty %d, nL1 %d, nEl_v2 %d\n\n",counter,nEls, nOther, nEmpty,nL1,nNeg);
 
         return LabelsArray;
     }
@@ -450,9 +453,9 @@ public class Level3Tester_pEvent {
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/rec_clas_018331.evio.00105-00109.hipo";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018326/run_018326_2.h5";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018740/run_018740.h5";
-        //String file2="/Users/tyson/data_repo/trigger_data/rgd/018777/run_018777.h5";
+        String file2="/Users/tyson/data_repo/trigger_data/rgd/018777/run_018777.h5";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018432/run_018432.h5";
-        String file2="/Users/tyson/data_repo/trigger_data/sims/el_rec.hipo";
+        //String file2="/Users/tyson/data_repo/trigger_data/sims/el_rec.hipo";
 
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
 
@@ -460,8 +463,8 @@ public class Level3Tester_pEvent {
 
         Level3Tester_pEvent t=new Level3Tester_pEvent();
         //ComputationGraph network=t.load("level3_0d_wrongTrigger.network");
-        //ComputationGraph network=t.load("level3_0d_v3.network");//_v3 best
-        ComputationGraph network=t.load("level3_0d_in.network");//_wrongTrigger
+        ComputationGraph network=t.load("level3_0d_v3.network");//_v3 best
+        //ComputationGraph network=t.load("level3_0d_in.network");//_wrongTrigger
         //ComputationGraph network=t.load("level3_0d_4C_t7_t4_t2t3_t1.network");
         //ComputationGraph network=t.load("level3_0d_4C_t7_t4_t2t3_t1_in.network");
 

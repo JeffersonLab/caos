@@ -77,7 +77,7 @@ public class Level3Tester {
         CompositeNode nodeDC = new CompositeNode( 12, 1,  "bbsbil", 4096);
         CompositeNode nodeEC = new CompositeNode( 11, 2, "bbsbifs", 4096);
         
-        int counter=0,nEls=0,nL1=0,nOther=0;
+        int counter=0,nEls=0,nL1=0,nOther=0,nEmpty=0;
         while(r.hasNext() && counter<(nMax-6)){
             
             r.nextEvent(e);
@@ -163,6 +163,7 @@ public class Level3Tester {
                          
                         if(gotEl==1){nEls++;}
                         if(gotEl==2){nOther++;}
+                        if(gotEl==0){nEmpty++;}
                         
                         OUTArray.putScalar(new int[] { counter, 0 }, gotEl);
                         OUTArray.putScalar(new int[] { counter, 1 }, hasL1);
@@ -181,7 +182,7 @@ public class Level3Tester {
         //System.out.print(OUTArray);
         //System.out.print(DCArray);
         //System.out.print(ECArray);
-        System.out.printf("counter %d, nEl %d, nL1 %d\n\n",counter,nEls,nL1);
+        System.out.printf("counter %d, nEl %d, nOther %d,nEmpty %d, nL1 %d\n\n",counter,nEls,nOther,nEmpty,nL1);
 
 
         INDArray[] inputs = new INDArray[2];
@@ -442,24 +443,24 @@ public class Level3Tester {
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018331_AI/rec_clas_018331.evio.00105-00109.hipo";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018326/run_018326_2.h5";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018740/run_018740.h5";
-        //String file2="/Users/tyson/data_repo/trigger_data/rgd/018777/run_018777.h5";
+        String file2="/Users/tyson/data_repo/trigger_data/rgd/018777/run_018777.h5";
         //String file2="/Users/tyson/data_repo/trigger_data/rgd/018432/run_018432.h5";
-        String file2="/Users/tyson/data_repo/trigger_data/sims/el_rec.hipo";
+        //String file2="/Users/tyson/data_repo/trigger_data/sims/el_rec.hipo";
 
         //String file2="/Users/tyson/data_repo/trigger_data/rga/rec_clas_005197.evio.00005-00009.hipo";
 
 
         Level3Tester t=new Level3Tester();
         //t.load("level3_0d_wrongTrigger.network");
-        //t.load("level3_0d_v3.network");//_v3 best
-        t.load("level3_0d_in.network");//_wrongTrigger
+        t.load("level3_0d_v3.network");//_v3 best
+        //t.load("level3_0d_in.network");//_wrongTrigger
         //t.load("level3_0d_4C_t7_t4_t2t3_t1.network");
         //t.load("level3_0d_4C_t7_t4_t2t3_t1_in.network");
 
         //Get vals for electron
         int elClass=1;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes
         int elLabelVal=1;
-        MultiDataSet data=Level3Tester.getData(file2, 100000,10.547);
+        MultiDataSet data=Level3Tester.getData(file2, 10000,10.547);
         double bestTh=t.findBestThreshold(data,elClass,0.995,elLabelVal);
         t.test(data, bestTh, elClass,elLabelVal,"Electron");//0.09
 

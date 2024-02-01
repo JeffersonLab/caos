@@ -1,13 +1,18 @@
 package org.jlab.online.trainer;
 
 import j4np.hipo5.data.Bank;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Level3Particle {
 
     int PID=0;
     int MC_PID=0;
 
-    int PIndex=0;
+    int MC_PIndex=-1;
+    int PIndex=-1;
+    int Cal_Sector=0;
+    int HTCC_Sector=0;
     int Sector=0;
     int Charge=0;
 
@@ -29,7 +34,11 @@ public class Level3Particle {
 
     double Nphe=0;
 
-    int Cal_index=-1;
+    List<Integer> Cal_index=new ArrayList<Integer>();
+    //double Cal_index=0;
+
+    double SF=0;
+    double ECAL_energy=0;
 
     double PCAL_energy=0;
     double ECIN_energy=0;
@@ -50,21 +59,21 @@ public class Level3Particle {
     double ECAL_scale=8.0;
 
     double PCal_UMax_cut = 80.;
-    double PCal_UMin_cut = 3.; // For oubendings this doesn't matter much;
+    double PCal_UMin_cut = 3.; // For outbendings this doesn't matter much;
     double PCal_VMax_cut = 73.;
     double PCal_VMin_cut = 3.;
     double PCal_WMax_cut = 73.;
     double PCal_WMin_cut = 3.;
 
     double ECin_UMax_cut = 35.;
-    double ECin_UMin_cut = 2.5; // For oubendings this doesn't matter much;
+    double ECin_UMin_cut = 2.5; // For outbendings this doesn't matter much;
     double ECin_VMax_cut = 34.;
     double ECin_VMin_cut = 3.;
     double ECin_WMax_cut = 34.;
     double ECin_WMin_cut = 3.;
 
     double ECout_UMax_cut = 34.;
-    double ECout_UMin_cut = 2; // For oubendings this doesn't matter much;
+    double ECout_UMin_cut = 2; // For outbendings this doesn't matter much;
     double ECout_VMax_cut = 34;
     double ECout_VMin_cut = 3.;
     double ECout_WMax_cut = 34.;
@@ -86,7 +95,7 @@ public class Level3Particle {
         for (int k = 0; k < CalBank.getRows(); k++) {
             int pindex = CalBank.getInt("pindex", k);
             int sectorTrk = CalBank.getInt("sector", k);
-            if(pindex==PIndex){Sector=sectorTrk;}
+            if(pindex==PIndex){Cal_Sector=sectorTrk;}
         }
     }
 
@@ -94,8 +103,29 @@ public class Level3Particle {
         for (int k = 0; k < HTCCBank.getRows(); k++) {
             int pindex = HTCCBank.getInt("pindex", k);
             double nphe = HTCCBank.getFloat("nphe", k);
-            if(pindex==PIndex){Nphe=nphe;}
+            int sector = HTCCBank.getInt("sector", k);
+            if(pindex==PIndex){
+                Nphe=nphe;
+                HTCC_Sector=sector;
+            }
         }
+    }
+
+    public Boolean isMip(Bank ECAL_Bank){
+        Boolean ismip=true;
+        for (int k = 0; k < ECAL_Bank.getRows(); k++) {
+            float widthU = ECAL_Bank.getFloat("widthU",k);
+            float widthV = ECAL_Bank.getFloat("widthV",k);
+            float widthW = ECAL_Bank.getFloat("widthW",k);
+            if(Cal_index.contains(k)){ 
+            //if(Cal_index==k){
+                if(widthU>1 && widthV>1 && widthW>1){
+                    ismip=false;
+                }
+            }
+
+        }
+        return ismip;
     }
 
     public Boolean check_FID_Cal_Clusters(Bank ECAL_Bank){
@@ -110,7 +140,7 @@ public class Level3Particle {
             double w=(double) ECAL_Bank.getInt("coordW",k);
             double energy=ECAL_Bank.getFloat("energy",k);
             
-            if(layer==1 && k==Cal_index){
+            if(layer==1 && Cal_index.contains(k)){// Cal_index==k){
                 u=u/PCAL_scale;
                 v=v/PCAL_scale;
                 w=w/PCAL_scale;
@@ -119,7 +149,7 @@ public class Level3Particle {
                 if(u>PCal_UMax_cut||u<PCal_UMin_cut){Fid=false;}
                 if(v>PCal_VMax_cut||v<PCal_VMin_cut){Fid=false;}
                 if(w>PCal_WMax_cut||w<PCal_WMin_cut){Fid=false;}
-            } else if(layer==4 && k==Cal_index){
+            } else if(layer==4 && Cal_index.contains(k)){// Cal_index==k){
                 u=u/ECAL_scale;
                 v=v/ECAL_scale;
                 w=w/ECAL_scale;
@@ -128,7 +158,7 @@ public class Level3Particle {
                 if(u>ECin_UMax_cut||u<ECin_UMin_cut){Fid=false;}
                 if(v>ECin_VMax_cut||v<ECin_VMin_cut){Fid=false;}
                 if(w>ECin_WMax_cut||w<ECin_WMin_cut){Fid=false;}
-            } else if(layer==7 && k==Cal_index){
+            } else if(layer==7 &&Cal_index.contains(k)){// Cal_index==k){
                 u=u/ECAL_scale;
                 v=v/ECAL_scale;
                 w=w/ECAL_scale;
@@ -145,9 +175,8 @@ public class Level3Particle {
 
     public Boolean check_Energy_Dep_Cut(){
         Boolean pass=false;
-        double tot_e=PCAL_energy+ECIN_energy+ECOUT_energy;
         //System.out.printf("energy P %f i %f o %f t %f\n",PCAL_energy,ECIN_energy,ECOUT_energy,tot_e);
-        if(tot_e>0.25&&PCAL_energy>0.06){
+        if(SF>0.2&&PCAL_energy>0.06){
             pass=true;
         }
         return pass;
@@ -173,7 +202,8 @@ public class Level3Particle {
             double lv=ECAL_Bank.getFloat("lv",k);
             double lw=ECAL_Bank.getFloat("lw",k);
             if (pindex == PIndex) {
-                Cal_index=index;
+                Cal_index.add(index);
+                //Cal_index=index;
                 if(layer==1){
                     PCALLU=lu;
                     PCALLV=lv;
@@ -192,6 +222,8 @@ public class Level3Particle {
                 }
             }
         }
+        ECAL_energy=PCAL_energy+ECIN_energy+ECOUT_energy;
+        SF=ECAL_energy/P;
 
     }
 
@@ -205,6 +237,27 @@ public class Level3Particle {
         }
         return truthmatched;
 
+    }
+
+    public void find_ClosestMCParticle(Bank MCPartBank){
+        double min_resPx=9999;
+        double min_resPy=9999;
+        double min_resPz=9999;
+        int best_ind=-1;
+        for (int i = 0; i < MCPartBank.getRows(); i++) {
+            read_MCParticle_Bank(i, MCPartBank);
+            double resPx=Math.abs(Px-MC_Px);
+            double resPy=Math.abs(Py-MC_Py);
+            double resPz=Math.abs(Pz-MC_Pz);
+            if(resPx<min_resPx && resPy<min_resPy && resPz<min_resPz){
+                min_resPx=resPx;
+                min_resPy=resPy;
+                min_resPz=resPz;
+                best_ind=i;
+            }
+        }
+        read_MCParticle_Bank(best_ind, MCPartBank);
+        MC_PIndex=best_ind;
     }
 
     public void read_MCParticle_Bank(int pindex, Bank PartBank) {

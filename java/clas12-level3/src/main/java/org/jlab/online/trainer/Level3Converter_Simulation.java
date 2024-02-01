@@ -84,13 +84,13 @@ public class Level3Converter_Simulation {
                                 p=part.MC_P;
                                 n++;
                             }
-                        } else if (pid == 22) {
+                        } else if (pid == 22 ) {
                             if (part.P > 0 && part.TruthMatch(0.5, 0.5, 0.5)) {
                                 keepEvent=true;
                                 p=part.MC_P;
                                 n++;
                             }
-                        } else if (pid == -211) {
+                        } else if (pid == -211 || pid==2212 || pid==211) {
                             if (part.P > 0.5 && part.TruthMatch(1.0, 1.0, 1.0)) {
                                 keepEvent=true;
                                 p=part.MC_P;
@@ -196,14 +196,14 @@ public class Level3Converter_Simulation {
         
 
         String dir="/Users/tyson/data_repo/trigger_data/sims/"; //_AI
-        String[] base={"el","pim","gamma","pos"};
-        int[] tags={1,2,7,3};
-        int[] pid={11,-211,22,-11};//not sure if this is useful yet
+        String[] base={"el","pim","gamma","pos","pip","p","pi0","mup","mum"};
+        int[] tags={1,2,7,3,4,4,8,5,6};
+        int[] pid={11,-211,22,-11,211,2212,111,13,-13};//not sure if this is useful yet
         List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
         sectors.add(1);
 
         //for (int file=100;file<110;file+=5){
-        for (int file=1;file<1;file+=1){
+        for (int file=4;file<6;file+=1){
 
             String fName=dir+base[file]+"_rec.hipo";
             String out=dir+base[file]+"_daq.h5";
@@ -211,7 +211,7 @@ public class Level3Converter_Simulation {
 
         }
 
-        String base_bg=dir+"bg_50nA_10p6/";
+        /*String base_bg=dir+"bg_50nA_10p6/";
         for (int file=1;file<101;file++){
             String zeros="0000";
             if(file>9){zeros="000";}
@@ -220,7 +220,7 @@ public class Level3Converter_Simulation {
             String fName=base_bg+zeros+String.valueOf(file)+".hipo";
             String out=base_bg+"daq_"+String.valueOf(file)+".h5";
             Level3Converter_Simulation.convertBGFile(fName,out,sectors);
-        }
+        }*/
 
     }
 }
