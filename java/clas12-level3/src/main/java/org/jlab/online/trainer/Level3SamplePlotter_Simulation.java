@@ -66,7 +66,7 @@ public class Level3SamplePlotter_Simulation {
 
     
    
-    public static void plot(List<String> files,List<Integer> pids,List<Integer> Sectors,int max){
+    public static void plot(List<String> files,List<Integer> Sectors,int max){
 
         H1F elP=makeNiceHist("e-","Momentum [GeV]",2,110,0,11);
         H1F poP=makeNiceHist("e+","Momentum [GeV]",3,110,0,11);
@@ -83,20 +83,25 @@ public class Level3SamplePlotter_Simulation {
         H2F gammaPTheta=makeNice2DHist("Photon","photon Momentum [GeV]",110,0,11,"photon Theta [Deg]",100,0,40);
         H2F pimPTheta=makeNice2DHist("pi-","pi- Momentum [GeV]",110,0,11,"pi- Theta [Deg]",100,0,40);
 
-        int classs=0, nEls = 0, nPosi = 0, nGamma = 0, nPim = 0;;
+        H1F elPhi=makeNiceHist("e-","Phi [Deg]",2,185,-185,185);
+        H1F poPhi=makeNiceHist("e+","Phi [Deg]",3,1805,-185,185);
+        H1F gammaPhi=makeNiceHist("photon","Phi [Deg]",5,185,-185,185);
+        H1F pimPhi=makeNiceHist("pi-","Phi [Deg]",6,185,-185,185);
+
+        int classs=0, nEls = 0, nPosi = 0, nGamma = 0, nPim = 0;
         for (String file : files) {
             HipoReader r = new HipoReader(file);
             Event e = new Event();
 
-            int nMax = max;
+            /*int nMax = max;
             if (r.entries() < max)
-                nMax = r.entries();
+                nMax = r.entries();*/
 
             Bank[] banks = r.getBanks("DC::tdc", "ECAL::adc", "RUN::config");
             Bank[] dsts = r.getBanks("REC::Particle", "REC::Track", "REC::Calorimeter", "REC::Cherenkov","ECAL::clusters","MC::Particle");
 
             int counter=0;
-            while (r.hasNext() && counter < nMax) {
+            while (r.hasNext()) {
 
                 r.nextEvent(e);
                 e.read(banks);
@@ -110,11 +115,14 @@ public class Level3SamplePlotter_Simulation {
                 for (int i = 0; i < dsts[0].getRows(); i++) {
                     Level3Particle part = new Level3Particle();
                     part.read_Particle_Bank(i, dsts[0]);
-                    part.read_MCParticle_Bank(0, dsts[5]);
-                    part.read_Cal_Bank(dsts[2]);
-                    part.read_HTCC_bank(dsts[3]);
-                    part.find_sector_cal(dsts[2]);
-                    particles.add(part);
+                    if(part.PIndex!=-1){ //ie part in FD
+                        part.find_ClosestMCParticle(dsts[5]);
+                        part.read_Cal_Bank(dsts[2]);
+                        part.read_HTCC_bank(dsts[3]);
+                        part.find_sector_cal(dsts[2]);
+                        part.find_sector_track(dsts[1]);
+                        particles.add(part);
+                    }
                 }
 
                 // loop over sectors
@@ -127,46 +135,50 @@ public class Level3SamplePlotter_Simulation {
                     //fille Gen plots without truthmatching
                     //otherwise they look like rec
                      for (Level3Particle part : particles) {
-                        if (pids.get(classs) == 11) {
+                        if (part.MC_PID == 11) {
                             elP_gen.fill(part.MC_P);
-                        } else if(pids.get(classs) == -11){
+                        } else if(part.MC_PID == -11){
                             poP_gen.fill(part.MC_P);
-                        }else if (pids.get(classs) == 22) {
+                        }else if (part.MC_PID == 22) {
                             gammaP_gen.fill(part.MC_P);
-                        }else if (pids.get(classs) == -211) {
+                        }else if (part.MC_PID == -211) {
                             pimP_gen.fill(part.MC_P);
                         }
                      }
                     
                     // keep sectors with at least one particle
                     for (Level3Particle part : particles) {
-                        if (part.Sector == sect) {
-                            if (pids.get(classs) == 11) {
+                        if (part.Cal_Sector == sect) {
+                            if (part.MC_PID == 11 && nEls<max) {
                                 if (part.P > 0.5 && part.TruthMatch(1.0, 1.0, 1.0)) {
                                     nEls++;
                                     elP.fill(part.P);
                                     elPTheta.fill(part.P, part.Theta * (180.0 / Math.PI));
+                                    elPhi.fill(part.MC_Phi* (180.0 / Math.PI));
                                     counter++;
                                 }
-                            } else if (pids.get(classs) == -11) {
+                            } else if (part.MC_PID == -11& nPosi<max) {
                                 if (part.P > 0.5 && part.TruthMatch(1.0, 1.0, 1.0)) {
                                     nPosi++;
                                     poP.fill(part.P);
                                     poPTheta.fill(part.P, part.Theta * (180.0 / Math.PI));
+                                    poPhi.fill(part.MC_Phi* (180.0 / Math.PI));
                                     counter++;
                                 }
-                            } else if (pids.get(classs) == 22) {
+                            } else if (part.MC_PID == 22& nGamma<max) {
                                 if (part.P > 0 && part.TruthMatch(0.5, 0.5, 0.5)) {
                                     nGamma++;
                                     gammaP.fill(part.P);
                                     gammaPTheta.fill(part.P, part.Theta * (180.0 / Math.PI));
+                                    gammaPhi.fill(part.MC_Phi* (180.0 / Math.PI));
                                     counter++;
                                 }
-                            } else if (pids.get(classs) == -211) {
+                            } else if (part.MC_PID == -211 && nPim<max) {
                                 if (part.P > 0.5 && part.TruthMatch(1.0, 1.0, 1.0)) {
                                     nPim++;
                                     pimP.fill(part.P);
                                     pimPTheta.fill(part.P, part.Theta * (180.0 / Math.PI));
+                                    pimPhi.fill(part.MC_Phi* (180.0 / Math.PI));
                                     counter++;
                                 }
                             }
@@ -207,32 +219,48 @@ public class Level3SamplePlotter_Simulation {
         TGCanvas cPThneg = new TGCanvas();
         cPThneg.setTitle("photon Momentum v Theta");
         cPThneg.draw(gammaPTheta);
+
+        TGCanvas cPhi = new TGCanvas();
+        cPhi.setTitle("Phi");
+        cPhi.draw(elPhi).draw(poPhi,"same").draw(pimPhi,"same").draw(gammaPhi,"same");
+        cPhi.region().showLegend(0.7, 0.95);
     }
 
     
     
     public static void main(String[] args){        
-        String dir = "/Users/tyson/data_repo/trigger_data/sims/";
+        String dir = "/Users/tyson/data_repo/trigger_data/sims/claspyth_train/";
 
-        List<String> files = new ArrayList<>();
+        /*List<String> files = new ArrayList<>();
         files.add(dir+"pim_rec.hipo");
         files.add(dir+"gamma_rec.hipo");
         files.add(dir+"el_rec.hipo");
-        files.add(dir+"pos_rec.hipo");
+        files.add(dir+"pos_rec.hipo");*/
 
-        List<Integer> pids=new ArrayList<>();
-        pids.add(-211);
-        pids.add(22);
-        pids.add(11);
-        pids.add(-11);
+        List<String> files = new ArrayList<>();
+        files.add(dir+"clasdis_1.hipo");
+        files.add(dir+"clasdis_2.hipo");
+        files.add(dir+"clasdis_3.hipo");
+        files.add(dir+"clasdis_4.hipo");
+        files.add(dir+"clasdis_5.hipo");
+        files.add(dir+"clasdis_6.hipo");
+        files.add(dir+"clasdis_7.hipo");
+        files.add(dir+"clasdis_8.hipo");
+        files.add(dir+"clasdis_9.hipo");
+        files.add(dir+"clasdis_10.hipo");
 
-        List<Integer> sectors=new ArrayList<Integer>(); //simulated only in sectors 1 and 6
+        List<Integer> sectors=new ArrayList<Integer>();
         sectors.add(1);
+        sectors.add(2);
+        sectors.add(3);
+        sectors.add(4);
+        sectors.add(5);
+        sectors.add(6);
 
         Level3SamplePlotter_Simulation P=new Level3SamplePlotter_Simulation();
 
         
-        Level3SamplePlotter_Simulation.plot(files,pids,sectors,70000);
+        Level3SamplePlotter_Simulation.plot(files,sectors,70000);
         
     }
 }

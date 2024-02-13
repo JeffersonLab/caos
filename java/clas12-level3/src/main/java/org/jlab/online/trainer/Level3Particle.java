@@ -32,6 +32,8 @@ public class Level3Particle {
     double MC_Theta=0;
     double MC_Phi=0;
 
+    int MC_Sector=0;
+
     double Nphe=0;
 
     List<Integer> Cal_index=new ArrayList<Integer>();
@@ -268,6 +270,68 @@ public class Level3Particle {
         MC_P = Math.sqrt(MC_Px * MC_Px + MC_Py * MC_Py + MC_Pz * MC_Pz);
         MC_Theta = Math.acos(MC_Pz / MC_P);// Math.atan2(Math.sqrt(px*px+py*py),pz);
         MC_Phi = Math.atan2(MC_Py, MC_Px);
+        double theta_deg=MC_Theta* (180.0 / Math.PI);
+        double phi_deg=MC_Phi* (180.0 / Math.PI);
+        if(theta_deg>5 && theta_deg<35){
+            if(MC_PID==22 || MC_PID==2112){
+                if (phi_deg > -30 && phi_deg < 30) {
+                    MC_Sector = 1;
+                } else if (phi_deg > 30 && phi_deg < 90) {
+                    MC_Sector = 2;
+                } else if (phi_deg > 90 && phi_deg < 150) {
+                    MC_Sector = 3;
+                } else if (phi_deg > 150 && phi_deg < -150) {
+                    MC_Sector = 4;
+                } else if (phi_deg > -150 && phi_deg < -90) {
+                    MC_Sector = 5;
+                } else if (phi_deg > -90 && phi_deg < -30) {
+                    MC_Sector = 6;
+                }
+            } else{
+                //shoudl this be different for charged particles?
+                // they'll drift in phi
+                //this also depends if negative or positive charge
+                //and depends on field...
+                //done below for e- in inbending
+                if (phi_deg > -15 && phi_deg < 40) {
+                    MC_Sector = 1;
+                } else if (phi_deg > 45 && phi_deg < 90) {
+                    MC_Sector = 2;
+                } else if (phi_deg > 105 && phi_deg < 145) {
+                    MC_Sector = 3;
+                } else if (phi_deg > 165 && phi_deg < -150) {
+                    MC_Sector = 4;
+                } else if (phi_deg > -135 && phi_deg < -90) {
+                    MC_Sector = 5;
+                } else if (phi_deg > -75 && phi_deg < -30) {
+                    MC_Sector = 6;
+                }
+                
+            }
+        }
+        MC_PIndex=pindex;
+        
+    }
+
+    public void find_ClosestRECParticle(Bank PartBank){
+        double min_resPx=9999;
+        double min_resPy=9999;
+        double min_resPz=9999;
+        int best_ind=-1;
+        for (int i = 0; i < PartBank.getRows(); i++) {
+            read_Particle_Bank(i, PartBank);
+            double resPx=Math.abs(Px-MC_Px);
+            double resPy=Math.abs(Py-MC_Py);
+            double resPz=Math.abs(Pz-MC_Pz);
+            if(resPx<min_resPx && resPy<min_resPy && resPz<min_resPz){
+                min_resPx=resPx;
+                min_resPy=resPy;
+                min_resPz=resPz;
+                best_ind=i;
+            }
+        }
+        read_Particle_Bank(best_ind, PartBank);
+        PIndex=best_ind;
     }
 
     public void read_Particle_Bank(int pindex, Bank PartBank) {

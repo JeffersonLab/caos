@@ -92,9 +92,9 @@ public class Level3Trainer_Simulation{
 	}
 
 
-    public void evaluateFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, Boolean doPlots) {
+    public void evaluateFile(List<String[]> files,List<String[]> names,String bg, Boolean addBG, int nEvents_pSample, Boolean doPlots) {
 
-        MultiDataSet data = this.getClassesFromFile(files,names,bg,nEvents_pSample,0.9);
+        MultiDataSet data = this.getClassesFromFile(files,names,bg,addBG,nEvents_pSample,0.9);
 
         long nTestEvents = data.getFeatures()[0].shape()[0];
 
@@ -111,103 +111,6 @@ public class Level3Trainer_Simulation{
 
         // System.out.println("Number of Test Events "+nTestEvents);
         Level3Metrics_MultiClass metrics = new Level3Metrics_MultiClass(nTestEvents, outputs[0], data.getLabels()[0],el_index,files.size(),doPlots);
-
-    }
-
-    public void plotHTCC(List<String[]> files,List<String[]> names, int max) {
-
-        H1F hHTCC_all = new H1F("HTCC_all", 8, 1, 9);
-        hHTCC_all.attr().setTitleX("Mirror");
-        hHTCC_all.attr().setTitleY("ADC [AU]");
-        hHTCC_all.attr().setTitle("HTCC");
-        hHTCC_all.attr().setLineColor(2);
-		hHTCC_all.attr().setLineWidth(3);
-
-        H2F hHTCC2D_all = new H2F("HTCC2D_all", 4, 1, 5, 2, 1, 3);
-        hHTCC2D_all.attr().setTitleX("Mirror");
-        hHTCC2D_all.attr().setTitleY("Layers");
-        hHTCC2D_all.attr().setTitle("HTCC");
-
-        MultiDataSet data = this.getClassesFromFile(files,names,"",max,0);
-        INDArray HTCC=data.getFeatures()[3];
-        for (int k=0;k<max;k++){
-
-            H1F hHTCC_adc = new H1F("HTCC_adc", 100, 0, 1);
-            hHTCC_adc.attr().setTitleX("ADC Single Event [AU]");
-            hHTCC_adc.attr().setTitle("HTCC ADC Single Event");
-            hHTCC_adc.attr().setLineColor(2);
-		    hHTCC_adc.attr().setLineWidth(3);
-
-            H1F hHTCC = new H1F("HTCC", 8, 1, 9);
-            hHTCC.attr().setTitleX("Mirror");
-            hHTCC.attr().setTitleY("ADC [AU]");
-            hHTCC.attr().setTitle("HTCC");
-            hHTCC.attr().setLineColor(2);
-		    hHTCC.attr().setLineWidth(3);
-            
-
-            H2F hHTCC2D = new H2F("HTCC2D", 4, 1, 5, 2, 1, 3);
-            hHTCC2D.attr().setTitleX("Mirror");
-            hHTCC2D.attr().setTitleY("Layers");
-            hHTCC2D.attr().setTitle("HTCC");
-            INDArray HTCCArray = HTCC.get(NDArrayIndex.point(k), NDArrayIndex.point(0),
-                    NDArrayIndex.all(),
-                     NDArrayIndex.point(0));
-            for (int i = 0; i < 8; i++) {
-                int j=1;
-                if(i>3){j=2;}
-                if (HTCCArray.getFloat(i) > 0) {
-                    double mirror=(i)%4;
-                    hHTCC2D.fill(mirror+1,j,HTCCArray.getFloat(i));
-                    hHTCC2D_all.fill(mirror+1,j,HTCCArray.getFloat(i));
-                    hHTCC.fill(i+1,HTCCArray.getFloat(i));
-                    hHTCC_all.fill(i+1,HTCCArray.getFloat(i));
-                    hHTCC_adc.fill(HTCCArray.getFloat(i));
-                }
-            }
-            if(k<10){
-                TGCanvas c2D = new TGCanvas();
-                c2D.setTitle("HTCC");
-                c2D.draw(hHTCC2D);
-
-                TGCanvas c = new TGCanvas();
-                c.setTitle("HTCC");
-                c.draw(hHTCC);
-
-                /*TGCanvas c_adc = new TGCanvas();
-                c_adc.setTitle("HTCC ADC");
-                c_adc.draw(hHTCC_adc);*/
-            }
-
-        }
-
-        TGCanvas c2D_all = new TGCanvas();
-        c2D_all.setTitle("HTCC");
-        c2D_all.draw(hHTCC2D_all);
-
-        TGCanvas c_all = new TGCanvas();
-        c_all.setTitle("HTCC");
-        c_all.draw(hHTCC_all);
-
-        for(int l=0;l<8;l++){
-
-            H1F hHTCC_adc = new H1F("HTCC_adc", 100, 0, 1);
-            hHTCC_adc.attr().setTitleX("ADC Mirror "+String.valueOf(l+1)+" [AU]");
-            hHTCC_adc.attr().setTitle("HTCC ADC Mirror "+String.valueOf(l+1));
-            hHTCC_adc.attr().setLineColor(2);
-		    hHTCC_adc.attr().setLineWidth(3);
-            for (int k = 0; k < max; k++) {
-
-                INDArray HTCCArray = HTCC.get(NDArrayIndex.point(k), NDArrayIndex.point(0),
-                        NDArrayIndex.all(),
-                        NDArrayIndex.point(0));
-                hHTCC_adc.fill(HTCCArray.getFloat(l));
-                    
-            }
-            TGCanvas c_adc = new TGCanvas();
-            c_adc.setTitle("HTCC");
-            c_adc.draw(hHTCC_adc);
-        }
 
     }
 
@@ -238,10 +141,10 @@ public class Level3Trainer_Simulation{
 
 	}
 
-    public void trainFile(List<String[]> files,List<String[]> names,String bg, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
+    public void trainFile(List<String[]> files,List<String[]> names,String bg, Boolean addBG, int nEvents_pSample, int nEvents_pSample_test,int batchSize) {
 
-        MultiDataSet data = this.getClassesFromFile(files,names,bg,nEvents_pSample,0);
-        MultiDataSet data_test = this.getClassesFromFile(files,names,bg,nEvents_pSample_test,0.9);
+        MultiDataSet data = this.getClassesFromFile(files,names,bg,addBG,nEvents_pSample,0);
+        MultiDataSet data_test = this.getClassesFromFile(files,names,bg,addBG,nEvents_pSample_test,0.9);
 
         long NTotEvents = data.getFeatures()[0].shape()[0];
         long NTotEvents_test = data_test.getFeatures()[0].shape()[0];
@@ -286,263 +189,6 @@ public class Level3Trainer_Simulation{
             }
         }
         
-    }
-
-    public void getEnergiesForClassesFromFiles(List<String[]> files,List<String[]> names, int max) {
-        //for testing
-        TGCanvas c = new TGCanvas();
-        c.setTitle("Calorimeter Energy");
-        TGCanvas c2 = new TGCanvas();
-        c2.setTitle("Number of Hits in Calorimeter");
-        TGCanvas c_FTOF = new TGCanvas();
-        c_FTOF.setTitle("FTOF ADC");
-        TGCanvas c2_FTOF = new TGCanvas();
-        c2_FTOF.setTitle("Number of Hits in FTOF");
-        TGCanvas c_HTCC = new TGCanvas();
-        c_HTCC.setTitle("HTCC ADC");
-        TGCanvas c2_HTCC = new TGCanvas();
-        c2_HTCC.setTitle("Number of Hits in HTCC");
-        //added tag is for individual tag
-        //classs is for each array of tags ie class
-        int added_classes=0, classs=0;
-
-        for (String[] file_arr : files) {
-
-            System.out.printf("Class: %d",classs);
-
-            H1F h = new H1F("E", 101, -0.01, 1);
-            h.attr().setLineColor(classs+2);// tags start at 1
-            h.attr().setTitleX("Calorimeter Energy [AU]");
-            h.attr().setLineWidth(3);
-            h.attr().setTitle("Class " + Arrays.toString(names.get(classs)));
-            H1F h2 = new H1F("E", 101, 0, 101);
-            h2.attr().setLineColor(classs+2);// tags start at 1
-            h2.attr().setTitleX("N Hits in Calorimeter");
-            h2.attr().setLineWidth(3);
-            h2.attr().setTitle("Class " + Arrays.toString(names.get(classs)));
-
-            H1F h_FTOF = new H1F("E_FTOF", 101, -0.01, 1);
-            h_FTOF.attr().setLineColor(classs+2);// tags start at 1
-            h_FTOF.attr().setTitleX("FTOF ADC [AU]");
-            h_FTOF.attr().setLineWidth(3);
-            h_FTOF.attr().setTitle("Class " + Arrays.toString(names.get(classs)));
-            H1F h2_FTOF = new H1F("E", 31, 0, 31);
-            h2_FTOF.attr().setLineColor(classs+2);// tags start at 1
-            h2_FTOF.attr().setTitleX("N Hits in FTOF");
-            h2_FTOF.attr().setLineWidth(3);
-            h2_FTOF.attr().setTitle("Class " + Arrays.toString(names.get(classs)));
-
-            H1F h_HTCC = new H1F("E_HTCC", 101, -0.01, 1);
-            h_HTCC.attr().setLineColor(classs+2);// tags start at 1
-            h_HTCC.attr().setTitleX("HTCC ADC [AU]");
-            h_HTCC.attr().setLineWidth(3);
-            h_HTCC.attr().setTitle("Class " + Arrays.toString(names.get(classs)));
-            H1F h2_HTCC = new H1F("E", 21, 0, 21);
-            h2_HTCC.attr().setLineColor(classs+2);// tags start at 1
-            h2_HTCC.attr().setTitleX("N Hits in HTCC");
-            h2_HTCC.attr().setLineWidth(3);
-            h2_HTCC.attr().setTitle("Class " + Arrays.toString(names.get(classs)));
-
-            for (int j = 0; j < file_arr.length; j++) {
-                String file = file_arr[j]+"_daq.h5";
-                HipoReader r = new HipoReader();
-            
-                r.open(file);
-
-                System.out.println("Reading file: "+file);
-
-                int nMax = max/file_arr.length;
-
-                CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
-                CompositeNode nFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
-                CompositeNode nHTCC = new CompositeNode( 14, 5, "bbsbifs", 4096);
-
-                INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-                INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
-                INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
-                Event event = new Event();
-                int counter = 0,eventNb=0;
-                while (r.hasNext() == true && counter < nMax) {
-                    r.nextEvent(event);
-                    event.read(nEC, 11, 2);
-                    event.read(nFTOF, 13, 3);
-                    event.read(nHTCC, 14, 5);
-                    Node node = event.read(5, 4);
-                    int[] ids = node.getInt();
-
-                    List<Double> energies = new ArrayList<Double>();
-                    Level3Utils.fillEC(ECArray, nEC, ids[2], counter, energies);
-                    for (double energy : energies) {
-                        h.fill(energy);
-                    }
-                    h2.fill(energies.size());
-
-                    Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
-                    int nFTOF_Hits=0;
-                    for(int l=0;l<62;l++){
-                        if(FTOFArray.getFloat(counter,0, l,0)>0){
-                            nFTOF_Hits++;
-                            h_FTOF.fill(FTOFArray.getFloat(counter,0, l,0));
-                        }
-                    }
-                    h2_FTOF.fill(nFTOF_Hits);
-                    Level3Utils.fillHTCC(HTCCArray,nHTCC,ids[2],counter);
-                    int nHTCC_Hits=0;
-                    for(int l=0;l<8;l++){
-                        if(HTCCArray.getFloat(counter,0, l,0)>0){
-                            nHTCC_Hits++;
-                            h_HTCC.fill(HTCCArray.getFloat(counter,0, l,0));
-                        }
-                    }
-                    h2_HTCC.fill(nHTCC_Hits);
-                    counter++;
-
-                }
-            }
-            if (classs == 0) {
-                c.draw(h);
-                c2.draw(h2);
-                c_FTOF.draw(h_FTOF);
-                c2_FTOF.draw(h2_FTOF);
-                c_HTCC.draw(h_HTCC);
-                c2_HTCC.draw(h2_HTCC);
-            } else{
-                c.draw(h,"same");
-                c2.draw(h2,"same");
-                c_FTOF.draw(h_FTOF,"same");
-                c2_FTOF.draw(h2_FTOF,"same");
-                c_HTCC.draw(h_HTCC,"same");
-                c2_HTCC.draw(h2_HTCC,"same");
-            }
-            classs++;
-        }
-    }
-
-    public void histClasses(List<String[]> files,List<String[]> names, int max) {
-        TGCanvas c = new TGCanvas();
-        c.setTitle("Tags");
-        //added tag is for individual tag
-        //classs is for each array of tags ie class
-        int added_classes=0, classs=0;
-
-        for (String[] file_arr : files) {
-            H1F h = new H1F("E", 80, 0, 80);
-            h.attr().setLineColor(classs + 2);
-            h.attr().setTitleX("Tags");
-            h.attr().setLineWidth(3);
-            h.attr().setTitle("Class " + Arrays.toString(names.get(classs)));
-
-            System.out.printf("Class: %d",classs);
-
-            for (int j = 0; j < file_arr.length; j++) {
-                String file = file_arr[j]+"_daq.h5";
-                HipoReader r = new HipoReader();
-            
-                r.open(file);
-
-                System.out.println("Reading file: "+file);
-
-                int nMax = max/file_arr.length;
-
-                Event event = new Event();
-                int counter = 0,eventNb=0;
-                while (r.hasNext() == true && counter < nMax) {
-                    r.nextEvent(event);
-
-                    Node node = event.read(5, 4);
-                    int[] ids = node.getInt();
-
-                    // Event tag==4 is much more prevalent than others
-                    // in the case where we have more than one tag per class
-                    // probably don't want tag 4 to dominate
-
-                    h.fill(event.getEventTag() * 10 + ids[1]);
-                    counter++;
-
-                }
-            }
-            if (classs == 0) {
-                c.draw(h);
-            } else {
-                c.draw(h, "same");
-            }
-            classs++;
-        }
-    }
-
-    public void saveClasses(List<String[]> files,List<String[]> names,String out, int max) {
-
-        //added tag is for individual tag
-        //classs is for each array of tags ie class
-        int added_classes=0, classs=0;
-
-        for (String[] file_arr : files) {
-
-            System.out.printf("Class: %d",classs);
-
-            for (int j = 0; j < file_arr.length; j++) {
-                String file = file_arr[j]+"_daq.h5";
-                HipoReader r = new HipoReader();
-            
-                r.open(file);
-
-                System.out.println("Reading file: "+file);
-
-                int nMax = max/file_arr.length;
-
-                CompositeNode nDC = new CompositeNode(12, 1, "bbsbil", 4096);
-                CompositeNode nEC = new CompositeNode(11, 2, "bbsbifs", 4096);
-                CompositeNode nFTOF = new CompositeNode( 13, 3,  "bbsbifs", 4096);
-                CompositeNode nHTCC = new CompositeNode( 14, 5, "bbsbifs", 4096);
-
-                INDArray DCArray = Nd4j.zeros(nMax, 1, 6, 112);
-                INDArray ECArray = Nd4j.zeros(nMax, 1, 6, 72);
-                INDArray FTOFArray = Nd4j.zeros(nMax, 1,62,1);
-                INDArray HTCCArray = Nd4j.zeros(nMax, 1,8,1);
-                INDArray OUTArray = Nd4j.zeros(nMax, files.size());
-                Event event = new Event();
-                int counter = 0,eventNb=0;
-                while (r.hasNext() == true && counter < nMax) {
-                    r.nextEvent(event);
-
-                    event.read(nDC, 12, 1);
-                    event.read(nEC, 11, 2);
-                    event.read(nFTOF, 13, 3);
-                    event.read(nHTCC, 14, 5);
-
-                    Node node = event.read(5, 4);
-
-                    int[] ids = node.getInt();
-
-                    // System.out.printf("event tag (%d) & ID (%d)\n", ids[1], ids[0]);
-                    // System.out.printf("event tag (%d) & ID (%d)\n",event.getEventTag(),ids[0]);
-
-                    Level3Utils.fillDC(DCArray, nDC, ids[2], counter);
-                    int nHits = Level3Utils.fillEC(ECArray, nEC, ids[2], counter);
-                    Level3Utils.fillLabels_MultiClass(OUTArray, files.size(), classs, counter);// tag
-                    Level3Utils.fillFTOF(FTOFArray,nFTOF,ids[2],counter);
-                    Level3Utils.fillHTCC(HTCCArray,nHTCC,ids[2],counter);
-                    counter++;
-
-                }
-                System.out.printf("loaded samples (%d)\n\n\n", counter);
-                File fileEC = new File(out + "EC_" + String.valueOf(names.get(classs)[j]) + ".npy");
-                File fileDC = new File(out + "DC_" + String.valueOf(names.get(classs)[j]) + ".npy");
-                File fileFTOF = new File(out + "FTOF_" + String.valueOf(names.get(classs)[j]) + ".npy");
-                File fileHTCC = new File(out + "HTCC_" + String.valueOf(names.get(classs)[j]) + ".npy");
-                try {
-                    Nd4j.writeAsNumpy(ECArray, fileEC);
-                    Nd4j.writeAsNumpy(DCArray, fileDC);
-                    Nd4j.writeAsNumpy(FTOFArray, fileFTOF);
-                    Nd4j.writeAsNumpy(HTCCArray, fileHTCC);
-                } catch (IOException e) {
-                    System.out.println("Could not write file");
-                }
-                added_classes++;
-            }
-            classs++;
-        }
-
     }
 
     public INDArray add3DArrays(INDArray arr1, INDArray arr2) {
@@ -661,7 +307,7 @@ public class Level3Trainer_Simulation{
         return dataset;
     }
 
-    public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names,String bg, int max,double trainTestP) {
+    public MultiDataSet getClassesFromFile(List<String[]> files,List<String[]> names,String bg,Boolean addBG, int max,double trainTestP) {
         INDArray[] inputs = new INDArray[4];
         INDArray[] outputs = new INDArray[1];
         //added tag is for individual tag
@@ -676,7 +322,7 @@ public class Level3Trainer_Simulation{
             INDArray[] outputs_class = new INDArray[1];
             int added_classes=0;
             for (int j = 0; j < file_arr.length; j++) {
-                String file = file_arr[j]+"_daq.h5";
+                String file = file_arr[j]+"_daq_v2.h5";
                 HipoReader r = new HipoReader();
             
                 r.open(file);
@@ -783,13 +429,13 @@ public class Level3Trainer_Simulation{
             //corrupt portion of data by removing certain superlayers
             if((names.get(classs)[0] != "gamma") && (names.get(classs)[0] != "empty")){
                 long nEv=Math.round(inputs_class[0].shape()[0]);
-                MultiDataSet bgDataSet=new MultiDataSet(new INDArray[]{},new INDArray[]{});
+                int fileMtp=1;
+                if(max>10000){fileMtp=(int) Math.ceil(max/10000);}
+                MultiDataSet bgDataSet=new MultiDataSet();
                 if(bg!=""){
-                    int fileMtp=1;
-                    if(max>10000){fileMtp=(int) Math.ceil(max/10000);}
                     bgDataSet=getBg(bg,(int) nEv,(int) Math.round(trainTestP*100)+classs*fileMtp+1);
                 }
-
+                
                 Random rand = new Random();
                 for(int i=0;i<nEv;i++){
                     //SLs to skip
@@ -800,7 +446,7 @@ public class Level3Trainer_Simulation{
                     //corrupt only a portion of data
                     if (i < (nEv / 2)) {
                         //System.out.printf("Nev/2 %d, i %d \n",(nEv/2),i);
-                        if (bg != "") {
+                        if (addBG) {
                             INDArray to_rm1 = inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1),
                                     NDArrayIndex.all(),
                                     NDArrayIndex.all()).dup();
@@ -826,13 +472,30 @@ public class Level3Trainer_Simulation{
                             inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
                                     NDArrayIndex.all()).assign(wbg);
                         } else {
-                            inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
-                                    NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
-                            inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
-                                    NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
+                            if(bg!=""){
+                                //for clasdis data, bg is already in data so we don't to add bg again
+                                //however we don't just want empty superlayer so we load some other bg for
+                                //superlayer and add that
+                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                        NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1),
+                                        NDArrayIndex.all(),
+                                        NDArrayIndex.all()));
+                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                        NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2),
+                                        NDArrayIndex.all(),
+                                        NDArrayIndex.all()));
+                            }
+                            else{
+                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                        NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
+                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
+                                        NDArrayIndex.all()).assign(Nd4j.zeros(6, 112));
+                            }
+                            
+                            
                         }
                     } else {// have to add noise to rest of DC data
-                        if (bg != "") {
+                        if (addBG) {
                             INDArray wbg = add3DArrays(
                                     inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),
                                             NDArrayIndex.all()).dup(),
@@ -846,14 +509,14 @@ public class Level3Trainer_Simulation{
                     
                 }
 
-                if (bg != "") {
+                if (addBG) {
                     inputs_class[1] = addInputArrays(inputs_class[1], bgDataSet.getFeatures()[1]);
                     inputs_class[2] = addInputArrays(inputs_class[2], bgDataSet.getFeatures()[2]);
                     inputs_class[3] = addInputArrays(inputs_class[3], bgDataSet.getFeatures()[3]);
                 }
 
             } else{
-                if (bg != "") {
+                if (addBG) {
                     int fileMtp=1;
                     if(max>10000){fileMtp=(int) Math.ceil(max/10000);}
                     MultiDataSet bgDataSet=getBg(bg, max, (int) Math.round(trainTestP*100)+classs*fileMtp+1);
@@ -892,27 +555,42 @@ public class Level3Trainer_Simulation{
 
         //String dir = "/scratch/clasrun/caos/sims/";
 
-        String bg="";//dir+"bg_50nA_10p6/";//"";
+        // for clasdis data, bg is already in data so we don't to add bg again
+        // however when corrupting we don't want just empty array so 
+        // we add data from bg merging
+        // think we should do this for real data too
+        // code expects addBG false but a non empty bg string
+        // obviously if we want to addBG code expects non empty bg string
+        String bg=dir+"bg_50nA_10p6/";//"";
+        Boolean addBG=false;
 
         List<String[]> files = new ArrayList<>();
-        files.add(new String[] { dir+"claspyth_pim"});
+        /*files.add(new String[] { dir+"claspyth_pim"});
         files.add(new String[] { dir+"claspyth_gamma"});
         //files.add(new String[] { dir+"pos"}); //not even e+ in claspyth data
         files.add(new String[] { dir+"claspyth_pip"});
-        files.add(new String[] {dir+"claspyth_pim",dir+"claspyth_pip"});//,dir+"pos",dir+"el"
+        //files.add(new String[] {dir+"claspyth_pim",dir+"claspyth_pip"});//,dir+"pos",dir+"el"
         files.add(new String[] { dir+"claspyth_empty" });
+        files.add(new String[] { dir+"claspyth_el" });*/
+
+        files.add(new String[] { dir+"claspyth_empty" });
+        files.add(new String[]{dir+"claspyth_pim",dir+"claspyth_pip",dir+"claspyth_gamma"});
         files.add(new String[] { dir+"claspyth_el" });
 
         /*files.add(new String[] { dir+"pim", dir+"gamma",dir+"pim"});// ,dir+"pos"});//,dir+"pim"});
         files.add(new String[] { dir+"el" });*/
 
         List<String[]> names = new ArrayList<>();
-        names.add(new String[] { "pim"});
+        /*names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
         //names.add(new String[] { "pos" });
         names.add(new String[] { "pip" });
-        names.add(new String[]{"mixMatch","mixMatch"});//,"mixMatch","mixMatch"
+        //names.add(new String[]{"mixMatch","mixMatch"});//,"mixMatch","mixMatch"
         names.add(new String[]{"empty",""});//,"mixMatch","mixMatch"
+        names.add(new String[] { "el" });*/
+        
+        names.add(new String[] { "empty" });
+        names.add(new String[] { "pim","pip","gamma" });
         names.add(new String[] { "el" });
 
         /*names.add(new String[] { "pim", "gamma","mixMatch"});// ,"pos"});//,"mixMatch"});
@@ -935,11 +613,12 @@ public class Level3Trainer_Simulation{
         // t.load("level3_sim_"+net+".network");
 
         /*t.nEpochs = 750;//500
-        t.trainFile(files,names,bg,30000,1000,1000);//30000 5000 10000
-        t.save("level3_sim_MC_wMixMatch_wbg_wCorrupt_wEmpty_SIDIS");*/
+        
+        t.trainFile(files,names,bg,addBG,50000,1000,1000);//30000 5000 10000
+        t.save("level3_sim_3C_wbg_wCorrupt_wEmpty_SIDIS");*/
 
-        t.load("level3_sim_MC_wMixMatch_wbg_wCorrupt_wEmpty_SIDIS"+net+".network");
-        t.evaluateFile(files,names,bg,1000,true);//5000
+        t.load("level3_sim_3C_wbg_wCorrupt_wEmpty_SIDIS"+net+".network");
+        t.evaluateFile(files,names,bg,addBG,1000,true);//5000
 
     }
 }

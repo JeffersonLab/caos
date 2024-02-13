@@ -40,11 +40,11 @@ import twig.graphics.TGCanvas;
  *
  * @author tyson
  */
-public class Level3Converter_SimulationSIDIS {
+public class Level3Converter_SimulationSIDIS_MCPart {
 
     ComputationGraph network = null;
 
-    public Level3Converter_SimulationSIDIS() {
+    public Level3Converter_SimulationSIDIS_MCPart() {
 
     }
 
@@ -77,6 +77,49 @@ public class Level3Converter_SimulationSIDIS {
         }
         return nTrack_pSect;
 
+    }
+
+    public static List<Level3Particle> getMCPart_pSect(Bank[] dsts,int sect){
+        List<Level3Particle> pInS = new ArrayList<Level3Particle>();
+        // find and initialise particles
+        for (int i = 0; i < dsts[5].getRows(); i++) {
+            Level3Particle part = new Level3Particle();
+            part.read_MCParticle_Bank(i, dsts[5]);
+            part.find_ClosestRECParticle(dsts[0]);
+            if (part.PIndex != -1) { // ie REC part in FD
+                part.read_Cal_Bank(dsts[2]);
+                part.read_HTCC_bank(dsts[3]);
+                part.find_sector_cal(dsts[2]);
+                part.find_sector_track(dsts[1]);
+            }
+            // MC part in right sector
+            if(part.MC_Sector==sect) {
+                pInS.add(part);
+            }
+        }
+        return pInS;
+    }
+
+    public static List<Level3Particle> getRECPart_pSect(Bank[] dsts,int sect){
+        List<Level3Particle> pInS = new ArrayList<Level3Particle>();
+
+        // find and initialise particles
+        for (int i = 0; i < dsts[0].getRows(); i++) {
+            Level3Particle part = new Level3Particle();
+            part.read_Particle_Bank(i, dsts[0]);
+            if(part.PIndex!=-1){ //ie part in FD
+                part.find_ClosestMCParticle(dsts[5]);
+                part.read_Cal_Bank(dsts[2]);
+                part.read_HTCC_bank(dsts[3]);
+                part.find_sector_cal(dsts[2]);
+                part.find_sector_track(dsts[1]);
+                if(sect==part.Cal_Sector){
+                    pInS.add(part);
+                }
+                
+            }
+        }
+        return pInS;
     }
 
     public static Boolean noCloseMCPart(Level3Particle part, Bank MCBank){
@@ -146,76 +189,56 @@ public class Level3Converter_SimulationSIDIS {
 
                 e.read(dsts);
 
-                List<Level3Particle> particles = new ArrayList<Level3Particle>();
-
-                // find and initialise particles
-                for (int i = 0; i < dsts[0].getRows(); i++) {
-                    Level3Particle part = new Level3Particle();
-                    part.read_Particle_Bank(i, dsts[0]);
-                    if(part.PIndex!=-1){ //ie part in FD
-                        part.find_ClosestMCParticle(dsts[5]);
-                        part.read_Cal_Bank(dsts[2]);
-                        part.read_HTCC_bank(dsts[3]);
-                        part.find_sector_cal(dsts[2]);
-                        part.find_sector_track(dsts[1]);
-                        particles.add(part);
-                    }
-                }
-
                 // loop over sectors
                 for (int sect = 1; sect < 7; sect++) {
+
+                    List<Level3Particle> pInSREC=getRECPart_pSect(dsts, sect);
+                    List<Level3Particle> pInSMC=getMCPart_pSect(dsts, sect);
 
                     double p = 0;
                     Boolean hasDesiredParticle = false, hasEl=false;
 
-                    //check if we have at least one particle
-                    //and if there's an electron in the sector
-                    for (Level3Particle part : particles) {
-                        if (part.Cal_Sector == sect ){//&& nPart_pSect(particles, sect)==1) { //&& nTrack_pSect(dsts[1],sect)==1
-                            if (part.TruthMatch(0.1, 0.1, 0.1)) {
-                                if (part.P > 0.5) {
-                                    if (part.MC_PID == 11) {
-                                        if (part.check_Energy_Dep_Cut() == true
-                                                && part.check_FID_Cal_Clusters(dsts[4]) == true
-                                                && part.check_SF_cut() == true 
-                                                && part.Nphe>=2) {
-                                            hasEl = true;
-                                            if (part.MC_PID == desiredPID) {
-                                                hasDesiredParticle = true;
-                                                p = part.P;
-                                            } 
-                                        }
-                                    } else if (part.MC_PID == -11) {
-                                        if (part.check_Energy_Dep_Cut() == true
-                                                && part.check_FID_Cal_Clusters(dsts[4]) == true) {
-                                            if (part.MC_PID == desiredPID) {
-                                                hasDesiredParticle = true;
-                                                p = part.P;
-                                            } 
-                                        }
-                                    } else if (part.MC_PID == 22) {
-                                        //only want photons on their own
-                                        //not photons produced by other particles
-                                        if (nPart_pSect(particles, sect)==1) {
-                                            if (part.MC_PID == desiredPID) {
-                                                hasDesiredParticle = true;
-                                                p = part.P;
-                                            } 
-                                        }
-                                    } else {
+                     // check if we have at least one REC particle
+                     if (pInSREC.size() != 0) {
+                        //loop over MC particles
+                        for (Level3Particle part : pInSMC) {
+                            if (part.MC_PID == 11) {
+                                p = part.MC_P;
+                                //for electrons, check we have at least one REC particle with HTCC in same sector
+                                for (Level3Particle recpart : pInSREC) {
+                                    part.read_Particle_Bank(recpart.PIndex, dsts[0]);
+                                    part.read_HTCC_bank(dsts[3]);
+                                    part.find_sector_cal(dsts[2]);
+                                    if(part.Nphe>2 && part.HTCC_Sector==part.Cal_Sector){
+                                        hasEl = true;
                                         if (part.MC_PID == desiredPID) {
                                             hasDesiredParticle = true;
                                             p = part.P;
                                         } 
                                     }
                                 }
+                                
+                            } else if (part.MC_PID == 22) {
+                                //only want photons on their own
+                                //not photons produced by other particles
+                                if (pInSREC.size()==1) {
+                                    if (part.MC_PID == desiredPID) {
+                                        hasDesiredParticle = true;
+                                        p = part.P;
+                                    } 
+                                }
+                            } else {
+                                if (part.MC_PID == desiredPID) {
+                                    hasDesiredParticle = true;
+                                    p = part.P;
+                                } 
                             }
-                        } 
+                        }
                     }
 
                     //if no particle in sector then empty
                     // PID==0 calls for empty
-                    if(nPart_pSect(particles, sect)==0 && desiredPID==0){
+                    if(pInSREC.size()==0 && desiredPID==0){
                         hasDesiredParticle=true;
                     }
 
@@ -226,7 +249,7 @@ public class Level3Converter_SimulationSIDIS {
                     if (hasDesiredParticle) {
                         if (desiredPID==11) {
                             keepEvent=true;
-                        }else{
+                        } else{
                             if (!hasEl) {
                                 keepEvent=true;
                             }
@@ -278,13 +301,13 @@ public class Level3Converter_SimulationSIDIS {
         String[] part={"el","pim","gamma","pos","pip","p","empty"};//,"pi0","mup","mum"};
         Integer[] pid={11,-211,22,-11,211,2212,0};
 
-        for(int i=0;i<1;i++){
-            int nFiles=2;//56
+        for(int i=0;i<7;i++){
+            int nFiles=56;//56
             //lots of empty events so don't want to create huge file
             if(pid[i]==0){
                 nFiles=5;
             }
-            Level3Converter_SimulationSIDIS.convertData(dir,10.6,pid[i],dir+"claspyth_"+part[i]+"_daq_test.h5",nFiles);//10000
+            Level3Converter_SimulationSIDIS_MCPart.convertData(dir,10.6,pid[i],dir+"claspyth_"+part[i]+"_daq_v2.h5",nFiles);//10000
         }
        
         

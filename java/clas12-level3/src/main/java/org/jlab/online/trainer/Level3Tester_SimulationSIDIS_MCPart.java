@@ -40,11 +40,11 @@ import twig.graphics.TGCanvas;
  *
  * @author tyson
  */
-public class Level3Tester_SimulationSIDIS {
+public class Level3Tester_SimulationSIDIS_MCPart {
 
     ComputationGraph network = null;
 
-    public Level3Tester_SimulationSIDIS() {
+    public Level3Tester_SimulationSIDIS_MCPart() {
 
     }
 
@@ -68,6 +68,17 @@ public class Level3Tester_SimulationSIDIS {
 
     }
 
+    public static int nMCPart_pSect(List<Level3Particle> particles,int sect){
+        int nPart_pSect=0;
+        for(Level3Particle part:particles){
+            if(part.MC_Sector==sect){
+                nPart_pSect++;
+            }
+        }
+        return nPart_pSect;
+
+    }
+
     public static int nTrack_pSect(Bank TrackBank,int sect){
         int nTrack_pSect=0;
         for (int k = 0; k < TrackBank.getRows(); k++) {
@@ -77,6 +88,49 @@ public class Level3Tester_SimulationSIDIS {
         }
         return nTrack_pSect;
 
+    }
+
+    public static List<Level3Particle> getMCPart_pSect(Bank[] dsts,int sect){
+        List<Level3Particle> pInS = new ArrayList<Level3Particle>();
+        // find and initialise particles
+        for (int i = 0; i < dsts[5].getRows(); i++) {
+            Level3Particle part = new Level3Particle();
+            part.read_MCParticle_Bank(i, dsts[5]);
+            part.find_ClosestRECParticle(dsts[0]);
+            if (part.PIndex != -1) { // ie REC part in FD
+                part.read_Cal_Bank(dsts[2]);
+                part.read_HTCC_bank(dsts[3]);
+                part.find_sector_cal(dsts[2]);
+                part.find_sector_track(dsts[1]);
+            }
+            // ie MC part in FD
+            if(part.MC_Sector==sect) {
+                pInS.add(part);
+            }
+        }
+        return pInS;
+    }
+
+    public static List<Level3Particle> getRECPart_pSect(Bank[] dsts,int sect){
+        List<Level3Particle> pInS = new ArrayList<Level3Particle>();
+
+        // find and initialise particles
+        for (int i = 0; i < dsts[0].getRows(); i++) {
+            Level3Particle part = new Level3Particle();
+            part.read_Particle_Bank(i, dsts[0]);
+            if(part.PIndex!=-1){ //ie part in FD
+                part.find_ClosestMCParticle(dsts[5]);
+                part.read_Cal_Bank(dsts[2]);
+                part.read_HTCC_bank(dsts[3]);
+                part.find_sector_cal(dsts[2]);
+                part.find_sector_track(dsts[1]);
+                if(sect==part.Cal_Sector){
+                    pInS.add(part);
+                }
+                
+            }
+        }
+        return pInS;
     }
 
     public static Boolean noCloseMCPart(Level3Particle part, Bank MCBank){
@@ -148,22 +202,6 @@ public class Level3Tester_SimulationSIDIS {
 
                 e.read(dsts);
 
-                List<Level3Particle> particles = new ArrayList<Level3Particle>();
-
-                // find and initialise particles
-                for (int i = 0; i < dsts[0].getRows(); i++) {
-                    Level3Particle part = new Level3Particle();
-                    part.read_Particle_Bank(i, dsts[0]);
-                    if(part.PIndex!=-1){ //ie part in FD
-                        part.find_ClosestMCParticle(dsts[5]);
-                        part.read_Cal_Bank(dsts[2]);
-                        part.read_HTCC_bank(dsts[3]);
-                        part.find_sector_cal(dsts[2]);
-                        part.find_sector_track(dsts[1]);
-                        particles.add(part);
-                    }
-                }
-
                 // loop over sectors
                 for (int sect = 1; sect < 7; sect++) {
 
@@ -177,64 +215,43 @@ public class Level3Tester_SimulationSIDIS {
                     double SF=0;
                     double ECAL_e=0;
 
-                    // check if we have at least one particle
-                    // and if there's an electron in the sector
-                    for (Level3Particle part : particles) {
-                        if (part.Cal_Sector == sect) {// && nPart_pSect(particles, sect)==1) { //&&
-                                                      // nTrack_pSect(dsts[1],sect)==1
-                            if (part.TruthMatch(0.1, 0.1, 0.1)) {
-                                if (part.P > 0.5) {
-                                    if (part.MC_PID == 11) {
-                                        if (part.check_Energy_Dep_Cut() == true
-                                                && part.check_FID_Cal_Clusters(dsts[4]) == true
-                                                && part.check_SF_cut() == true
-                                                && part.Nphe >= 2) {
-                                            p = part.P;
-                                            theta = part.Theta * (180.0 / Math.PI);
-                                            phi = part.Phi * (180.0 / Math.PI);
-                                            nphe = part.Nphe;
-                                            PID = part.MC_PID;
-                                            SF = part.SF;
-                                            ECAL_e = part.ECAL_energy;
-                                            hasEl=true;
-                                            hasParticle=true;
-                                        }
-                                    } else if (part.MC_PID == -11) {
-                                        if (part.check_Energy_Dep_Cut() == true
-                                                && part.check_FID_Cal_Clusters(dsts[4]) == true) {
-                                            p = part.P;
-                                            theta = part.Theta * (180.0 / Math.PI);
-                                            phi = part.Phi * (180.0 / Math.PI);
-                                            nphe = part.Nphe;
-                                            PID = part.MC_PID;
-                                            SF = part.SF;
-                                            ECAL_e = part.ECAL_energy;
-                                            hasParticle=true;
-                                            
-                                        }
-                                    } else if (part.MC_PID == 22) {
-                                        // only want photons on their own
-                                        // not photons produced by other particles
-                                        if (nPart_pSect(particles, sect) == 1) {
-                                            p = part.P;
-                                            theta = part.Theta * (180.0 / Math.PI);
-                                            phi = part.Phi * (180.0 / Math.PI);
-                                            nphe = part.Nphe;
-                                            PID = part.MC_PID;
-                                            SF = part.SF;
-                                            ECAL_e = part.ECAL_energy;
-                                            hasParticle = true;
-                                        }
-                                    } else {
-                                        p = part.P;
-                                        theta = part.Theta * (180.0 / Math.PI);
-                                        phi = part.Phi * (180.0 / Math.PI);
-                                        nphe = part.Nphe;
-                                        PID = part.MC_PID;
+                    List<Level3Particle> pInSREC=getRECPart_pSect(dsts, sect);
+                    List<Level3Particle> pInSMC=getMCPart_pSect(dsts, sect);
+
+                    // check if we have at least one REC particle
+                    if (pInSREC.size() != 0) {
+                        hasParticle = true;
+                        //loop over MC particles
+                        for (Level3Particle part : pInSMC) {
+                            if (part.MC_PID == 11) {
+                                p = part.MC_P;
+                                theta = part.MC_Theta * (180.0 / Math.PI);
+                                phi = part.MC_Phi * (180.0 / Math.PI);
+                                PID = part.MC_PID;
+                                //for electrons, check we have at least one REC particle with HTCC in same sector
+                                for (Level3Particle recpart : pInSREC) {
+                                    part.read_Particle_Bank(recpart.PIndex, dsts[0]);
+                                    part.read_HTCC_bank(dsts[3]);
+                                    part.find_sector_cal(dsts[2]);
+                                    if(part.Nphe>2 && part.HTCC_Sector==part.Cal_Sector){
                                         SF = part.SF;
                                         ECAL_e = part.ECAL_energy;
-                                        hasParticle = true;
+                                        nphe = part.Nphe;
+                                        hasEl = true;
                                     }
+                                }
+                                
+                            } 
+                            else {
+                                p = part.MC_P;
+                                theta = part.MC_Theta * (180.0 / Math.PI);
+                                phi = part.MC_Phi * (180.0 / Math.PI);
+                                PID = part.MC_PID;
+                                // only take REC quantities for truthmatched particle
+                                if (part.PIndex != -1 && part.TruthMatch(0.1, 0.1, 0.1)) {
+                                    SF = part.SF;
+                                    ECAL_e = part.ECAL_energy;
+                                    nphe = part.Nphe;
                                 }
                             }
                         }
@@ -257,7 +274,7 @@ public class Level3Tester_SimulationSIDIS {
                     Level3Converter_MultiClass.convertHTCC(banks[4], nodeHTCC, sect);
                     // nodeDC.print();
                     // nodeEC.print();
-                    //nodeDC.getRows() > 0 && && hasParticle
+                    //nodeDC.getRows() > 0 &&
                     if ( nodeEC.getRows() > 0 && counter_tot<max  ) {//&& hasParticle == true && classs == 1 && classs == 1
 
                         // Level3Utils.fillDC_wLayers(DCArray, nodeDC, sect, counter_tot);
@@ -275,6 +292,13 @@ public class Level3Tester_SimulationSIDIS {
                         //System.out.println("filled arrays");
                         // check that DC & EC aren't all empty, should at least have noise
                         if (EventDCArray.any() && EventECArray.any()) { 
+
+                            INDArray EventHTCCCArray = HTCCArray.get(NDArrayIndex.point(counter_tot), NDArrayIndex.all(),
+                               NDArrayIndex.all(), NDArrayIndex.all());
+
+                            if(classs==1 && !EventHTCCCArray.any()){
+                                classs=0;
+                            }
 
                             if (classs == 1) {
                                 nEls++;
@@ -593,11 +617,11 @@ public class Level3Tester_SimulationSIDIS {
             //System.out.println(outputs[0]);
         }
 
-        Level3Tester_SimulationSIDIS.PlotResponse(outputs[0], data.getLabels()[0],LabelVal,elClass,Part);
-        Level3Tester_SimulationSIDIS.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,1,"P","[GeV]",1,9.0,1.0);
-        Level3Tester_SimulationSIDIS.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,2,"Theta","[Deg]",10.0,35.0,5.);
-        //Level3Tester_SimulationSIDIS.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,3,"Sector","",0.5,6.5,1.0);
-        INDArray metrics=Level3Tester_SimulationSIDIS.getMetrics(outputs[0],data.getLabels()[0],LabelVal,thresh, elClass);
+        Level3Tester_SimulationSIDIS_MCPart.PlotResponse(outputs[0], data.getLabels()[0],LabelVal,elClass,Part);
+        Level3Tester_SimulationSIDIS_MCPart.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,1,"P","[GeV]",1,9.0,1.0);
+        Level3Tester_SimulationSIDIS_MCPart.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,2,"Theta","[Deg]",10.0,35.0,5.);
+        //Level3Tester_SimulationSIDIS_MCPart.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,3,"Sector","",0.5,6.5,1.0);
+        INDArray metrics=Level3Tester_SimulationSIDIS_MCPart.getMetrics(outputs[0],data.getLabels()[0],LabelVal,thresh, elClass);
         System.out.printf("\n Threshold: %f\n", thresh);
         System.out.printf("Level3 Purity: %f Efficiency: %f\n",metrics.getFloat(0,0),metrics.getFloat(1,0));
         System.out.printf("TP: %f, FP: %f, FN: %f\n",metrics.getFloat(2,0),metrics.getFloat(3,0),metrics.getFloat(4,0));
@@ -803,7 +827,7 @@ public class Level3Tester_SimulationSIDIS {
         //String dir = "/Users/tyson/data_repo/trigger_data/rgd/018777/run_018777.h5";
         //String dir = "/Users/tyson/data_repo/trigger_data/rgd/018331_AI/rec_clas_018331.evio.00100-00104.hipo";
 
-        Level3Tester_SimulationSIDIS t=new Level3Tester_SimulationSIDIS();
+        Level3Tester_SimulationSIDIS_MCPart t=new Level3Tester_SimulationSIDIS_MCPart();
         //t.load("level3_sim_0d.network");
         //t.load("level3_sim_fullLayers_0d.network");
         //t.load("level3_0d_in.network");
@@ -819,7 +843,7 @@ public class Level3Tester_SimulationSIDIS {
         //Get vals for electron
         int elClass=4;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes etc
         int elLabelVal=1;
-        MultiDataSet data=Level3Tester_SimulationSIDIS.getData(dir,10000,10.6);//10000
+        MultiDataSet data=Level3Tester_SimulationSIDIS_MCPart.getData(dir,10000,10.6);//10000
 
         //plotDCExamples(data.getFeatures()[0], 1,500);
         //plotECExamples(data.getFeatures()[1], 1,500);
