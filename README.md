@@ -6,7 +6,7 @@ Clas12 Online Software
 login into clonfarm11 computer with clasrun account. Then run script:
 
 ```
-clonfarm11> ~/CAOS/bin/start_hipo_et.sh
+~/CAOS/bin/start_hipo_et.sh
 ```
 
 This will bring two terminals (xterm) one of them running local ET ring, the other
@@ -17,9 +17,12 @@ Once these terminals are running, open another terminal log in into clonfarm11
 as clasrun. then from prompt run:
 
 ```
-clonfarm11> clas12online
+clas12online
 ```
 This will start the online conventional reconstruction.Enjoy the histograms.
+To submit a log entry use the button on the bottom of the GUI.
+
+
 
 # AI/ML reconstruction
 
