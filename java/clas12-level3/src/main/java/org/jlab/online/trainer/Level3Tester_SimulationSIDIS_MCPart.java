@@ -154,18 +154,18 @@ public class Level3Tester_SimulationSIDIS_MCPart {
     }
 
     public static MultiDataSet getData(String dir,int max,double beamE){
-        int nEls = 0, nOther = 0,counter_tot=0,nBg=0;
+        int nEls = 0, nOther = 0,counter_tot=0,nBg=0,trackbutnomc=0;
 
-        int start=1;
+        int start=50;
 
         // INDArray DCArray = Nd4j.zeros(max, 1, 6, 112);
         INDArray DCArray = Nd4j.zeros(max, 6, 6, 112);
         INDArray ECArray = Nd4j.zeros(max, 1, 6, 72);
         INDArray FTOFArray = Nd4j.zeros(max, 1, 62, 1);
         INDArray HTCCArray = Nd4j.zeros(max, 1, 8, 1);
-        INDArray OUTArray = Nd4j.zeros(max, 10);
+        INDArray OUTArray = Nd4j.zeros(max, 11);
 
-        while (counter_tot < max && start < 5) {//56
+        while (counter_tot < max && start < 56) {//56
 
             String file = dir + "clasdis_" + String.valueOf(start) + ".hipo";
             //String file=dir;
@@ -209,7 +209,7 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                     double theta = 0;
                     double phi = 0;
                     double nphe = 0;
-                    int PID=0;
+                    int PID=0,MCPID=0;
                     Boolean hasParticle = false,hasEl = false;
                     int classs=0;
                     double SF=0;
@@ -218,40 +218,49 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                     List<Level3Particle> pInSREC=getRECPart_pSect(dsts, sect);
                     List<Level3Particle> pInSMC=getMCPart_pSect(dsts, sect);
 
+                    if(pInSREC.size() != 0 && pInSMC.size()==0){
+                        trackbutnomc++;
+                    }
+
                     // check if we have at least one REC particle
-                    if (pInSREC.size() != 0) {
+                    if (pInSREC.size() != 0 && pInSMC.size()!=0) {
                         hasParticle = true;
                         //loop over MC particles
                         for (Level3Particle part : pInSMC) {
                             if (part.MC_PID == 11) {
-                                p = part.MC_P;
-                                theta = part.MC_Theta * (180.0 / Math.PI);
-                                phi = part.MC_Phi * (180.0 / Math.PI);
-                                PID = part.MC_PID;
                                 //for electrons, check we have at least one REC particle with HTCC in same sector
                                 for (Level3Particle recpart : pInSREC) {
                                     part.read_Particle_Bank(recpart.PIndex, dsts[0]);
                                     part.read_HTCC_bank(dsts[3]);
                                     part.find_sector_cal(dsts[2]);
-                                    if(part.Nphe>2 && part.HTCC_Sector==part.Cal_Sector){
+                                    if(part.Nphe>2 && part.HTCC_Sector==part.Cal_Sector ){//&& part.check_Energy_Dep_Cut() && part.SF>0.1 &&part.check_FID_Cal_Clusters(dsts[4])
                                         SF = part.SF;
                                         ECAL_e = part.ECAL_energy;
                                         nphe = part.Nphe;
+                                        p = part.MC_P;
+                                        theta = part.MC_Theta * (180.0 / Math.PI);
+                                        phi = part.MC_Phi * (180.0 / Math.PI);
+                                        MCPID = part.MC_PID;
+                                        PID = part.PID;
                                         hasEl = true;
                                     }
                                 }
-                                
                             } 
                             else {
-                                p = part.MC_P;
-                                theta = part.MC_Theta * (180.0 / Math.PI);
-                                phi = part.MC_Phi * (180.0 / Math.PI);
-                                PID = part.MC_PID;
-                                // only take REC quantities for truthmatched particle
-                                if (part.PIndex != -1 && part.TruthMatch(0.1, 0.1, 0.1)) {
-                                    SF = part.SF;
-                                    ECAL_e = part.ECAL_energy;
-                                    nphe = part.Nphe;
+                                //don't want to overwrite info from el
+                                if (!hasEl) {
+                                    p = part.MC_P;
+                                    theta = part.MC_Theta * (180.0 / Math.PI);
+                                    phi = part.MC_Phi * (180.0 / Math.PI);
+                                    MCPID = part.MC_PID;
+                                    // && part.TruthMatch(0.1, 0.1, 0.1)
+                                    // only take REC quantities for truthmatched particle
+                                    if (part.PIndex != -1) {
+                                        SF = part.SF;
+                                        ECAL_e = part.ECAL_energy;
+                                        nphe = part.Nphe;
+                                        PID = part.PID;
+                                    }
                                 }
                             }
                         }
@@ -327,6 +336,7 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                             OUTArray.putScalar(new int[] { counter_tot, 7 }, PID);
                             OUTArray.putScalar(new int[] { counter_tot, 8 }, SF);
                             OUTArray.putScalar(new int[] { counter_tot, 9 }, ECAL_e);
+                            OUTArray.putScalar(new int[] { counter_tot, 10 }, MCPID);
                             counter_tot++;
                          } else {
                             // erase last entry
@@ -349,8 +359,8 @@ public class Level3Tester_SimulationSIDIS_MCPart {
         // System.out.print(OUTArray);
         // System.out.print(DCArray);
         // System.out.print(ECArray);
-        System.out.printf("counter %d, n events with e- %d, n empty events %d, n events with other particle type %d\n\n", counter_tot, nEls, nBg,
-                nOther);
+        System.out.printf("counter %d, n events with e- %d, n empty events %d, n events with other particle type %d, track but no mc %d\n\n", counter_tot, nEls, nBg,
+                nOther,trackbutnomc);
 
         MultiDataSet dataset = new MultiDataSet(new INDArray[] { DCArray, ECArray, FTOFArray, HTCCArray }, new INDArray[] { OUTArray });
 
@@ -383,7 +393,95 @@ public class Level3Tester_SimulationSIDIS_MCPart {
         c.draw(hRespPos).draw(hRespNeg,"same");
         c.region().showLegend(0.05, 0.95);
             
-        }//End of PlotResponse
+    }//End of PlotResponse
+
+    public static void PlotPIDResponse(INDArray output, INDArray Labels, int LabelVal, int elClass, String part) {
+        long NEvents = output.shape()[0];
+        H1F hRespPos = new H1F("MC 11 in Sector", 100, 0, 1);
+        hRespPos.attr().setLineColor(2);
+        hRespPos.attr().setFillColor(2);
+        hRespPos.attr().setLineWidth(3);
+        hRespPos.attr().setTitleX("Positive Response");
+        H1F hpiPos = new H1F("MC -211 in Sector", 100, 0, 1);
+        hpiPos.attr().setLineColor(5);
+        hpiPos.attr().setLineWidth(3);
+        hpiPos.attr().setTitleX("Positive Response");
+        H1F hgaPos = new H1F("MC 22 in Sector", 100, 0, 1);
+        hgaPos.attr().setLineColor(6);
+        hgaPos.attr().setLineWidth(3);
+        hgaPos.attr().setTitleX("Positive Response");
+        H1F hOtherPos = new H1F("MC Particle (Not 22, 11, -211) in Sector", 100, 0, 1);
+        hOtherPos.attr().setLineColor(7);
+        hOtherPos.attr().setLineWidth(3);
+        hOtherPos.attr().setTitleX("Negative Response");
+        H1F hemptyPos = new H1F("No MC particle in Sector", 100, 0, 1);
+        hemptyPos.attr().setLineColor(3);
+        hemptyPos.attr().setLineWidth(3);
+        hemptyPos.attr().setTitleX("Positive Response");
+
+        H1F hRespNeg = new H1F("MC 11 in Sector", 100, 0, 1);
+        hRespNeg.attr().setLineColor(2);
+        hRespNeg.attr().setFillColor(2);
+        hRespNeg.attr().setLineWidth(3);
+        hRespNeg.attr().setTitleX("Negative Response");
+        H1F hpiNeg = new H1F("MC -211 in Sector", 100, 0, 1);
+        hpiNeg.attr().setLineColor(5);
+        hpiNeg.attr().setLineWidth(3);
+        hpiNeg.attr().setTitleX("Negative Response");
+        H1F hgaNeg = new H1F("MC 22 in Sector", 100, 0, 1);
+        hgaNeg.attr().setLineColor(6);
+        hgaNeg.attr().setLineWidth(3);
+        hgaNeg.attr().setTitleX("Negative Response");
+        H1F hOtherNeg = new H1F("MC Particle (Not 22, 11, -211) in Sector", 100, 0, 1);
+        hOtherNeg.attr().setLineColor(7);
+        hOtherNeg.attr().setLineWidth(3);
+        hOtherNeg.attr().setTitleX("Negative Response");
+        H1F hemptyNeg = new H1F("No MC particle in Sector", 100, 0, 1);
+        hemptyNeg.attr().setLineColor(3);
+        hemptyNeg.attr().setLineWidth(3);
+        hemptyNeg.attr().setTitleX("Negative Response");
+
+        // Sort predictions into MC PID
+        for (long i = 0; i < NEvents; i += 1) {
+            if (Labels.getFloat(i, 0) == LabelVal) {
+                if (Labels.getFloat(i, 10) == 11) {
+                    hRespPos.fill(output.getFloat(i, elClass));
+                } else if (Labels.getFloat(i, 10) == -211) {
+                    hpiPos.fill(output.getFloat(i, elClass));
+                } else if (Labels.getFloat(i, 10) == 22) {
+                    hgaPos.fill(output.getFloat(i, elClass));
+                } else if (Labels.getFloat(i, 10) == 0) {
+                    hemptyPos.fill(output.getFloat(i, elClass));
+                } else{
+                    hOtherPos.fill(output.getFloat(i, elClass));
+                }
+            } else{
+                if (Labels.getFloat(i, 10) == 11) {
+                    hRespNeg.fill(output.getFloat(i, elClass));
+                } else if (Labels.getFloat(i, 10) == -211) {
+                    hpiNeg.fill(output.getFloat(i, elClass));
+                } else if (Labels.getFloat(i, 10) == 22) {
+                    hgaNeg.fill(output.getFloat(i, elClass));
+                } else if (Labels.getFloat(i, 10) == 0) {
+                    hemptyNeg.fill(output.getFloat(i, elClass));
+                }else{
+                    hOtherNeg.fill(output.getFloat(i, elClass));
+                }
+            }
+        }
+
+        TGCanvas cPos = new TGCanvas();
+        cPos.setTitle("Positive Response (MC PID)");
+        cPos.draw(hRespPos).draw(hpiPos, "same").draw(hgaPos, "same").draw(hOtherPos,"same").draw(hemptyPos, "same");
+        cPos.region().showLegend(0.05, 0.95);
+
+        TGCanvas cNeg = new TGCanvas();
+        cNeg.setTitle("Negative Response (MC PID)");
+        cNeg.draw(hRespNeg).draw(hpiNeg, "same").draw(hgaNeg, "same").draw(hOtherNeg,"same").draw(hemptyNeg, "same");
+        cNeg.region().showLegend(0.05, 0.95);
+
+    }// End of PlotPIDResponse
+    
 
     //Labels col 0 is 1 if there's an e-, 0 otherwise
     public static INDArray getMetsForBin(INDArray outputs, INDArray Labels,int LabelVal,double thresh,int elClass,int cutVar,double low,double high){
@@ -618,6 +716,7 @@ public class Level3Tester_SimulationSIDIS_MCPart {
         }
 
         Level3Tester_SimulationSIDIS_MCPart.PlotResponse(outputs[0], data.getLabels()[0],LabelVal,elClass,Part);
+        Level3Tester_SimulationSIDIS_MCPart.PlotPIDResponse(outputs[0], data.getLabels()[0],LabelVal,elClass,Part);
         Level3Tester_SimulationSIDIS_MCPart.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,1,"P","[GeV]",1,9.0,1.0);
         Level3Tester_SimulationSIDIS_MCPart.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,2,"Theta","[Deg]",10.0,35.0,5.);
         //Level3Tester_SimulationSIDIS_MCPart.plotVarDep(data,outputs[0],thresh,elClass,LabelVal,true,3,"Sector","",0.5,6.5,1.0);
@@ -626,8 +725,9 @@ public class Level3Tester_SimulationSIDIS_MCPart {
         System.out.printf("Level3 Purity: %f Efficiency: %f\n",metrics.getFloat(0,0),metrics.getFloat(1,0));
         System.out.printf("TP: %f, FP: %f, FN: %f\n",metrics.getFloat(2,0),metrics.getFloat(3,0),metrics.getFloat(4,0));
 
-        //debugElectrons(outputs[0], data,LabelVal,elClass);
+        debugElectrons(outputs[0], data,LabelVal,elClass);
         debugBG(outputs[0], data,LabelVal,elClass);
+        getStats(outputs[0], data,LabelVal,elClass);
     }
 
     public static void plotElHTCCExamples(MultiDataSet data,int nEx){
@@ -642,6 +742,102 @@ public class Level3Tester_SimulationSIDIS_MCPart {
         }
     }
 
+    public static void getStats(INDArray outputs, MultiDataSet data,int elLabelVal,int elClass){
+        int nfakeEl=0,nPitoEl=0,nMissedEl=0,nEltoPi=0,nTrueEl=0,nTruePi=0,nTrueNonEl=0,nGammatoEl=0, nTrueGamma=0;
+        int nTrueElL3=0,nMissedElL3=0,nPitoElL3=0,nTruePiL3=0,nGammatoElL3=0, nTrueGammaL3=0, nBgtoElL3=0, nTrueBGL3=0;
+        INDArray Labels=data.getLabels()[0];
+        for(int i=0;i<outputs.shape()[0];i++){
+            // has MC particle
+            if (Labels.getFloat(i, 10) != 0) {
+                // is MC el
+                if (Labels.getFloat(i, 10) == 11) {
+                    if (Labels.getFloat(i, 7) == 11) {
+                        nTrueEl++;
+                    }
+                    if (Labels.getFloat(i, 7) == -211) {
+                        nEltoPi++;
+                    }
+                    if (Labels.getFloat(i, 7) != 11) {
+                        nMissedEl++;
+                    }
+
+                    if (outputs.getFloat(i, elClass) > 0.9) {
+                        nTrueElL3++;
+                    } else {
+                        nMissedElL3++;
+                    }
+
+                } else {
+                    if (Labels.getFloat(i, 10) == -211) {
+                        if (Labels.getFloat(i, 7) == -211) {
+                            nTruePi++;
+                        } else if (Labels.getFloat(i, 7) == 11) {
+                            nPitoEl++;
+                        }
+
+                        if (outputs.getFloat(i, elClass) > 0.9) {
+                            nPitoElL3++;
+                        } else {
+                            nTruePiL3++;
+                        }
+
+                    }
+
+                    if (Labels.getFloat(i, 10) == 22) {
+                        if (Labels.getFloat(i, 7) == 22) {
+                            nTrueGamma++;
+                        } else if (Labels.getFloat(i, 7) == 11) {
+                            nGammatoEl++;
+                        }
+
+                        if (outputs.getFloat(i, elClass) > 0.9) {
+                            nGammatoElL3++;
+                        } else {
+                            nTrueGammaL3++;
+                        }
+
+                    }
+
+                    if (Labels.getFloat(i, 7) == 11) {
+                        nfakeEl++;
+                    }
+                    if (Labels.getFloat(i, 7) != 11) {
+                        nTrueNonEl++;
+                    }
+
+                    if (outputs.getFloat(i, elClass) > 0.9) {
+                        nBgtoElL3++;
+                    } else {
+                        nTrueBGL3++;
+                    }
+
+                }
+            }
+        }
+
+        System.out.println("\n\nFrom reconstruction:");
+        System.out.printf("n MC 11 reconstructed as 11: %d\n", nTrueEl);
+        System.out.printf("n MC 11 reconstructed as -211: %d\n", nEltoPi);
+        System.out.printf("n MC 11 not reconstructed as 11: %d\n", nMissedEl);
+        System.out.printf("n MC -211 reconstructed as -211: %d\n", nTruePi);
+        System.out.printf("n MC -211 reconstructed as 11: %d\n", nPitoEl);
+        System.out.printf("n MC 22 reconstructed as 22: %d\n", nTrueGamma);
+        System.out.printf("n MC 22 reconstructed as 11: %d\n", nGammatoEl);
+        System.out.printf("n MC !11 reconstructed as !11: %d\n", nTrueNonEl);
+        System.out.printf("n MC !11 reconstructed as 11: %d\n", nfakeEl);
+
+        System.out.println("\nFrom L3:");
+        System.out.printf("n MC 11 reconstructed as 11: %d\n", nTrueElL3);
+        System.out.printf("n MC 11 not reconstructed as 11: %d\n", nMissedElL3);
+        System.out.printf("n MC -211 reconstructed as !11: %d\n", nTruePiL3);
+        System.out.printf("n MC -211 reconstructed as 11: %d\n", nPitoElL3);
+        System.out.printf("n MC 22 reconstructed as !11: %d\n", nTrueGammaL3);
+        System.out.printf("n MC 22 reconstructed as 11: %d\n", nGammatoElL3);
+        System.out.printf("n MC !11 reconstructed as !11: %d\n", nTrueBGL3);
+        System.out.printf("n MC !11 reconstructed as 11: %d\n", nBgtoElL3);
+
+    }
+
     public static void debugElectrons(INDArray outputs, MultiDataSet data,int elLabelVal,int elClass){
         int shown=0;
         INDArray Labels=data.getLabels()[0];
@@ -650,9 +846,9 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                 if(outputs.getFloat(i, elClass) <0.001 && shown<1){
                     System.out.printf("\nElectron @ resp %f\n",outputs.getFloat(i, elClass));
                     System.out.printf("P %f, theta %f, phi %f\n",Labels.getFloat(i, 1),Labels.getFloat(i, 2),Labels.getFloat(i, 5));
-                    System.out.printf("nphe %f, sect %f, PID %f\n",Labels.getFloat(i, 6),Labels.getFloat(i, 3),Labels.getFloat(i, 7));
+                    System.out.printf("nphe %f, sect %f, PID %f, MC PID %f\n",Labels.getFloat(i, 6),Labels.getFloat(i, 3),Labels.getFloat(i, 7),Labels.getFloat(i, 10));
                     System.out.printf("SF %f, ECAL energy %f\n",Labels.getFloat(i, 8),Labels.getFloat(i, 9));
-                    plotDCExamples(data.getFeatures()[0], 1, i);
+                    //plotDCExamples(data.getFeatures()[0], 1, i);
                     //plotECExamples(data.getFeatures()[1], 1, i);
                     //plotECExamples(data.getFeatures()[3], 1, i);
                     shown++;
@@ -667,9 +863,9 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                 if(outputs.getFloat(i, elClass) >0.9 && shown2<1){
                     System.out.printf("\nElectron @ resp %f\n",outputs.getFloat(i, elClass));
                     System.out.printf("P %f, theta %f, phi %f\n",Labels.getFloat(i, 1),Labels.getFloat(i, 2),Labels.getFloat(i, 5));
-                    System.out.printf("nphe %f, sect %f, PID %f\n",Labels.getFloat(i, 6),Labels.getFloat(i, 3),Labels.getFloat(i, 7));
+                    System.out.printf("nphe %f, sect %f, PID %f, MC PID %f\n",Labels.getFloat(i, 6),Labels.getFloat(i, 3),Labels.getFloat(i, 7),Labels.getFloat(i, 10));
                     System.out.printf("SF %f, ECAL energy %f\n",Labels.getFloat(i, 8),Labels.getFloat(i, 9));
-                    plotDCExamples(data.getFeatures()[0], 1, i);
+                    //plotDCExamples(data.getFeatures()[0], 1, i);
                     //plotECExamples(data.getFeatures()[1], 1, i);
                     //plotECExamples(data.getFeatures()[3], 1, i);
                     shown2++;
@@ -681,11 +877,11 @@ public class Level3Tester_SimulationSIDIS_MCPart {
 
     public static void debugBG(INDArray outputs, MultiDataSet data,int elLabelVal,int elClass){
 
-        H1F hBGType = new H1F("BG PID IDed as signal", 8, -0.5, 7.5);
+        H1F hBGType = new H1F("BG PID IDed as signal", 16, -0.5, 15.5);
         hBGType.attr().setLineColor(2);
         hBGType.attr().setFillColor(2);
         hBGType.attr().setLineWidth(3);
-        hBGType.attr().setTitleX("BG PID (0 empty, 1 -211, 2 -11, 3 22, 4 11, 5 2112, 6 +/- 321, 7 others)");
+        hBGType.attr().setTitleX("BG Geant 4 ID (0 empty, 1 22, 2 -11, 3 11, 9 -211, 11 +/-321, 13 2112 ,15 others)");
 
 
         H1F hHasHTCC = new H1F("BG has HTCC?", 2, -0.5, 1.5);
@@ -713,6 +909,18 @@ public class Level3Tester_SimulationSIDIS_MCPart {
         hnHasHTCC.attr().setTitleX("HTCC not empty (0 no, 1 true)");
         hnHasHTCC.attr().setTitle("PID 2112");
 
+        H1F hpiHasHTCC = new H1F("BG has HTCC?", 2, -0.5, 1.5);
+        hpiHasHTCC.attr().setLineColor(4);
+        hpiHasHTCC.attr().setLineWidth(3);
+        hpiHasHTCC.attr().setTitleX("HTCC not empty (0 no, 1 true)");
+        hpiHasHTCC.attr().setTitle("PID -211");
+
+        H1F helHasHTCC = new H1F("BG has HTCC?", 2, -0.5, 1.5);
+        helHasHTCC.attr().setLineColor(7);
+        helHasHTCC.attr().setLineWidth(3);
+        helHasHTCC.attr().setTitleX("HTCC not empty (0 no, 1 true)");
+        helHasHTCC.attr().setTitle("PID 11");
+
         H1F hkHasHTCC = new H1F("BG has HTCC?", 2, -0.5, 1.5);
         hkHasHTCC.attr().setLineColor(6);
         hkHasHTCC.attr().setLineWidth(3);
@@ -721,7 +929,7 @@ public class Level3Tester_SimulationSIDIS_MCPart {
     
         
 
-        int shown=0;
+        int shown=0, shownempty=0;
         INDArray Labels=data.getLabels()[0];
         for(int i=0;i<outputs.shape()[0];i++){
             if(Labels.getFloat(i, 0) != elLabelVal){
@@ -731,7 +939,7 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                         NDArrayIndex.all());
 
                     int bgtype=-1;
-                    if(Labels.getFloat(i, 7)==0){
+                    if(Labels.getFloat(i, 10)==0){
                         bgtype=0;
                         
                         if(htcc.any()){
@@ -740,14 +948,19 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                             hHasHTCC.fill(0);
                         }
 
-                    } else if(Labels.getFloat(i, 7)==-211){
-                        bgtype=1;
+                    } else if(Labels.getFloat(i, 10)==-211){
+                        bgtype=9;
+                        if(htcc.any()){
+                            hpiHasHTCC.fill(1);
+                        } else{
+                            hpiHasHTCC.fill(0);
+                        }
                     }
-                    else if(Labels.getFloat(i, 7)==-11){
+                    else if(Labels.getFloat(i, 10)==-11){
                         bgtype=2;
                     }
-                    else if(Labels.getFloat(i, 7)==22){
-                        bgtype=3;
+                    else if(Labels.getFloat(i, 10)==22){
+                        bgtype=1;
 
                         if(htcc.any()){
                             hphHasHTCC.fill(1);
@@ -755,11 +968,16 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                             hphHasHTCC.fill(0);
                         }
 
-                    }else if(Labels.getFloat(i, 7)==11){
-                        bgtype=4;
+                    }else if(Labels.getFloat(i, 10)==11){
+                        bgtype=3;
+                        if(htcc.any()){
+                            helHasHTCC.fill(1);
+                        } else{
+                            helHasHTCC.fill(0);
+                        }
                     }
-                    else if(Labels.getFloat(i, 7)==2112){
-                        bgtype=5;
+                    else if(Labels.getFloat(i, 10)==2112){
+                        bgtype=13;
 
                         if(htcc.any()){
                             hnHasHTCC.fill(1);
@@ -768,8 +986,8 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                         }
 
                     }
-                    else if(Math.abs(Labels.getFloat(i, 7))==321){
-                        bgtype=6;
+                    else if(Math.abs(Labels.getFloat(i, 10))==321){
+                        bgtype=11;
 
                         if(htcc.any()){
                             hkHasHTCC.fill(1);
@@ -779,7 +997,7 @@ public class Level3Tester_SimulationSIDIS_MCPart {
 
                     }
                     else {
-                        bgtype=7;
+                        bgtype=15;
 
                         if(htcc.any()){
                             hothHasHTCC.fill(1);
@@ -794,15 +1012,25 @@ public class Level3Tester_SimulationSIDIS_MCPart {
                     }
 
                 
-                    if(shown<1){
+                    if(Labels.getFloat(i, 10)!=0 && shown<1){
                         System.out.printf("\nBG @ resp %f\n",outputs.getFloat(i, elClass));
                         System.out.printf("P %f, theta %f, phi %f\n",Labels.getFloat(i, 1),Labels.getFloat(i, 2),Labels.getFloat(i, 5));
-                        System.out.printf("nphe %f, sect %f, PID %f\n",Labels.getFloat(i, 6),Labels.getFloat(i, 3),Labels.getFloat(i, 7));
+                        System.out.printf("nphe %f, sect %f, PID %f, MC PID %f\n",Labels.getFloat(i, 6),Labels.getFloat(i, 3),Labels.getFloat(i, 7),Labels.getFloat(i, 10));
+                        System.out.printf("SF %f, ECAL energy %f\n",Labels.getFloat(i, 8),Labels.getFloat(i, 9));
+                        //plotDCExamples(data.getFeatures()[0], 1, i);
+                        //plotECExamples(data.getFeatures()[1], 1, i);
+                        //plotECExamples(data.getFeatures()[3], 1, i);
+                        shown++;
+                    }
+                    if(Labels.getFloat(i, 10)==0 && shownempty<1){
+                        System.out.printf("\nBG @ resp %f\n",outputs.getFloat(i, elClass));
+                        System.out.printf("P %f, theta %f, phi %f\n",Labels.getFloat(i, 1),Labels.getFloat(i, 2),Labels.getFloat(i, 5));
+                        System.out.printf("nphe %f, sect %f, PID %f, MC PID %f\n",Labels.getFloat(i, 6),Labels.getFloat(i, 3),Labels.getFloat(i, 7),Labels.getFloat(i, 10));
                         System.out.printf("SF %f, ECAL energy %f\n",Labels.getFloat(i, 8),Labels.getFloat(i, 9));
                         plotDCExamples(data.getFeatures()[0], 1, i);
                         plotECExamples(data.getFeatures()[1], 1, i);
                         plotECExamples(data.getFeatures()[3], 1, i);
-                        shown++;
+                        shownempty++;
                     }
 
                 }
@@ -815,15 +1043,15 @@ public class Level3Tester_SimulationSIDIS_MCPart {
 
         TGCanvas c2 = new TGCanvas();
         c2.setTitle("has HTCC");
-        c2.draw(hHasHTCC).draw(hphHasHTCC,"same").draw(hothHasHTCC,"same").draw(hnHasHTCC,"same").draw(hkHasHTCC,"same");
+        c2.draw(hHasHTCC).draw(hphHasHTCC,"same").draw(hothHasHTCC,"same").draw(hnHasHTCC,"same").draw(hkHasHTCC,"same").draw(hpiHasHTCC,"same").draw(helHasHTCC,"same");
         c2.region().showLegend(0.25, 0.6);
 
     }
     
     public static void main(String[] args){        
         
-        String dir = "/Users/tyson/data_repo/trigger_data/sims/claspyth/";
-        //String dir = "/Users/tyson/data_repo/trigger_data/sims/claspyth_train/";
+        //String dir = "/Users/tyson/data_repo/trigger_data/sims/claspyth/";
+        String dir = "/Users/tyson/data_repo/trigger_data/sims/claspyth_train/";
         //String dir = "/Users/tyson/data_repo/trigger_data/rgd/018777/run_018777.h5";
         //String dir = "/Users/tyson/data_repo/trigger_data/rgd/018331_AI/rec_clas_018331.evio.00100-00104.hipo";
 
@@ -834,14 +1062,16 @@ public class Level3Tester_SimulationSIDIS_MCPart {
         //t.load("level3_sim_0d_FTOFHTCC.network");
         //t.load("level3_sim_wMixMatch_0d_FTOFHTCC.network");
         //t.load("level3_sim_MC_wMixMatch_0d_FTOFHTCC_v1.network");
-        t.load("level3_sim_MC_wMixMatch_wCorrupt_wbg_SIDIS_0f.network");//5C
+        //t.load("level3_sim_MC_wMixMatch_wCorrupt_wbg_SIDIS_0f.network");//5C
         //t.load("level3_sim_MC_wMixMatch_wCorrupt_wbg_wEmpty_SIDIS_0f.network");//6C
         //t.load("level3_sim_MC_wCorrupt_wbg_wEmpty_SIDIS_0f.network");//5C
+        //t.load("level3_sim_3C_wbg_wCorrupt_wEmpty_SIDIS_0f.network"); //3C MC part training
+        //t.load("level3_sim_MC_wCorrupt_wbg_wEmpty_SIDIS_v2_0f.network"); //5C MC par training
 
         Boolean mask_nphe=false;
 
         //Get vals for electron
-        int elClass=4;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes etc
+        int elClass=2;//1 for 2 classes, 2 for 3 classes, 3 for 4 classes etc
         int elLabelVal=1;
         MultiDataSet data=Level3Tester_SimulationSIDIS_MCPart.getData(dir,10000,10.6);//10000
 

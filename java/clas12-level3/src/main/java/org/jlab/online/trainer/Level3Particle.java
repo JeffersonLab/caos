@@ -186,9 +186,7 @@ public class Level3Particle {
 
     public Boolean check_SF_cut(){
         Boolean pass=false;
-        double tot_e=PCAL_energy+ECIN_energy+ECOUT_energy;
-        double sf=tot_e/P;
-        if(sf>0.2){pass=true;}
+        if(SF>0.2){pass=true;}
         return pass;
     }
 
@@ -306,6 +304,21 @@ public class Level3Particle {
                 } else if (phi_deg > -75 && phi_deg < -30) {
                     MC_Sector = 6;
                 }
+
+                //trying to account for regions of no acceptance...
+                /*if (phi_deg > -20 && phi_deg < 40) {
+                    MC_Sector = 1;
+                } else if (phi_deg > 40 && phi_deg < 100) {
+                    MC_Sector = 2;
+                } else if (phi_deg > 100 && phi_deg < 160) {
+                    MC_Sector = 3;
+                } else if (phi_deg > 160 && phi_deg < -140) {
+                    MC_Sector = 4;
+                } else if (phi_deg > -140 && phi_deg < -80) {
+                    MC_Sector = 5;
+                } else if (phi_deg > -80 && phi_deg < -20) {
+                    MC_Sector = 6;
+                } */
                 
             }
         }

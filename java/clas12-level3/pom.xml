@@ -208,11 +208,23 @@
                   <!--<mainClass>org.jlab.online.trainer.Level3SamplePlotter</mainClass>-->
 
                   <!--<mainClass>org.jlab.online.trainer.Level3Converter_Simulation</mainClass>-->
+                  <!--<mainClass>org.jlab.online.trainer.Level3Converter_SimulationSIDIS</mainClass>-->
+                  <!--<mainClass>org.jlab.online.trainer.Level3Converter_SimulationSIDIS_v2</mainClass>-->
+                  <!--<mainClass>org.jlab.online.trainer.Level3Converter_SimulationSIDIS_MCPart</mainClass>-->
+
                   <!--<mainClass>org.jlab.online.trainer.Level3Trainer_Simulation</mainClass>-->
-                  <mainClass>org.jlab.online.trainer.Level3Tester_Simulation</mainClass>
+
+                  <!--<mainClass>org.jlab.online.trainer.Level3Tester_Simulation</mainClass>-->
+                  <mainClass>org.jlab.online.trainer.Level3Tester_SimulationSIDIS</mainClass>
+                  <!--<mainClass>org.jlab.online.trainer.Level3Tester_SimulationSIDIS_MCPart</mainClass>-->
+                  <!--<mainClass>org.jlab.online.trainer.Level3Tester_SingleEvent_SimulationSIDIS</mainClass>-->
+
                   <!--<mainClass>org.jlab.online.trainer.Level3SamplePlotter_Simulation</mainClass>-->
+                  <!--<mainClass>org.jlab.online.trainer.Level3SampleEfficiency_Simulation</mainClass>-->
 
                   <!--<mainClass>org.jlab.online.trainer.Level3PyWriter</mainClass>-->
+
+                  <!--<mainClass>org.jlab.online.trainer.Level3ClusterFinder_Simulation</mainClass>-->
                   
                 </transformer>
               </transformers>

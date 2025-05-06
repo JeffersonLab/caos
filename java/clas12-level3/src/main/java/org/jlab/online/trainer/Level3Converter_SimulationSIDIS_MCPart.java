@@ -203,7 +203,6 @@ public class Level3Converter_SimulationSIDIS_MCPart {
                         //loop over MC particles
                         for (Level3Particle part : pInSMC) {
                             if (part.MC_PID == 11) {
-                                p = part.MC_P;
                                 //for electrons, check we have at least one REC particle with HTCC in same sector
                                 for (Level3Particle recpart : pInSREC) {
                                     part.read_Particle_Bank(recpart.PIndex, dsts[0]);

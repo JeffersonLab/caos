@@ -473,15 +473,17 @@ public class Level3Trainer_Simulation{
                                     NDArrayIndex.all()).assign(wbg);
                         } else {
                             if(bg!=""){
-                                //for clasdis data, bg is already in data so we don't to add bg again
+                                //for clasdis data, bg is already in data so we don't want to add bg again
                                 //however we don't just want empty superlayer so we load some other bg for
                                 //superlayer and add that
                                 inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
-                                        NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1),
+                                        NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), 
+                                        NDArrayIndex.point(SLs1),
                                         NDArrayIndex.all(),
                                         NDArrayIndex.all()));
-                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
-                                        NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2),
+                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
+                                        NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), 
+                                        NDArrayIndex.point(SLs2),
                                         NDArrayIndex.all(),
                                         NDArrayIndex.all()));
                             }
@@ -515,7 +517,7 @@ public class Level3Trainer_Simulation{
                     inputs_class[3] = addInputArrays(inputs_class[3], bgDataSet.getFeatures()[3]);
                 }
 
-            } else{
+            } else{ //add noise to photon on mixmatch
                 if (addBG) {
                     int fileMtp=1;
                     if(max>10000){fileMtp=(int) Math.ceil(max/10000);}
@@ -617,7 +619,7 @@ public class Level3Trainer_Simulation{
         t.trainFile(files,names,bg,addBG,50000,1000,1000);//30000 5000 10000
         t.save("level3_sim_3C_wbg_wCorrupt_wEmpty_SIDIS");*/
 
-        t.load("level3_sim_3C_wbg_wCorrupt_wEmpty_SIDIS"+net+".network");
+        t.load("level3_sim_3C_wbg_wCorrupt_wEmpty_SIDIS_"+net+".network");
         t.evaluateFile(files,names,bg,addBG,1000,true);//5000
 
     }
