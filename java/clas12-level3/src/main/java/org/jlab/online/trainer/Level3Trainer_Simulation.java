@@ -322,7 +322,7 @@ public class Level3Trainer_Simulation{
             INDArray[] outputs_class = new INDArray[1];
             int added_classes=0;
             for (int j = 0; j < file_arr.length; j++) {
-                String file = file_arr[j]+"_daq_v2.h5";
+                String file = file_arr[j]+"_daq_v3.h5";
                 HipoReader r = new HipoReader();
             
                 r.open(file);
@@ -480,7 +480,7 @@ public class Level3Trainer_Simulation{
                                         NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1),
                                         NDArrayIndex.all(),
                                         NDArrayIndex.all()));
-                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs1), NDArrayIndex.all(),
+                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
                                         NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2),
                                         NDArrayIndex.all(),
                                         NDArrayIndex.all()));
@@ -550,10 +550,10 @@ public class Level3Trainer_Simulation{
 
     public static void main(String[] args) {
      
-        String dir = "/Users/tyson/data_repo/trigger_data/sims/";
+        //String dir = "/Users/tyson/data_repo/trigger_data/sims/";
         //String out = "/Users/tyson/data_repo/trigger_data/sims/python/";
 
-        //String dir = "/scratch/clasrun/caos/sims/";
+        String dir = "/scratch/clasrun/caos/sims/";
 
         // for clasdis data, bg is already in data so we don't to add bg again
         // however when corrupting we don't want just empty array so 
@@ -565,33 +565,33 @@ public class Level3Trainer_Simulation{
         Boolean addBG=false;
 
         List<String[]> files = new ArrayList<>();
-        /*files.add(new String[] { dir+"claspyth_pim"});
+        files.add(new String[] { dir+"claspyth_pim"});
         files.add(new String[] { dir+"claspyth_gamma"});
         //files.add(new String[] { dir+"pos"}); //not even e+ in claspyth data
         files.add(new String[] { dir+"claspyth_pip"});
         //files.add(new String[] {dir+"claspyth_pim",dir+"claspyth_pip"});//,dir+"pos",dir+"el"
         files.add(new String[] { dir+"claspyth_empty" });
-        files.add(new String[] { dir+"claspyth_el" });*/
-
-        files.add(new String[] { dir+"claspyth_empty" });
-        files.add(new String[]{dir+"claspyth_pim",dir+"claspyth_pip",dir+"claspyth_gamma"});
         files.add(new String[] { dir+"claspyth_el" });
+
+        /*files.add(new String[] { dir+"claspyth_empty" });
+        files.add(new String[]{dir+"claspyth_pim",dir+"claspyth_pip",dir+"claspyth_gamma"});
+        files.add(new String[] { dir+"claspyth_el" });*/
 
         /*files.add(new String[] { dir+"pim", dir+"gamma",dir+"pim"});// ,dir+"pos"});//,dir+"pim"});
         files.add(new String[] { dir+"el" });*/
 
         List<String[]> names = new ArrayList<>();
-        /*names.add(new String[] { "pim"});
+        names.add(new String[] { "pim"});
         names.add(new String[] { "gamma"});
         //names.add(new String[] { "pos" });
         names.add(new String[] { "pip" });
         //names.add(new String[]{"mixMatch","mixMatch"});//,"mixMatch","mixMatch"
         names.add(new String[]{"empty",""});//,"mixMatch","mixMatch"
-        names.add(new String[] { "el" });*/
-        
-        names.add(new String[] { "empty" });
-        names.add(new String[] { "pim","pip","gamma" });
         names.add(new String[] { "el" });
+        
+        /*names.add(new String[] { "empty" });
+        names.add(new String[] { "pim","pip","gamma" });
+        names.add(new String[] { "el" });*/
 
         /*names.add(new String[] { "pim", "gamma","mixMatch"});// ,"pos"});//,"mixMatch"});
         names.add(new String[] { "el" });*/
@@ -612,13 +612,13 @@ public class Level3Trainer_Simulation{
         // transfer learning
         // t.load("level3_sim_"+net+".network");
 
-        /*t.nEpochs = 750;//500
+        t.nEpochs = 400;//500 //750
         
-        t.trainFile(files,names,bg,addBG,50000,1000,1000);//30000 5000 10000
-        t.save("level3_sim_3C_wbg_wCorrupt_wEmpty_SIDIS");*/
+        t.trainFile(files,names,bg,addBG,30000,1000,1000);//30000 5000 10000
+        t.save("level3_sim_MC_wCorrupt_wbg_wEmpty_SIDIS");
 
-        t.load("level3_sim_3C_wbg_wCorrupt_wEmpty_SIDIS"+net+".network");
-        t.evaluateFile(files,names,bg,addBG,1000,true);//5000
+        t.load("level3_sim_MC_wCorrupt_wbg_wEmpty_SIDIS_"+net+".network");
+        t.evaluateFile(files,names,bg,addBG,1000,false);//5000
 
     }
 }
