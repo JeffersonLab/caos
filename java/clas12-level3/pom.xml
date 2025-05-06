@@ -183,6 +183,10 @@
                     <!--<mainClass>org.jlab.online.trainer.Level3Trainer</mainClass>-->
                     <mainClass>org.jlab.online.trainer.Level3Trainer_Simulation</mainClass>
                     <!--<mainClass>org.jlab.online.trainer.Level3ClusterFinder_Simulation</mainClass>-->
+                    <!--<mainClass>org.jlab.online.trainer.Level3Trainer_MultiClass</mainClass>-->
+                    <!--<mainClass>org.jlab.online.trainer.Level3Trainer</mainClass>-->
+                    <mainClass>org.jlab.online.trainer.Level3Trainer_Simulation</mainClass>
+                    <!--<mainClass>org.jlab.online.trainer.Level3ClusterFinder_Simulation</mainClass>-->
                   <!--<mainClass>org.jlab.online.trainer.Level3Converter_MultiClass</mainClass>-->
                   
                   <!--<mainClass>org.jlab.online.trainer.Level3Trainer</mainClass>-->
