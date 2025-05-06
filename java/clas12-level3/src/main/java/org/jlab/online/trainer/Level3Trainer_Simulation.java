@@ -482,8 +482,6 @@ public class Level3Trainer_Simulation{
                                         NDArrayIndex.all(),
                                         NDArrayIndex.all()));
                                 inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
-                                        NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2),
-                                inputs_class[0].get(NDArrayIndex.point(i), NDArrayIndex.point(SLs2), NDArrayIndex.all(),
                                         NDArrayIndex.all()).assign(bgDataSet.getFeatures()[0].get(NDArrayIndex.point(i), 
                                         NDArrayIndex.point(SLs2),
                                         NDArrayIndex.all(),
